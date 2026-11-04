@@ -10,7 +10,8 @@
 //! ```
 //!
 //! Every CTOad already exists when the takeover starts, so each one starts at 0 and nobody
-//! is short-changed.
+//! is short-changed. Fees belong to the CTOad's token ID, not to a wallet, so unclaimed fees
+//! move with the NFT when it's sold.
 
 use near_sdk::{near, store::LookupMap, IntoStorageKey};
 

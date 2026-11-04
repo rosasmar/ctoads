@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["contracts/cto-token"]
+members = ["contracts/cto-token", "contracts/ctoad-nft"]
 
 [workspace.dependencies]
 near-sdk = "5.30.0"
