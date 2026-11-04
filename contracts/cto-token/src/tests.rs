@@ -405,3 +405,42 @@ fn curve_stays_solvent_when_everyone_exits() {
     assert_eq!(m.token_reserve.0, SUPPLY);
     assert!(m.real_near_reserve.0 < 1_000, "dust {}", m.real_near_reserve.0);
 }
+
+#[test]
+fn no_fees_are_split_until_the_last_ctoad_is_confirmed() {
+    let (t, mut c) = setup(config(3, true, 0));
+    let wallets = [acct("a"), acct("b"), acct("c")];
+    // Every slot is earned, but only two mints are confirmed. The third one fails.
+    for (i, w) in wallets.iter().enumerate() {
+        let tokens = buy(&t, &mut c, w, 60 * NEAR);
+        sell(&t, &mut c, w, tokens);
+        if i < 2 {
+            confirm_mint(&t, &mut c, w, i as u32 + 1);
+        }
+    }
+    t.set_with_result(&curve_id(), PromiseResult::Failed);
+    c.on_ctoad_minted(wallets[2].clone(), U128(NEAR));
+    let m = c.get_market();
+    assert_eq!((m.ctoads_minted, m.ctoads_reserved), (2, 3));
+    assert!(!m.takeover, "the CTO happened before all CTOads were minted");
+
+    // Trading continues, and every fee still goes to the deployer.
+    let before = m.deployer_fees_total.0;
+    buy(&t, &mut c, &acct("dave"), 100 * NEAR);
+    let m = c.get_market();
+    assert!(m.deployer_fees_total.0 > before);
+    assert_eq!(m.holder_fees_total.0, 0);
+    assert_eq!(m.fees_per_ctoad.0, 0);
+    assert!(c.ctoad_unclaimed(vec!["1".into(), "2".into()]).iter().all(|u| u.0 == 0));
+
+    // The retry for #3 lands. Only now does the takeover happen.
+    t.set(&acct("anyone"), 0);
+    c.retry_mint(wallets[2].clone());
+    confirm_mint(&t, &mut c, &wallets[2], 3);
+    assert!(c.get_market().takeover);
+    let deployer_total = c.get_market().deployer_fees_total.0;
+    buy(&t, &mut c, &acct("erin"), 100 * NEAR);
+    let m = c.get_market();
+    assert_eq!(m.deployer_fees_total.0, deployer_total);
+    assert!(m.holder_fees_total.0 > 0);
+}
