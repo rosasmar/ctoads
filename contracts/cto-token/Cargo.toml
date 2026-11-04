@@ -9,6 +9,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 near-sdk.workspace = true
+near-contract-standards.workspace = true
 uint.workspace = true
 
 [dev-dependencies]
