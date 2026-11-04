@@ -3,6 +3,7 @@ resolver = "2"
 members = ["contracts/cto-token"]
 
 [workspace.dependencies]
+near-sdk = "5.30.0"
 uint = { version = "0.10.2", default-features = false }
 
 [profile.release]
