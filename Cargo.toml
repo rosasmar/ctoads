@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["contracts/cto-token"]
+
+[workspace.dependencies]
+uint = { version = "0.10.2", default-features = false }
+
+[profile.release]
+codegen-units = 1
+opt-level = "z"
+lto = true
+debug = false
+panic = "abort"
+overflow-checks = true
