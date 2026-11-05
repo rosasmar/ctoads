@@ -27,7 +27,7 @@ Create an account funded by the testnet faucet. The key is saved to your system 
 
 ```sh
 near account create-account sponsor-by-faucet-service <you>.testnet \
-  autogenerate-new-keypair save-to-keychain network-config testnet create
+  autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain network-config testnet create
 ```
 
 If you already have a testnet account, import it with `near account import-account`.
@@ -36,10 +36,10 @@ If you already have a testnet account, import it with `near account import-accou
 
 | Deploy | Deployer NEAR |
 |---|---|
-| Demo (`DEMO=1`, 3 CTOads) | ~10 |
+| Demo (`DEMO=1`, 3 CTOads) | ~9 to deploy, ~15 to also run [Try it](#4-try-it) |
 | Full (500 CTOads) | ~15 |
 
-That covers code storage (~2.9 NEAR for the token contract, ~2.4 NEAR for the NFT contract), storage for 500 mints (~3.6 NEAR), the global contract deploy, and gas. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
+That covers code storage (~2.9 NEAR for the token contract, ~2.4 NEAR for the NFT contract), storage for 500 mints (~3.6 NEAR), the global contract deploy (~2.3 NEAR), and gas. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
 
 ## 3. Deploy
 

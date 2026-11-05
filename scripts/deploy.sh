@@ -55,10 +55,10 @@ near contract deploy-as-global use-file "$WASM/ctoad_account/ctoad_account.wasm"
 
 say "Creating $TOKEN and $NFT"
 near account create-account fund-myself "$TOKEN" "$TOKEN_FUNDING NEAR" \
-  autogenerate-new-keypair save-to-keychain sign-as "$DEPLOYER" \
+  autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
   network-config "$NETWORK" sign-with-keychain send
 near account create-account fund-myself "$NFT" "$NFT_FUNDING NEAR" \
-  autogenerate-new-keypair save-to-keychain sign-as "$DEPLOYER" \
+  autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
   network-config "$NETWORK" sign-with-keychain send
 
 TOKEN_ARGS=$(cat <<EOF
