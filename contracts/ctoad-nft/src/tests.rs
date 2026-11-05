@@ -152,3 +152,28 @@ fn near_formatting() {
     assert_eq!(format_near(NEAR * 123 / 100), "1.23");
     assert_eq!(format_near(42 * NEAR + 5 * NEAR / 1000), "42.00");
 }
+
+/// Same JSON shape that scripts/deploy.sh passes to `new`.
+#[test]
+fn deploy_script_init_args_parse() {
+    #[derive(near_sdk::serde::Deserialize)]
+    #[serde(crate = "near_sdk::serde")]
+    #[allow(dead_code)]
+    struct NewArgs {
+        owner_id: AccountId,
+        cto_token_id: AccountId,
+        max_supply: u32,
+        metadata: NFTContractMetadata,
+    }
+    let json = r#"{
+      "owner_id": "me.testnet",
+      "cto_token_id": "cto.me.testnet",
+      "max_supply": 500,
+      "metadata": {
+        "spec": "nft-1.0.0", "name": "CTOads", "symbol": "CTOAD",
+        "icon": null, "base_uri": null, "reference": null, "reference_hash": null
+      }
+    }"#;
+    let args: NewArgs = near_sdk::serde_json::from_str(json).unwrap();
+    args.metadata.assert_valid();
+}
