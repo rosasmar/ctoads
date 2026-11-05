@@ -381,6 +381,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ctoad-account"
+version = "0.1.0"
+dependencies = [
+ "near-sdk",
+]
+
+[[package]]
 name = "ctoad-nft"
 version = "0.1.0"
 dependencies = [

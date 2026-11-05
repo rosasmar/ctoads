@@ -6,12 +6,15 @@ Sell $CTO at a big enough loss and you mint a CTOad NFT. Once the last
 CTOad is minted, every trading fee is split between CTOad holders and the
 deployer's cut ends.
 
+Every CTOad has its own NEAR account, and whoever holds the NFT controls it.
+
 ## Contracts
 
 | Contract | Path | What it does |
 |---|---|---|
 | $CTO token | [`contracts/cto-token`](contracts/cto-token) | NEP-141 token that trades on its own bonding curve, tracks each wallet's cost basis, and mints CTOads for losing sells. |
 | CTOad NFT | [`contracts/ctoad-nft`](contracts/ctoad-nft) | Capped NEP-171 collection. Only the token contract can mint. Holders claim fees here. |
+| CTOad account | [`contracts/ctoad-account`](contracts/ctoad-account) | Small wallet contract every CTOad's account runs. It has no keys, and only the token contract can withdraw from it. |
 
 ## How it works
 
@@ -26,19 +29,28 @@ deployer's cut ends.
   `one_per_wallet` allows it. Losses from separate sells don't add up.
 - **Takeover.** Until the last CTOad is confirmed, fees go to the deployer.
   After that, every fee is split equally across all CTOads.
-- **Claiming.** Fees belong to the CTOad, not the wallet, so unclaimed fees
-  move with the NFT when it's sold.
+- **Accounts.** When a CTOad is minted, the token creates its account,
+  `ctoad-<id>.<token contract>`, running the account contract. The deposit
+  comes out of the deployer's fees. If those are short, anyone can pay it
+  with `create_ctoad_account`.
+- **Claiming.** Holders call `claim` on the NFT contract. The CTOad's fees
+  go into its account, and the account sends its whole balance to the
+  holder. A CTOad without an account is paid directly. Fees belong to the
+  CTOad, not the wallet, so unclaimed fees move with the NFT when it's sold.
 
 ## Methods
 
 | Contract | Method | Notes |
 |---|---|---|
 | token | `buy({ min_tokens_out? })` | Attach the NEAR to spend. A first buy also pays for your storage. |
-| token | `sell({ amount, min_near_out? })` | Attach exactly 1 yoctoNEAR and 100 Tgas. |
+| token | `sell({ amount, min_near_out? })` | Attach exactly 1 yoctoNEAR and at least 100 Tgas. |
 | token | `quote_buy` / `quote_sell` | Free previews, including whether a sell would earn a CTOad. |
 | token | `retry_mint({ account_id })` | Finishes a failed mint. The CTOad still goes to the seller. |
 | token | `withdraw_deployer_fees()` | Anyone can call it. It always pays the deployer. |
-| NFT | `claim({ token_ids })` | Up to 50 CTOads you own. Attach about 100 Tgas. |
+| token | `create_ctoad_account({ token_id })` | Opens a CTOad's account if the deployer's fees couldn't. Attach `ctoad_account_deposit`. |
+| token | `sweep({ token_ids })` | Moves earned fees into up to 50 CTOad accounts. Anyone can call it. |
+| token | `get_ctoad_account({ token_id })` | A CTOad's account name, state and fees not yet swept. |
+| NFT | `claim({ token_ids })` | Up to 20 CTOads you own. Attach 300 Tgas. |
 
 ## Settings
 
@@ -53,6 +65,8 @@ Fixed when the token contract is initialized. There are no admin functions.
 | `max_ctoads` | Number of CTOads. Must match `max_supply` on the NFT contract |
 | `one_per_wallet` | If true, a wallet can earn at most one CTOad |
 | `min_hold_secs` | How long after a wallet's last buy a loss can count |
+| `ctoad_account_code_hash` | Code hash of the account contract, deployed as a global contract |
+| `ctoad_account_deposit` | NEAR given to each new CTOad account for its storage |
 
 The NFT contract's only owner action is `set_base_uri`, which points the
 images at hosted art.

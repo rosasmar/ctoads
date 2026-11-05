@@ -61,7 +61,30 @@ fn config(max_ctoads: u32, one_per_wallet: bool, min_hold_secs: u64) -> Config {
         max_ctoads,
         one_per_wallet,
         min_hold_secs,
+        ctoad_account_code_hash: Base58CryptoHash::from([7u8; 32]),
+        ctoad_account_deposit: U128(ACCOUNT_DEPOSIT),
     }
+}
+
+const ACCOUNT_DEPOSIT: u128 = 5 * NEAR / 1000;
+
+fn ctoad_account(n: u32) -> AccountId {
+    format!("ctoad-{n}.cto.testnet").parse().unwrap()
+}
+
+/// Simulates the CTOad account creation receipt succeeding.
+fn account_ready(t: &T, c: &mut Contract, n: u32) {
+    t.set_with_result(&curve_id(), PromiseResult::Successful(vec![]));
+    c.on_ctoad_account_created(n, None);
+}
+
+/// Every action in this context's created receipts, grouped by receiver.
+fn actions_to(receiver: &AccountId) -> Vec<MockAction> {
+    get_created_receipts()
+        .into_iter()
+        .filter(|r| &r.receiver_id == receiver)
+        .flat_map(|r| r.actions)
+        .collect()
 }
 
 fn setup(cfg: Config) -> (T, Contract) {
@@ -443,4 +466,173 @@ fn no_fees_are_split_until_the_last_ctoad_is_confirmed() {
     let m = c.get_market();
     assert_eq!(m.deployer_fees_total.0, deployer_total);
     assert!(m.holder_fees_total.0 > 0);
+}
+
+// ---------------------------------------------------------------------------------------------
+// CTOad accounts (ctoad-<id>.<token contract>)
+// ---------------------------------------------------------------------------------------------
+
+fn earn_and_confirm(t: &T, c: &mut Contract, who: &AccountId, n: u32) {
+    let tokens = buy(t, c, who, 60 * NEAR);
+    sell(t, c, who, tokens);
+    confirm_mint(t, c, who, n);
+}
+
+fn transfer_amount(actions: &[MockAction]) -> Option<u128> {
+    actions.iter().find_map(|a| match a {
+        MockAction::Transfer { deposit, .. } => Some(deposit.as_yoctonear()),
+        _ => None,
+    })
+}
+
+#[test]
+fn confirmed_mint_opens_the_ctoads_account() {
+    let (t, mut c) = setup(config(500, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    let pot = c.get_market().deployer_fees_unwithdrawn.0;
+
+    confirm_mint(&t, &mut c, &alice, 1);
+    let actions = actions_to(&ctoad_account(1));
+    assert!(matches!(actions[0], MockAction::CreateAccount { .. }));
+    assert_eq!(transfer_amount(&actions), Some(ACCOUNT_DEPOSIT));
+    assert!(actions.iter().any(|a| matches!(a, MockAction::UseGlobalContract { .. })));
+    // The account is paid for out of the deployer's pre-takeover fees.
+    assert_eq!(c.get_market().deployer_fees_unwithdrawn.0, pot - ACCOUNT_DEPOSIT);
+    assert_eq!(c.get_ctoad_account("1".into()).state, Some(CtoadAccountState::Creating));
+
+    account_ready(&t, &mut c, 1);
+    let view = c.get_ctoad_account("1".into());
+    assert_eq!(view.state, Some(CtoadAccountState::Ready));
+    assert_eq!(view.account_id, ctoad_account(1));
+    assert_eq!(c.ctoad_account_id("1".into()), ctoad_account(1));
+}
+
+#[test]
+fn failed_account_creation_refunds_the_deployer() {
+    let (t, mut c) = setup(config(500, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    let pot = c.get_market().deployer_fees_unwithdrawn.0;
+    confirm_mint(&t, &mut c, &alice, 1);
+
+    t.set_with_result(&curve_id(), PromiseResult::Failed);
+    c.on_ctoad_account_created(1, None);
+    assert_eq!(c.get_ctoad_account("1".into()).state, None);
+    assert_eq!(c.get_market().deployer_fees_unwithdrawn.0, pot);
+}
+
+#[test]
+fn anyone_can_pay_to_open_an_account_the_deployer_couldnt_cover() {
+    let (t, mut c) = setup(config(500, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    t.set(&acct("anyone"), 0);
+    c.withdraw_deployer_fees(); // the pot is now empty
+
+    confirm_mint(&t, &mut c, &alice, 1);
+    assert!(actions_to(&ctoad_account(1)).is_empty());
+    assert_eq!(c.get_ctoad_account("1".into()).state, None);
+
+    let bob = acct("bob");
+    t.set(&bob, ACCOUNT_DEPOSIT + 7);
+    c.create_ctoad_account("1".into());
+    assert_eq!(transfer_amount(&actions_to(&ctoad_account(1))), Some(ACCOUNT_DEPOSIT));
+    assert_eq!(transfer_amount(&actions_to(&bob)), Some(7), "excess deposit refunded");
+
+    // If creating it fails, Bob gets his deposit back.
+    t.set_with_result(&curve_id(), PromiseResult::Failed);
+    c.on_ctoad_account_created(1, Some(bob.clone()));
+    assert_eq!(transfer_amount(&actions_to(&bob)), Some(ACCOUNT_DEPOSIT));
+}
+
+#[test]
+#[should_panic(expected = "Deployer fees can't cover it")]
+fn opening_an_account_without_funds_fails_clearly() {
+    let (t, mut c) = setup(config(500, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    t.set(&acct("anyone"), 0);
+    c.withdraw_deployer_fees();
+    confirm_mint(&t, &mut c, &alice, 1);
+    t.set(&acct("anyone"), 0);
+    c.create_ctoad_account("1".into());
+}
+
+#[test]
+#[should_panic(expected = "That CTOad hasn't been minted yet")]
+fn cannot_open_an_account_for_an_unminted_ctoad() {
+    let (t, mut c) = setup(config(500, true, 0));
+    t.set(&acct("anyone"), ACCOUNT_DEPOSIT);
+    c.create_ctoad_account("1".into());
+}
+
+#[test]
+fn claim_pays_through_the_ctoads_account() {
+    let (t, mut c) = setup(config(1, true, 0));
+    let alice = acct("alice");
+    earn_and_confirm(&t, &mut c, &alice, 1);
+    account_ready(&t, &mut c, 1);
+    buy(&t, &mut c, &acct("bob"), 100 * NEAR); // after the takeover: fees go to CTOad #1
+    let owed = c.ctoad_unclaimed(vec!["1".into()])[0].0;
+    assert!(owed > 0);
+
+    t.set(&ctoads_id(), 0);
+    assert_eq!(c.ctoad_payout(vec!["1".into(), "1".into()], alice.clone()).0, owed);
+
+    // One receipt to the CTOad's account: the fees arrive, then withdraw pays the holder.
+    let actions = actions_to(&ctoad_account(1));
+    assert_eq!(transfer_amount(&actions), Some(owed));
+    let withdraws: Vec<_> = actions
+        .iter()
+        .filter_map(|a| match a {
+            MockAction::FunctionCallWeight { method_name, args, .. } => {
+                Some((String::from_utf8(method_name.clone()).unwrap(), args.clone()))
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(withdraws, vec![("withdraw".to_string(), b"alice.testnet".to_vec())]);
+    // Nothing is paid to Alice directly.
+    assert!(actions_to(&alice).is_empty());
+}
+
+#[test]
+fn claim_without_an_account_pays_the_holder_directly() {
+    let (t, mut c) = setup(config(1, true, 0));
+    let alice = acct("alice");
+    earn_and_confirm(&t, &mut c, &alice, 1); // the account is still "Creating"
+    buy(&t, &mut c, &acct("bob"), 100 * NEAR);
+    let owed = c.ctoad_unclaimed(vec!["1".into()])[0].0;
+
+    t.set(&ctoads_id(), 0);
+    c.ctoad_payout(vec!["1".into()], alice.clone());
+    assert_eq!(transfer_amount(&actions_to(&alice)), Some(owed));
+    assert!(actions_to(&ctoad_account(1)).is_empty());
+}
+
+#[test]
+fn sweep_moves_fees_into_ready_accounts_only() {
+    let (t, mut c) = setup(config(2, true, 0));
+    earn_and_confirm(&t, &mut c, &acct("a"), 1);
+    earn_and_confirm(&t, &mut c, &acct("b"), 2);
+    account_ready(&t, &mut c, 1);
+    buy(&t, &mut c, &acct("carol"), 100 * NEAR);
+    let owed = c.ctoad_unclaimed(vec!["1".into()])[0].0;
+
+    t.set(&acct("anyone"), 0);
+    assert_eq!(c.sweep(vec!["1".into(), "2".into()]).0, owed);
+    assert_eq!(transfer_amount(&actions_to(&ctoad_account(1))), Some(owed));
+    assert!(actions_to(&ctoad_account(2)).is_empty());
+    assert_eq!(c.get_ctoad_account("1".into()).unswept_fees.0, 0);
+    assert_eq!(c.get_ctoad_account("2".into()).unswept_fees.0, owed);
+
+    // A failed sweep puts the fees back on the CTOad.
+    t.set_with_result(&curve_id(), PromiseResult::Failed);
+    c.on_payout(ctoad_account(1), vec![(1, U128(owed))]);
+    assert_eq!(c.get_ctoad_account("1".into()).unswept_fees.0, owed);
 }
