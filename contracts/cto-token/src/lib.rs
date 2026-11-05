@@ -6,8 +6,12 @@
 //!   buy()  -> NEAR in, $CTO out. Adds the NEAR spent (fee included) to the buyer's cost basis.
 //!   sell() -> $CTO in, NEAR out. loss = cost basis of the tokens sold - NEAR received.
 //!             A large enough loss calls the CTOad contract's `mint_ctoad`.
-//!   on_ctoad_minted() -> counts confirmed mints. The last one flips `takeover`.
+//!   on_ctoad_minted() -> counts confirmed mints. The last one flips `takeover`. Also creates the
+//!             CTOad's own account, `ctoad-<id>.<this contract>`, which runs the global
+//!             `ctoad-account` wallet contract.
+//!   sweep() -> moves fees a CTOad has earned into its account. Anyone can call it.
 //!   ctoad_payout() -> only the CTOad contract can call it, after checking ownership in `claim`.
+//!             Sends the CTOad its earned fees, then has its account pay the holder.
 //!
 //! The contract has no admin functions. Every setting is fixed at `new`.
 
@@ -25,7 +29,7 @@ use near_sdk::{
     assert_one_yocto,
     collections::LazyOption,
     env, ext_contract,
-    json_types::{U128, U64},
+    json_types::{Base58CryptoHash, U128, U64},
     log, near, require,
     serde_json::{self, json},
     store::LookupMap,
@@ -40,12 +44,17 @@ mod fees;
 mod tests;
 
 const GAS_FOR_MINT: Gas = Gas::from_tgas(30);
-const GAS_FOR_ON_MINTED: Gas = Gas::from_tgas(10);
+/// Covers counting the mint and starting creation of the CTOad's account.
+const GAS_FOR_ON_MINTED: Gas = Gas::from_tgas(20);
 const GAS_FOR_ON_TRANSFER: Gas = Gas::from_tgas(5);
+const GAS_FOR_ACCOUNT_WITHDRAW: Gas = Gas::from_tgas(5);
 /// A sell that earns a CTOad must carry enough gas to finish the mint. Otherwise the whole
 /// sell fails, so the seller can retry with more gas instead of losing the CTOad.
-const MIN_GAS_FOR_MINTING_SELL: Gas = Gas::from_tgas(80);
+const MIN_GAS_FOR_MINTING_SELL: Gas = Gas::from_tgas(100);
 const MAX_FEE_BPS: u16 = 1_000;
+const MAX_SWEEP_BATCH: usize = 50;
+/// "ctoad-500." is 10 characters, and account IDs can be at most 64.
+const MAX_PARENT_ID_LEN: usize = 54;
 
 #[ext_contract(ext_ctoad)]
 #[allow(dead_code)]
@@ -61,6 +70,15 @@ enum StorageKey {
     Holders,
     Claimed,
     MintRetries,
+    CtoadAccounts,
+}
+
+/// Lifecycle of a CTOad's own account. No entry means it hasn't been created.
+#[near(serializers = [borsh, json])]
+#[derive(Clone, Copy, PartialEq, Debug)]
+pub enum CtoadAccountState {
+    Creating,
+    Ready,
 }
 
 /// Fixed at deploy. There are no setters.
@@ -81,6 +99,11 @@ pub struct Config {
     pub one_per_wallet: bool,
     /// A loss only counts if the seller's most recent buy is at least this old.
     pub min_hold_secs: u64,
+    /// Code hash of the `ctoad-account` wallet contract, already deployed as a global contract.
+    pub ctoad_account_code_hash: Base58CryptoHash,
+    /// yoctoNEAR given to each new CTOad account for its storage. It comes out of the
+    /// deployer's pre-takeover fees, or out of the deposit attached to `create_ctoad_account`.
+    pub ctoad_account_deposit: U128,
 }
 
 #[near(serializers = [borsh])]
@@ -110,6 +133,8 @@ pub struct Contract {
     takeover: bool,
     /// Account -> losses whose mint failed. Anyone can retry them with `retry_mint`.
     mint_retries: LookupMap<AccountId, Vec<u128>>,
+    /// CTOad number -> state of its account (`ctoad-<n>.<this contract>`).
+    ctoad_accounts: LookupMap<u32, CtoadAccountState>,
 }
 
 #[near]
@@ -127,6 +152,10 @@ impl Contract {
         require!(config.max_ctoads > 0, "max_ctoads must be positive");
         require!(config.loss_threshold.0 > 0, "loss_threshold must be positive");
         require!(total_supply.0 > 0 && virtual_near_reserve.0 > 0, "empty curve");
+        require!(
+            env::current_account_id().len() <= MAX_PARENT_ID_LEN,
+            "Account ID too long for ctoad-<id> sub-accounts (max 54 characters)"
+        );
         metadata.assert_valid();
 
         let mut this = Self {
@@ -142,6 +171,7 @@ impl Contract {
             ctoads_minted: 0,
             takeover: false,
             mint_retries: LookupMap::new(StorageKey::MintRetries),
+            ctoad_accounts: LookupMap::new(StorageKey::CtoadAccounts),
         };
         this.measure_holder_storage_usage();
 
@@ -257,7 +287,7 @@ impl Contract {
         if earns_ctoad {
             require!(
                 env::prepaid_gas() >= MIN_GAS_FOR_MINTING_SELL,
-                "This sell earns a CTOad. Attach at least 80 Tgas so it can be minted."
+                "This sell earns a CTOad. Attach at least 100 Tgas so it can be minted."
             );
             self.ctoads_reserved += 1;
             self.request_mint(seller.clone(), loss);
@@ -297,6 +327,13 @@ impl Contract {
                     self.takeover = true;
                     events::emit("takeover", json!({ "ctoads": self.config.max_ctoads }));
                 }
+                // Give the new CTOad its own account, paid for from the deployer's fees.
+                // If those don't cover it, anyone can create it later with `create_ctoad_account`.
+                if let Ok(n) = token_id.parse::<u32>() {
+                    if !self.start_ctoad_account(n, None) {
+                        log!("Not enough deployer fees to open CTOad #{}'s account yet", n);
+                    }
+                }
                 Some(token_id)
             }
             None => {
@@ -313,7 +350,7 @@ impl Contract {
     /// Re-sends a failed mint. Anyone can call it, and the CTOad always goes to the original seller.
     pub fn retry_mint(&mut self, account_id: AccountId) {
         let mut losses = self.mint_retries.remove(&account_id).expect("No failed mint for this account");
-        require!(env::prepaid_gas() >= MIN_GAS_FOR_MINTING_SELL, "Attach at least 80 Tgas");
+        require!(env::prepaid_gas() >= MIN_GAS_FOR_MINTING_SELL, "Attach at least 100 Tgas");
         let loss = losses.pop().unwrap();
         if !losses.is_empty() {
             self.mint_retries.insert(account_id.clone(), losses);
@@ -322,40 +359,128 @@ impl Contract {
     }
 
     // ---------------------------------------------------------------------------------------
+    // CTOad accounts
+    // ---------------------------------------------------------------------------------------
+
+    /// Creates a minted CTOad's account if it doesn't exist yet. You only need this if the
+    /// deployer's fees couldn't cover it at mint time. Attach `ctoad_account_deposit` to pay for
+    /// it yourself (the excess is refunded), or attach nothing to use the deployer's fees.
+    #[payable]
+    pub fn create_ctoad_account(&mut self, token_id: String) {
+        let n = self.parse_ctoad(&token_id);
+        require!(n <= self.ctoads_minted, "That CTOad hasn't been minted yet");
+        require!(
+            !self.ctoad_accounts.contains_key(&n),
+            "That CTOad's account already exists or is being created"
+        );
+        let deposit = self.config.ctoad_account_deposit.0;
+        let attached = env::attached_deposit().as_yoctonear();
+        let payer = if attached == 0 {
+            None
+        } else {
+            require!(attached >= deposit, format!("Attach at least {deposit} yoctoNEAR"));
+            if attached > deposit {
+                Promise::new(env::predecessor_account_id())
+                    .transfer(NearToken::from_yoctonear(attached - deposit))
+                    .detach();
+            }
+            Some(env::predecessor_account_id())
+        };
+        require!(
+            self.start_ctoad_account(n, payer),
+            format!("Deployer fees can't cover it. Attach {deposit} yoctoNEAR to pay for it.")
+        );
+    }
+
+    #[private]
+    pub fn on_ctoad_account_created(&mut self, n: u32, payer: Option<AccountId>) {
+        if transfer_failed() {
+            self.ctoad_accounts.remove(&n);
+            let deposit = self.config.ctoad_account_deposit.0;
+            match payer {
+                None => self.fees.deployer_unwithdrawn += deposit,
+                Some(payer) => Promise::new(payer)
+                    .transfer(NearToken::from_yoctonear(deposit))
+                    .detach(),
+            }
+            log!("Creating CTOad #{}'s account failed. Its deposit was returned.", n);
+        } else {
+            self.ctoad_accounts.insert(n, CtoadAccountState::Ready);
+            events::emit(
+                "ctoad_account_created",
+                json!({ "token_id": n.to_string(), "account_id": self.ctoad_account(n) }),
+            );
+        }
+    }
+
+    /// Moves the fees each CTOad has earned into its own account, so the balance shows up there
+    /// on-chain. Anyone can call it, and it never pays out to a holder. CTOads whose account
+    /// isn't ready are skipped.
+    pub fn sweep(&mut self, token_ids: Vec<String>) -> U128 {
+        require!(token_ids.len() <= MAX_SWEEP_BATCH, "Sweep at most 50 CTOads at a time");
+        let mut total = 0;
+        for token_id in &token_ids {
+            let n = self.parse_ctoad(token_id);
+            if !self.ctoad_account_ready(n) {
+                continue;
+            }
+            let owed = self.fees.take(n);
+            if owed > 0 {
+                total += owed;
+                let account = self.ctoad_account(n);
+                Promise::new(account.clone())
+                    .transfer(NearToken::from_yoctonear(owed))
+                    .then(self.on_payout_callback(account, vec![(n, U128(owed))]))
+                    .detach();
+            }
+        }
+        U128(total)
+    }
+
+    // ---------------------------------------------------------------------------------------
     // Fees
     // ---------------------------------------------------------------------------------------
 
-    /// Pays the NEAR accrued for `token_ids` to `receiver_id`. Only the CTOad contract can call
-    /// this, after its `claim` has checked that `receiver_id` owns every one of those tokens.
+    /// Pays out everything `token_ids` have earned to `receiver_id`. Only the CTOad contract can
+    /// call this, after its `claim` has checked that `receiver_id` owns every one of those tokens.
+    ///
+    /// For a CTOad whose account is ready, this sends the account its unswept fees and then
+    /// calls its `withdraw`. The holder receives the account's whole balance: swept fees, new
+    /// fees, and anything else sent to it. A CTOad without an account yet is paid directly, so
+    /// fees are never stuck. Returns the fees taken from the running total.
     pub fn ctoad_payout(&mut self, token_ids: Vec<String>, receiver_id: AccountId) -> U128 {
         require!(
             env::predecessor_account_id() == self.config.ctoad_contract_id,
             "Only the CTOad contract can request payouts"
         );
+        let mut seen = Vec::new();
         let mut total = 0u128;
-        let mut paid = Vec::new();
+        let mut direct = Vec::new();
         for token_id in &token_ids {
             let n = self.parse_ctoad(token_id);
+            if seen.contains(&n) {
+                continue;
+            }
+            seen.push(n);
             let owed = self.fees.take(n);
-            if owed > 0 {
-                total += owed;
-                paid.push((n, U128(owed)));
+            total += owed;
+            if self.ctoad_account_ready(n) {
+                self.pay_through_account(n, owed, &receiver_id);
+            } else if owed > 0 {
+                direct.push((n, U128(owed)));
             }
         }
-        if total > 0 {
+        let direct_total: u128 = direct.iter().map(|(_, a)| a.0).sum();
+        if direct_total > 0 {
             Promise::new(receiver_id.clone())
-                .transfer(NearToken::from_yoctonear(total))
-                .then(
-                    Self::ext(env::current_account_id())
-                        .with_static_gas(GAS_FOR_ON_TRANSFER)
-                        .on_payout(receiver_id.clone(), paid),
-                )
+                .transfer(NearToken::from_yoctonear(direct_total))
+                .then(self.on_payout_callback(receiver_id.clone(), direct))
                 .detach();
-            events::emit(
-                "claim",
-                json!({ "account_id": receiver_id, "token_ids": token_ids, "amount": U128(total) }),
-            );
         }
+        events::emit(
+            "claim",
+            json!({ "account_id": receiver_id, "token_ids": token_ids, "amount": U128(total) }),
+        );
         U128(total)
     }
 
@@ -486,9 +611,25 @@ impl Contract {
         }
     }
 
-    /// Unclaimed fees, in yoctoNEAR, for each CTOad in `token_ids`.
+    /// Fees each CTOad in `token_ids` has earned that haven't been sent to its account yet, in
+    /// yoctoNEAR. What a holder can claim is this plus the account's own balance (see
+    /// `get_ctoad_account`, and `available` on the account itself).
     pub fn ctoad_unclaimed(&self, token_ids: Vec<String>) -> Vec<U128> {
         token_ids.iter().map(|id| U128(self.fees.unclaimed(self.parse_ctoad(id)))).collect()
+    }
+
+    /// The account belonging to CTOad `token_id`, e.g. `ctoad-42.cto.near`.
+    pub fn ctoad_account_id(&self, token_id: String) -> AccountId {
+        self.ctoad_account(self.parse_ctoad(&token_id))
+    }
+
+    pub fn get_ctoad_account(&self, token_id: String) -> CtoadAccountView {
+        let n = self.parse_ctoad(&token_id);
+        CtoadAccountView {
+            account_id: self.ctoad_account(n),
+            state: self.ctoad_accounts.get(&n).copied(),
+            unswept_fees: U128(self.fees.unclaimed(n)),
+        }
     }
 }
 
@@ -515,6 +656,69 @@ impl Contract {
                     .on_ctoad_minted(account_id, U128(loss)),
             )
             .detach();
+    }
+
+    fn ctoad_account(&self, n: u32) -> AccountId {
+        format!("ctoad-{n}.{}", env::current_account_id()).parse().unwrap()
+    }
+
+    fn ctoad_account_ready(&self, n: u32) -> bool {
+        self.ctoad_accounts.get(&n) == Some(&CtoadAccountState::Ready)
+    }
+
+    /// Starts creating `ctoad-<n>` with the global wallet contract. With `payer` set to None,
+    /// the deposit comes out of the deployer's fees, and this returns false if they're too low.
+    fn start_ctoad_account(&mut self, n: u32, payer: Option<AccountId>) -> bool {
+        if self.ctoad_accounts.contains_key(&n) {
+            return true;
+        }
+        let deposit = self.config.ctoad_account_deposit.0;
+        if payer.is_none() {
+            if self.fees.deployer_unwithdrawn < deposit {
+                return false;
+            }
+            self.fees.deployer_unwithdrawn -= deposit;
+        }
+        self.ctoad_accounts.insert(n, CtoadAccountState::Creating);
+        Promise::new(self.ctoad_account(n))
+            .create_account()
+            .transfer(NearToken::from_yoctonear(deposit))
+            .use_global_contract(self.config.ctoad_account_code_hash)
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_FOR_ON_TRANSFER)
+                    .on_ctoad_account_created(n, payer),
+            )
+            .detach();
+        true
+    }
+
+    /// One receipt to the CTOad's account: first the unswept fees arrive, then `withdraw` sends
+    /// the account's whole balance to the holder. If the receipt fails, both steps are undone
+    /// and the fees go back on the CTOad's balance.
+    fn pay_through_account(&self, n: u32, owed: u128, receiver_id: &AccountId) {
+        let account = self.ctoad_account(n);
+        let mut promise = Promise::new(account.clone());
+        if owed > 0 {
+            promise = promise.transfer(NearToken::from_yoctonear(owed));
+        }
+        let promise = promise.function_call(
+            "withdraw".to_string(),
+            receiver_id.as_bytes().to_vec(),
+            NearToken::from_yoctonear(0),
+            GAS_FOR_ACCOUNT_WITHDRAW,
+        );
+        if owed > 0 {
+            promise.then(self.on_payout_callback(account, vec![(n, U128(owed))])).detach();
+        } else {
+            promise.detach();
+        }
+    }
+
+    fn on_payout_callback(&self, receiver_id: AccountId, paid: Vec<(u32, U128)>) -> Promise {
+        Self::ext(env::current_account_id())
+            .with_static_gas(GAS_FOR_ON_TRANSFER)
+            .on_payout(receiver_id, paid)
     }
 
     fn parse_ctoad(&self, token_id: &str) -> u32 {
@@ -682,6 +886,15 @@ pub struct MarketView {
     pub deployer_fees_total: U128,
     pub holder_fees_total: U128,
     pub fees_per_ctoad: U128,
+}
+
+#[near(serializers = [json])]
+pub struct CtoadAccountView {
+    pub account_id: AccountId,
+    /// null = not created yet, "Creating", or "Ready".
+    pub state: Option<CtoadAccountState>,
+    /// Earned fees still held by the token contract and not yet swept into the account.
+    pub unswept_fees: U128,
 }
 
 #[near(serializers = [json])]
