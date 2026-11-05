@@ -80,6 +80,13 @@ cargo test --workspace
 cargo build --workspace --target wasm32-unknown-unknown --release
 ```
 
+## Deploy
+
+[`scripts/deploy.sh`](scripts/deploy.sh) builds and deploys all three contracts
+to testnet or mainnet. `DEMO=1` deploys 3 CTOads with a 0.1 NEAR loss
+threshold, so the whole lifecycle can be tried with a few testnet NEAR. See
+[DEPLOY.md](DEPLOY.md) for the tools, the settings and a step-by-step walkthrough.
+
 ## Team
 
 Marco and Jarren.

@@ -636,3 +636,41 @@ fn sweep_moves_fees_into_ready_accounts_only() {
     c.on_payout(ctoad_account(1), vec![(1, U128(owed))]);
     assert_eq!(c.get_ctoad_account("1".into()).unswept_fees.0, owed);
 }
+
+/// Same JSON shape that scripts/deploy.sh passes to `new`. If the init signature or Config
+/// changes, this test fails before a deploy does.
+#[test]
+fn deploy_script_init_args_parse() {
+    #[derive(near_sdk::serde::Deserialize)]
+    #[serde(crate = "near_sdk::serde")]
+    #[allow(dead_code)]
+    struct NewArgs {
+        config: Config,
+        metadata: FungibleTokenMetadata,
+        total_supply: U128,
+        virtual_near_reserve: U128,
+    }
+    let json = r#"{
+      "config": {
+        "owner_id": "me.testnet",
+        "ctoad_contract_id": "ctoads.me.testnet",
+        "fee_bps": 100,
+        "loss_threshold": "1000000000000000000000000",
+        "max_ctoads": 500,
+        "one_per_wallet": true,
+        "min_hold_secs": 0,
+        "ctoad_account_code_hash": "G7gjgBfUwCzSC9jWe7Lb5Vhw2HCG89AKkzaPbLPdsnuX",
+        "ctoad_account_deposit": "5000000000000000000000"
+      },
+      "metadata": {
+        "spec": "ft-1.0.0", "name": "CTO", "symbol": "CTO", "decimals": 18,
+        "icon": null, "reference": null, "reference_hash": null
+      },
+      "total_supply": "1000000000000000000000000000",
+      "virtual_near_reserve": "30000000000000000000000000"
+    }"#;
+    let args: NewArgs = near_sdk::serde_json::from_str(json).unwrap();
+    assert_eq!(args.config.max_ctoads, 500);
+    let hash: [u8; 32] = args.config.ctoad_account_code_hash.into();
+    assert_ne!(hash, [0u8; 32]);
+}
