@@ -60,7 +60,14 @@ fn token_contract_mints_sequential_ctoads() {
     let md = t.metadata.unwrap();
     assert_eq!(md.title.as_deref(), Some("CTOad #1"));
     assert_eq!(md.media.as_deref(), Some("1.png"));
-    assert!(md.description.unwrap().contains("losing 1.25 NEAR"));
+    let description = md.description.unwrap();
+    assert!(description.contains("losing 1.25 NEAR"));
+    assert!(description.contains("ctoad-1.cto.testnet"));
+    let extra: near_sdk::serde_json::Value =
+        near_sdk::serde_json::from_str(&md.extra.unwrap()).unwrap();
+    assert_eq!(extra["account"], "ctoad-1.cto.testnet");
+    assert_eq!(extra["first_owner"], "alice.testnet");
+    assert_eq!(c.ctoad_account_id("42".into()).as_str(), "ctoad-42.cto.testnet");
     assert_eq!(c.nft_total_supply().0, 2);
     assert_eq!(c.ctoad_status().minted, 2);
 }

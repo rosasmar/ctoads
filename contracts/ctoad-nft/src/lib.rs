@@ -31,7 +31,9 @@ use near_sdk::{
 mod tests;
 
 const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(20);
-const MAX_CLAIM_BATCH: usize = 50;
+/// Each CTOad in a claim makes its own call to its account, so batches are kept small enough
+/// to fit in 300 Tgas.
+const MAX_CLAIM_BATCH: usize = 20;
 const YOCTO_PER_CENTI_NEAR: u128 = 10u128.pow(22);
 
 #[ext_contract(ext_cto)]
@@ -110,17 +112,22 @@ impl Contract {
         self.minted += 1;
         let token_id = self.minted.to_string();
 
+        let account = self.ctoad_account(&token_id);
         let metadata = TokenMetadata {
             title: Some(format!("CTOad #{token_id}")),
             description: Some(format!(
-                "Earned by losing {} NEAR on $CTO. Holders of all {} CTOads split $CTO trading fees.",
+                "Earned by losing {} NEAR on $CTO. Once all {} CTOads are minted, its share of \
+                 $CTO trading fees collects in {account}, payable to whoever holds this CTOad.",
                 format_near(loss.0),
                 self.max_supply
             )),
             media: Some(format!("{token_id}.png")),
             copies: Some(1),
             issued_at: Some(env::block_timestamp_ms().to_string()),
-            extra: Some(json!({ "loss": loss, "first_owner": receiver_id }).to_string()),
+            extra: Some(
+                json!({ "loss": loss, "first_owner": receiver_id, "account": account })
+                    .to_string(),
+            ),
             ..Default::default()
         };
         // No refund account: this contract pays for storage from its own balance.
@@ -137,8 +144,8 @@ impl Contract {
         token_id
     }
 
-    /// Claims the $CTO trading fees earned by the CTOads you own. You pay your own gas
-    /// (attach about 100 Tgas). Returns the yoctoNEAR paid out.
+    /// Claims everything held by, or owed to, the CTOads you own, up to 20 per call. You pay your
+    /// own gas: attach 300 Tgas. Each CTOad's account sends its whole balance to you.
     pub fn claim(&self, token_ids: Vec<TokenId>) -> Promise {
         require!(
             !token_ids.is_empty() && token_ids.len() <= MAX_CLAIM_BATCH,
@@ -170,6 +177,12 @@ impl Contract {
         self.metadata.set(&metadata);
     }
 
+    /// The account that holds CTOad `token_id`'s fees, e.g. `ctoad-42.cto.near`. It's a
+    /// sub-account of the $CTO token contract.
+    pub fn ctoad_account_id(&self, token_id: TokenId) -> AccountId {
+        self.ctoad_account(&token_id)
+    }
+
     pub fn ctoad_status(&self) -> CtoadStatus {
         CtoadStatus {
             minted: self.minted,
@@ -177,6 +190,14 @@ impl Contract {
             sold_out: self.minted == self.max_supply,
             cto_token_id: self.cto_token_id.clone(),
         }
+    }
+}
+
+impl Contract {
+    fn ctoad_account(&self, token_id: &str) -> AccountId {
+        format!("ctoad-{token_id}.{}", self.cto_token_id)
+            .parse()
+            .unwrap_or_else(|_| env::panic_str("Not a CTOad id"))
     }
 }
 
