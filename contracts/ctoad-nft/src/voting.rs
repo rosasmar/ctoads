@@ -7,13 +7,18 @@
 //! A proposal passes as soon as yes votes reach 51% of all CTOads, and fails as soon as no votes
 //! do. Otherwise it's decided when the voting period ends: it passes if at least 51% of the
 //! votes cast are yes and at least 10% of all CTOads voted.
+//!
+//! Anyone can `execute` a passed proposal. This contract then asks the $CTO contract to send
+//! the amount from the treasury. If that fails, the proposal can be executed again later.
 
 use near_contract_standards::non_fungible_token::{
     enumeration::NonFungibleTokenEnumeration, TokenId,
 };
-use near_sdk::{env, json_types::U128, log, near, require, AccountId, NearToken, Promise};
+use near_sdk::{
+    env, json_types::U128, log, near, require, AccountId, Gas, NearToken, Promise, PromiseError,
+};
 
-use crate::{Contract, ContractExt};
+use crate::{ext_cto, Contract, ContractExt};
 
 /// Longest proposal description, in bytes.
 const MAX_DESCRIPTION_LEN: usize = 280;
@@ -23,6 +28,9 @@ const MAX_VOTE_BATCH: usize = 100;
 const MAJORITY_PCT: u32 = 51;
 /// Share of all CTOads that must vote for a proposal to pass when the period ends.
 const MIN_TURNOUT_PCT: u32 = 10;
+/// Covers the $CTO contract's `treasury_payout` and its transfer callback.
+const GAS_FOR_TREASURY_PAYOUT: Gas = Gas::from_tgas(20);
+const GAS_FOR_ON_EXECUTE: Gas = Gas::from_tgas(5);
 
 #[near(serializers = [borsh])]
 pub struct Proposal {
@@ -35,6 +43,8 @@ pub struct Proposal {
     pub no: u32,
     /// One bit per CTOad, set once that CTOad has voted.
     pub voted: Vec<u8>,
+    /// Set while the payout is in flight, and kept once it succeeds.
+    pub executed: bool,
 }
 
 #[near(serializers = [json])]
@@ -43,6 +53,7 @@ pub enum ProposalStatus {
     Open,
     Passed,
     Failed,
+    Executed,
 }
 
 #[near(serializers = [json])]
@@ -87,6 +98,7 @@ impl Contract {
             yes: 0,
             no: 0,
             voted: vec![0; (self.max_supply as usize).div_ceil(8)],
+            executed: false,
         });
         self.proposals.flush();
         let cost = (env::storage_usage() - storage_before) as u128
@@ -154,6 +166,41 @@ impl Contract {
         );
     }
 
+    /// Pays out a passed proposal from the treasury. Anyone can call it: it only does what the
+    /// vote decided. Attach 50 Tgas.
+    pub fn execute(&mut self, proposal_id: u32) -> Promise {
+        require!(
+            self.proposal_status(self.proposal(proposal_id)) == ProposalStatus::Passed,
+            "Only a passed proposal can be executed"
+        );
+        let proposal = self.proposals.get_mut(proposal_id - 1).unwrap();
+        proposal.executed = true;
+        ext_cto::ext(self.cto_token_id.clone())
+            .with_static_gas(GAS_FOR_TREASURY_PAYOUT)
+            .treasury_payout(proposal.receiver_id.clone(), U128(proposal.amount))
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_FOR_ON_EXECUTE)
+                    .on_execute(proposal_id),
+            )
+    }
+
+    #[private]
+    pub fn on_execute(
+        &mut self,
+        proposal_id: u32,
+        #[callback_result] paid: Result<bool, PromiseError>,
+    ) -> bool {
+        let paid = matches!(paid, Ok(true));
+        if paid {
+            log!("Proposal #{} executed", proposal_id);
+        } else {
+            self.proposals.get_mut(proposal_id - 1).unwrap().executed = false;
+            log!("Proposal #{} wasn't paid out. It can be executed again.", proposal_id);
+        }
+        paid
+    }
+
     pub fn get_proposal(&self, proposal_id: u32) -> ProposalView {
         self.proposal_view(proposal_id)
     }
@@ -183,7 +230,9 @@ impl Contract {
 
     fn proposal_status(&self, p: &Proposal) -> ProposalStatus {
         let majority = share_of(self.max_supply, MAJORITY_PCT);
-        if p.yes >= majority {
+        if p.executed {
+            ProposalStatus::Executed
+        } else if p.yes >= majority {
             ProposalStatus::Passed
         } else if p.no >= majority {
             ProposalStatus::Failed

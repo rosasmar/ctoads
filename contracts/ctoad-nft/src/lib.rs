@@ -47,6 +47,7 @@ const DEFAULT_VOTING_PERIOD_SECS: u64 = 30 * 24 * 60 * 60;
 #[allow(dead_code)]
 trait CtoToken {
     fn ctoad_payout(&mut self, token_ids: Vec<TokenId>, receiver_id: AccountId) -> U128;
+    fn treasury_payout(&mut self, receiver_id: AccountId, amount: U128) -> bool;
 }
 
 #[derive(BorshStorageKey)]

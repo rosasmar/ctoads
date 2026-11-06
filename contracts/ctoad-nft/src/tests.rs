@@ -2,7 +2,7 @@ use super::*;
 use near_contract_standards::non_fungible_token::metadata::NFT_METADATA_SPEC;
 use near_sdk::mock::MockAction;
 use near_sdk::test_utils::{get_created_receipts, VMContextBuilder};
-use near_sdk::{testing_env, NearToken};
+use near_sdk::{testing_env, NearToken, PromiseError};
 
 const NEAR: u128 = 10u128.pow(24);
 
@@ -321,4 +321,72 @@ fn proposer_pays_the_storage_and_gets_the_rest_back() {
     let cost = NEAR / 10 - refund;
     println!("one proposal: {} NEAR", format_near(cost));
     assert!(cost > 0 && cost < NEAR / 100);
+}
+
+fn passed_proposal() -> Contract {
+    let mut c = sold_out(&["alice", "alice", "bob"]);
+    propose(&mut c, "alice");
+    vote(&mut c, "alice", &["1", "2"], true, DAY_NS);
+    c
+}
+
+/// The token contract's answer to `treasury_payout` arriving back here.
+fn on_execute_with(c: &mut Contract, paid: Result<bool, PromiseError>) -> bool {
+    set_at(&nft_id(), 0, DAY_NS);
+    c.on_execute(1, paid)
+}
+
+#[test]
+fn execute_asks_the_token_contract_to_pay_from_the_treasury() {
+    let mut c = passed_proposal();
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+
+    let payout = get_created_receipts()
+        .into_iter()
+        .find(|r| r.receiver_id == cto_id())
+        .expect("no call to the token contract");
+    match &payout.actions[0] {
+        MockAction::FunctionCallWeight { method_name, args, .. } => {
+            assert_eq!(method_name, b"treasury_payout");
+            let args: near_sdk::serde_json::Value = near_sdk::serde_json::from_slice(args).unwrap();
+            assert_eq!(args["receiver_id"], "artist.testnet");
+            assert_eq!(args["amount"], NEAR.to_string());
+        }
+        other => panic!("unexpected action {other:?}"),
+    }
+    assert!(on_execute_with(&mut c, Ok(true)));
+    assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Executed);
+}
+
+#[test]
+#[should_panic(expected = "Only a passed proposal can be executed")]
+fn cannot_execute_an_open_proposal() {
+    let mut c = sold_out(&["alice", "bob", "carol"]);
+    propose(&mut c, "alice");
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+}
+
+#[test]
+#[should_panic(expected = "Only a passed proposal can be executed")]
+fn a_proposal_is_paid_only_once() {
+    let mut c = passed_proposal();
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+}
+
+#[test]
+fn a_failed_payout_can_be_executed_again() {
+    let mut c = passed_proposal();
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+    assert!(!on_execute_with(&mut c, Err(PromiseError::Failed)));
+    assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Passed);
+
+    set_at(&acct("anyone"), 0, DAY_NS);
+    let _ = c.execute(1);
+    assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Executed);
 }
