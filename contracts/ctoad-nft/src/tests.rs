@@ -40,6 +40,7 @@ fn setup(max_supply: u32) -> Contract {
             reference: None,
             reference_hash: None,
         },
+        None,
     )
 }
 
@@ -176,4 +177,148 @@ fn deploy_script_init_args_parse() {
     }"#;
     let args: NewArgs = near_sdk::serde_json::from_str(json).unwrap();
     args.metadata.assert_valid();
+}
+
+// ---------------------------------------------------------------------------------------------
+// Voting
+// ---------------------------------------------------------------------------------------------
+
+use crate::voting::ProposalStatus;
+
+const DAY_NS: u64 = 24 * 60 * 60 * 1_000_000_000;
+
+fn set_at(predecessor: &AccountId, deposit: u128, timestamp_ns: u64) {
+    testing_env!(VMContextBuilder::new()
+        .current_account_id(nft_id())
+        .predecessor_account_id(predecessor.clone())
+        .attached_deposit(NearToken::from_yoctonear(deposit))
+        .account_balance(NearToken::from_near(100))
+        .block_timestamp(timestamp_ns)
+        .build());
+}
+
+/// Mints every CTOad: `owners[i]` gets CTOad #i+1.
+fn sold_out(owners: &[&str]) -> Contract {
+    let mut c = setup(owners.len() as u32);
+    for owner in owners {
+        mint(&mut c, &acct(owner));
+    }
+    c
+}
+
+fn propose(c: &mut Contract, by: &str) -> u32 {
+    set_at(&acct(by), NEAR / 10, 0);
+    c.propose("Pay the artist".into(), acct("artist"), U128(NEAR))
+}
+
+fn vote(c: &mut Contract, by: &str, ids: &[&str], approve: bool, timestamp_ns: u64) {
+    set_at(&acct(by), 0, timestamp_ns);
+    c.vote(1, ids.iter().map(|id| id.to_string()).collect(), approve);
+}
+
+fn status_at(c: &Contract, timestamp_ns: u64) -> ProposalStatus {
+    set_at(&acct("anyone"), 0, timestamp_ns);
+    c.get_proposal(1).status
+}
+
+#[test]
+fn proposal_passes_early_at_51_percent_of_all_ctoads() {
+    let mut c = sold_out(&["alice", "alice", "bob"]);
+    assert_eq!(propose(&mut c, "alice"), 1);
+    assert_eq!(status_at(&c, 0), ProposalStatus::Open);
+    vote(&mut c, "alice", &["1", "2"], true, DAY_NS);
+    // 2 of 3 is 51% of all CTOads, so it passes without waiting 30 days.
+    assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Passed);
+    let p = c.get_proposal(1);
+    assert_eq!((p.yes, p.no, p.amount.0), (2, 0, NEAR));
+    assert_eq!(p.receiver_id, acct("artist"));
+}
+
+#[test]
+fn proposal_fails_early_at_51_percent_no() {
+    let mut c = sold_out(&["alice", "alice", "bob"]);
+    propose(&mut c, "bob");
+    vote(&mut c, "alice", &["1", "2"], false, DAY_NS);
+    assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Failed);
+}
+
+#[test]
+fn proposal_passes_after_the_period_with_most_votes_cast() {
+    let mut c = sold_out(&["alice", "alice", "bob", "carol", "carol", "carol", "carol", "carol"]);
+    propose(&mut c, "alice");
+    vote(&mut c, "alice", &["1", "2"], true, DAY_NS);
+    vote(&mut c, "bob", &["3"], false, DAY_NS);
+    // 2 yes of 3 votes cast, with turnout above 10%: open until the 30 days are up.
+    assert_eq!(status_at(&c, 29 * DAY_NS), ProposalStatus::Open);
+    assert_eq!(status_at(&c, 30 * DAY_NS), ProposalStatus::Passed);
+}
+
+#[test]
+fn proposal_fails_after_the_period_without_enough_turnout() {
+    let mut owners = vec!["alice"];
+    owners.extend(["bob"; 19]);
+    let mut c = sold_out(&owners);
+    propose(&mut c, "alice");
+    // 1 vote of 20 CTOads is under the 10% minimum, even though it's 100% yes.
+    vote(&mut c, "alice", &["1"], true, DAY_NS);
+    assert_eq!(status_at(&c, 30 * DAY_NS), ProposalStatus::Failed);
+}
+
+#[test]
+#[should_panic(expected = "CTOad #1 already voted on this proposal")]
+fn a_sold_ctoad_cannot_vote_again() {
+    let mut c = sold_out(&["alice", "bob", "carol", "dave"]);
+    propose(&mut c, "alice");
+    vote(&mut c, "alice", &["1"], true, DAY_NS);
+    set(&acct("alice"), 1);
+    c.nft_transfer(acct("mallory"), "1".into(), None, None);
+    vote(&mut c, "mallory", &["1"], true, DAY_NS);
+}
+
+#[test]
+#[should_panic(expected = "You don't own CTOad #2")]
+fn cannot_vote_with_someone_elses_ctoad() {
+    let mut c = sold_out(&["alice", "bob", "carol"]);
+    propose(&mut c, "alice");
+    vote(&mut c, "alice", &["2"], true, DAY_NS);
+}
+
+#[test]
+#[should_panic(expected = "Voting on this proposal has closed")]
+fn cannot_vote_after_the_period() {
+    let mut c = sold_out(&["alice", "bob", "carol"]);
+    propose(&mut c, "alice");
+    vote(&mut c, "bob", &["2"], true, 30 * DAY_NS);
+}
+
+#[test]
+#[should_panic(expected = "Proposals open once every CTOad is minted")]
+fn cannot_propose_before_every_ctoad_is_minted() {
+    let mut c = setup(3);
+    mint(&mut c, &acct("alice"));
+    propose(&mut c, "alice");
+}
+
+#[test]
+#[should_panic(expected = "Only CTOad holders can propose")]
+fn only_holders_can_propose() {
+    let mut c = sold_out(&["alice", "bob", "carol"]);
+    propose(&mut c, "mallory");
+}
+
+#[test]
+fn proposer_pays_the_storage_and_gets_the_rest_back() {
+    let mut c = sold_out(&["alice", "bob", "carol"]);
+    propose(&mut c, "alice");
+    let refund = get_created_receipts()
+        .into_iter()
+        .find(|r| r.receiver_id == acct("alice"))
+        .and_then(|r| match &r.actions[0] {
+            MockAction::Transfer { deposit, .. } => Some(deposit.as_yoctonear()),
+            _ => None,
+        })
+        .expect("no refund");
+    let cost = NEAR / 10 - refund;
+    println!("one proposal: {} NEAR", format_near(cost));
+    assert!(cost > 0 && cost < NEAR / 100);
 }
