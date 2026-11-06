@@ -1,9 +1,10 @@
 //! Fee router.
 //!
 //! Before the takeover, every fee builds up for the deployer.
-//! After the takeover, every fee is split equally across all CTOads. The router doesn't pay out
-//! on each trade. It keeps a running total of fees earned per CTOad (`per_ctoad`), and each
-//! CTOad records the total it had already been paid at its last claim (`claimed`):
+//! After the takeover, 10% of every fee goes to the treasury and the rest is split equally across
+//! all CTOads. The router doesn't pay out on each trade. It keeps a running total of fees earned
+//! per CTOad (`per_ctoad`), and each CTOad records the total it had already been paid at its last
+//! claim (`claimed`):
 //!
 //! ```text
 //! unclaimed(id) = per_ctoad - claimed[id]
@@ -15,6 +16,9 @@
 
 use near_sdk::{near, store::LookupMap, IntoStorageKey};
 
+/// Share of each post-takeover fee that goes to the treasury, in basis points (1000 = 10%).
+pub const TREASURY_BPS: u128 = 1000;
+
 #[near(serializers = [borsh])]
 pub struct FeeRouter {
     /// Pre-takeover fees the deployer hasn't withdrawn yet.
@@ -23,6 +27,10 @@ pub struct FeeRouter {
     pub deployer_total: u128,
     /// All fees ever routed to CTOad holders.
     pub holders_total: u128,
+    /// Treasury NEAR not spent yet.
+    pub treasury_balance: u128,
+    /// All fees ever routed to the treasury.
+    pub treasury_total: u128,
     /// Running total of fees each CTOad has earned since the takeover.
     pub per_ctoad: u128,
     /// Remainder from dividing by the number of CTOads. Added to the next fee so nothing is lost.
@@ -37,6 +45,8 @@ impl FeeRouter {
             deployer_unwithdrawn: 0,
             deployer_total: 0,
             holders_total: 0,
+            treasury_balance: 0,
+            treasury_total: 0,
             per_ctoad: 0,
             dust: 0,
             claimed: LookupMap::new(claimed_prefix),
@@ -48,8 +58,12 @@ impl FeeRouter {
             return;
         }
         if takeover {
-            self.holders_total += fee;
-            let pool = fee + self.dust;
+            let to_treasury = fee * TREASURY_BPS / 10_000;
+            self.treasury_balance += to_treasury;
+            self.treasury_total += to_treasury;
+            let to_holders = fee - to_treasury;
+            self.holders_total += to_holders;
+            let pool = to_holders + self.dust;
             self.per_ctoad += pool / ctoads as u128;
             self.dust = pool % ctoads as u128;
         } else {

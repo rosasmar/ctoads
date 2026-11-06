@@ -546,6 +546,8 @@ impl Contract {
             deployer_fees_total: U128(self.fees.deployer_total),
             holder_fees_total: U128(self.fees.holders_total),
             fees_per_ctoad: U128(self.fees.per_ctoad),
+            treasury_balance: U128(self.fees.treasury_balance),
+            treasury_total: U128(self.fees.treasury_total),
         }
     }
 
@@ -886,6 +888,8 @@ pub struct MarketView {
     pub deployer_fees_total: U128,
     pub holder_fees_total: U128,
     pub fees_per_ctoad: U128,
+    pub treasury_balance: U128,
+    pub treasury_total: U128,
 }
 
 #[near(serializers = [json])]

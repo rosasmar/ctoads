@@ -320,7 +320,7 @@ fn failed_mint_keeps_the_slot_and_can_be_retried() {
 }
 
 #[test]
-fn takeover_after_last_mint_then_holders_get_all_fees() {
+fn takeover_after_last_mint_then_holders_get_the_fees() {
     let (t, mut c) = setup(config(3, true, 0));
     let wallets = [acct("a"), acct("b"), acct("c")];
     for (i, w) in wallets.iter().enumerate() {
@@ -355,6 +355,25 @@ fn takeover_after_last_mint_then_holders_get_all_fees() {
     assert_eq!(c.ctoad_unclaimed(vec!["1".into()])[0].0, 0);
     let paid_again = c.ctoad_payout(vec!["1".into()], wallets[0].clone());
     assert_eq!(paid_again.0, 0);
+}
+
+#[test]
+fn treasury_gets_10_percent_after_takeover() {
+    let (t, mut c) = setup(config(3, true, 0));
+    for (i, w) in [acct("a"), acct("b"), acct("c")].iter().enumerate() {
+        let tokens = buy(&t, &mut c, w, 60 * NEAR);
+        sell(&t, &mut c, w, tokens);
+        confirm_mint(&t, &mut c, w, i as u32 + 1);
+    }
+    // Fees from before the takeover all went to the deployer.
+    assert_eq!(c.get_market().treasury_total.0, 0);
+
+    buy(&t, &mut c, &acct("dave"), 100 * NEAR);
+    let m = c.get_market();
+    let fee = m.treasury_total.0 + m.holder_fees_total.0;
+    assert_eq!(m.treasury_total.0, fee / 10);
+    assert_eq!(m.treasury_balance.0, m.treasury_total.0);
+    assert_eq!(m.fees_per_ctoad.0, m.holder_fees_total.0 / 3);
 }
 
 #[test]
