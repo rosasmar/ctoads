@@ -1,6 +1,6 @@
 # Deployment guide
 
-This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad, take over, claim. Mainnet uses the same steps (see [Mainnet](#mainnet)).
+This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad, take over, claim, vote on the treasury. Mainnet uses the same steps (see [Mainnet](#mainnet)).
 
 ## What gets deployed
 
@@ -36,10 +36,10 @@ If you already have a testnet account, import it with `near account import-accou
 
 | Deploy | Deployer NEAR |
 |---|---|
-| Demo (`DEMO=1`, 3 CTOads) | ~9 to deploy, ~15 to also run [Try it](#4-try-it) |
+| Demo (`DEMO=1`, 3 CTOads) | ~9.5 to deploy, ~16 to also run [Try it](#4-try-it) |
 | Full (500 CTOads) | ~15 |
 
-That covers code storage (~2.9 NEAR for the token contract, ~2.4 NEAR for the NFT contract), storage for 500 mints (~3.6 NEAR), the global contract deploy (~2.3 NEAR), and gas. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
+That covers code storage (~2.9 NEAR for the token contract, ~2.8 NEAR for the NFT contract), storage for 500 mints (~3.6 NEAR), the global contract deploy (~2.3 NEAR), and gas. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
 
 ## 3. Deploy
 
@@ -75,11 +75,12 @@ Override any of these with environment variables:
 | `LOSS_THRESHOLD` | 1 NEAR | 0.1 NEAR | Smallest loss, in yoctoNEAR, that earns a CTOad |
 | `ONE_PER_WALLET` | `true` | `false` | At most one CTOad per wallet |
 | `MIN_HOLD_SECS` | `0` | | How long after your last buy a loss can count |
+| `VOTING_PERIOD_SECS` | 30 days | 5 minutes | How long each proposal stays open |
 | `FEE_BPS` | `100` | | Fee per curve trade (100 = 1%) |
 | `VIRTUAL_NEAR` | 30 NEAR | | Virtual reserve. Sets the starting price. |
 | `TOTAL_SUPPLY` | 1B $CTO | | Minted to the curve at init (18 decimals) |
 | `ACCOUNT_DEPOSIT` | 0.005 NEAR | | Given to each new CTOad account for its storage |
-| `TOKEN_FUNDING` / `NFT_FUNDING` | `4` / `8` NEAR | `3.5` / `3` NEAR | Initial balance of each contract account |
+| `TOKEN_FUNDING` / `NFT_FUNDING` | `4` / `8` NEAR | `3.5` / `3.5` NEAR | Initial balance of each contract account |
 | `BASE_URI` | none | | Where the CTOad images are hosted |
 
 All of these are permanent once deployed. Neither contract has a function to change them. The only exception is the NFT owner's `set_base_uri`, which changes images only.
@@ -166,6 +167,48 @@ near contract call-function as-transaction $TOKEN withdraw_deployer_fees json-ar
   sign-as $ME network-config testnet sign-with-keychain send
 ```
 
+**9. Propose a treasury payout.** After the takeover, 10% of every fee goes to the treasury. Check its balance:
+
+```sh
+near contract call-function as-read-only $TOKEN get_market json-args '{}' network-config testnet now
+```
+
+`treasury_balance` is about 0.006 NEAR after step 7. Propose sending 0.005 NEAR of it to yourself, and attach 0.01 NEAR for the proposal's storage (the rest is refunded):
+
+```sh
+near contract call-function as-transaction $NFT propose \
+  json-args "{\"description\":\"Test payout\",\"receiver_id\":\"$ME\",\"amount\":\"5000000000000000000000\"}" \
+  prepaid-gas '30.0 Tgas' attached-deposit '0.01 NEAR' \
+  sign-as $ME network-config testnet sign-with-keychain send
+```
+
+**10. Vote.** Vote yes with two of your three CTOads. That's 51% of all CTOads, so the proposal passes right away:
+
+```sh
+near contract call-function as-transaction $NFT vote \
+  json-args '{"proposal_id":1,"token_ids":["1","2"],"approve":true}' \
+  prepaid-gas '30.0 Tgas' attached-deposit '0 NEAR' \
+  sign-as $ME network-config testnet sign-with-keychain send
+```
+
+To see the end of the voting period instead, vote with one CTOad and wait 5 minutes. One vote is enough turnout with 3 CTOads, so the proposal passes when the period ends.
+
+**11. Check the result.** Expect `"status": "Passed"`:
+
+```sh
+near contract call-function as-read-only $NFT get_proposal \
+  json-args '{"proposal_id":1}' network-config testnet now
+```
+
+**12. Execute.** Anyone can do this. The treasury sends the amount, and the status becomes `"Executed"`:
+
+```sh
+near contract call-function as-transaction $NFT execute \
+  json-args '{"proposal_id":1}' \
+  prepaid-gas '50.0 Tgas' attached-deposit '0 NEAR' \
+  sign-as $ME network-config testnet sign-with-keychain send
+```
+
 ## 5. Run the frontend
 
 The web app does everything in step 4 in the browser.
@@ -217,3 +260,5 @@ Use the same script with `NETWORK=mainnet DEPLOYER=<you>.near`, and the defaults
 | A CTOad mint failed, so `get_holder` shows `failed_mints > 0` | Anyone can call `retry_mint({"account_id": ...})` with 150 Tgas |
 | `get_ctoad_account` shows `state: null` | The deployer's fees didn't cover the account. Call `create_ctoad_account({"token_id": ...})` with `ACCOUNT_DEPOSIT` attached. Claims still work in the meantime and pay the holder directly. |
 | `Account ID too long for ctoad-<id> sub-accounts` | Pick a shorter `TOKEN` account (54 characters at most) |
+| `Proposals open once every CTOad is minted` | Voting starts at the takeover. Mint the rest first (step 6). |
+| `execute` logs `wasn't paid out` | The treasury doesn't hold the amount yet. The proposal stays `Passed`. Execute again after more trades. |
