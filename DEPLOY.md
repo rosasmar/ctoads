@@ -227,6 +227,7 @@ Connect a testnet wallet, such as Meteor or MyNearWallet. Then:
 2. Switch to Sell. It shows whether the sell earns a CTOad.
 3. Sell. The mint moment pops up.
 4. See your CTOad on the CTOads and Claim pages.
+5. Once every CTOad is minted, propose, vote and execute on the Vote page.
 
 See [web-app/README.md](web-app/README.md) for details.
 

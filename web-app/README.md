@@ -7,6 +7,7 @@ The Next.js frontend for $CTO and CTOads. See the [main README](../README.md) fo
 | `/` Trade | Buy and sell $CTO with live quotes, and see how many CTOads are minted. Before you sell, it shows whether the sell earns a CTOad, or why it won't. After a sell that earns one, it shows the "you got rekt, here's your CTOad" moment. |
 | `/ctoads` | Gallery of every minted CTOad: the loss that earned it, who holds it, and a link to its account |
 | `/claim` | Your CTOads, what each one can claim, and a button to claim it all |
+| `/vote` | The treasury and every proposal with its votes, status and time left. Once every CTOad is minted, holders can propose a payout, vote with their CTOads, and execute a passed proposal. |
 
 ## Run it
 
