@@ -19,6 +19,9 @@ export type Market = {
   deployer_fees_total: string;
   holder_fees_total: string;
   fees_per_ctoad: string;
+  /** NEAR the treasury holds now, and has received in total. */
+  treasury_balance: string;
+  treasury_total: string;
 };
 
 export type TokenConfig = {
@@ -64,6 +67,22 @@ export type NftToken = {
 
 export type CtoadExtra = { loss?: string; first_owner?: string; account?: string };
 
+export type ProposalStatus = "Open" | "Passed" | "Failed" | "Executed";
+
+/** Matches `ProposalView` in contracts/ctoad-nft/src/voting.rs. */
+export type Proposal = {
+  id: number;
+  proposer: string;
+  description: string;
+  receiver_id: string;
+  /** yoctoNEAR to send from the treasury */
+  amount: string;
+  voting_ends_ms: number;
+  yes: number;
+  no: number;
+  status: ProposalStatus;
+};
+
 export const getMarket = () => view<Market>(TOKEN_CONTRACT, "get_market");
 export const getConfig = () => view<TokenConfig>(TOKEN_CONTRACT, "get_config");
 export const getHolder = (accountId: string) => view<Holder>(TOKEN_CONTRACT, "get_holder", { account_id: accountId });
@@ -79,6 +98,13 @@ export const nftTokens = (fromIndex: number, limit: number) =>
   view<NftToken[]>(NFT_CONTRACT, "nft_tokens", { from_index: String(fromIndex), limit });
 export const nftTokensForOwner = (accountId: string) =>
   view<NftToken[]>(NFT_CONTRACT, "nft_tokens_for_owner", { account_id: accountId, from_index: "0", limit: 500 });
+
+export const getProposals = (fromId = 1, limit = 50) =>
+  view<Proposal[]>(NFT_CONTRACT, "get_proposals", { from_id: fromId, limit });
+export const getProposal = (proposalId: number) =>
+  view<Proposal>(NFT_CONTRACT, "get_proposal", { proposal_id: proposalId });
+export const hasVoted = (proposalId: number, tokenId: string) =>
+  view<boolean>(NFT_CONTRACT, "has_voted", { proposal_id: proposalId, token_id: tokenId });
 
 /** What a holder could claim for one CTOad right now: unswept fees + its account's balance. */
 export async function ctoadClaimable(tokenId: string) {
@@ -105,6 +131,11 @@ export const TX = {
   sell: { gas: 150_000_000_000_000n, deposit: 1n },
   /** Up to 20 CTOads per claim. */
   claim: { gas: 300_000_000_000_000n, batch: 20 },
+  /** 0.01 NEAR covers the proposal's storage. The contract refunds the rest. */
+  propose: { gas: 30_000_000_000_000n, deposit: 10n ** 22n },
+  /** Up to 100 CTOads per vote. */
+  vote: { gas: 30_000_000_000_000n, batch: 100 },
+  execute: { gas: 50_000_000_000_000n },
 };
 
 /**
