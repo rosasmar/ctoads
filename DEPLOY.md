@@ -166,7 +166,28 @@ near contract call-function as-transaction $TOKEN withdraw_deployer_fees json-ar
   sign-as $ME network-config testnet sign-with-keychain send
 ```
 
-## 5. Lock the contracts
+## 5. Run the frontend
+
+The web app does everything in step 4 in the browser.
+
+```sh
+cd web-app
+cp .env.example .env.local
+# set NEXT_PUBLIC_TOKEN_CONTRACT=cto.<you>.testnet and NEXT_PUBLIC_NFT_CONTRACT=ctoads.<you>.testnet
+npm install
+npm run dev   # http://localhost:3000
+```
+
+Connect a testnet wallet, such as Meteor or MyNearWallet. Then:
+
+1. Buy on the Trade page.
+2. Switch to Sell. It shows whether the sell earns a CTOad.
+3. Sell. The mint moment pops up.
+4. See your CTOad on the CTOads and Claim pages.
+
+See [web-app/README.md](web-app/README.md) for details.
+
+## 6. Lock the contracts
 
 The contracts have no admin functions, but whoever holds a contract account's full-access key can still deploy new code over it. To make the takeover credible, delete those keys. **This can't be undone.** The code can never be upgraded again, so do it only after testing.
 
@@ -185,7 +206,7 @@ Use the same script with `NETWORK=mainnet DEPLOYER=<you>.near`, and the defaults
 - Set `MIN_HOLD_SECS`, so a wallet can't buy and sell in the same minute just to earn a CTOad.
 - Set `BASE_URI` once the images are hosted. The owner can also set it later with `set_base_uri`.
 - Run the testnet demo end to end with the same commit.
-- Lock both contracts (step 5).
+- Lock both contracts (step 6).
 
 ## If something goes wrong
 

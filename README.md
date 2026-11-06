@@ -87,6 +87,12 @@ to testnet or mainnet. `DEMO=1` deploys 3 CTOads with a 0.1 NEAR loss
 threshold, so the whole lifecycle can be tried with a few testnet NEAR. See
 [DEPLOY.md](DEPLOY.md) for the tools, the settings and a step-by-step walkthrough.
 
+## Web app
+
+[`web-app`](web-app) is a Next.js frontend for the deployed contracts:
+trade $CTO, see whether a sell earns a CTOad, the mint moment, a gallery
+of every CTOad, and claiming. See [web-app/README.md](web-app/README.md).
+
 ## Team
 
 Marco and Jarren.
