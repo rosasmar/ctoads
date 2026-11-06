@@ -164,12 +164,14 @@ fn deploy_script_init_args_parse() {
         owner_id: AccountId,
         cto_token_id: AccountId,
         max_supply: u32,
+        voting_period_secs: Option<u64>,
         metadata: NFTContractMetadata,
     }
     let json = r#"{
       "owner_id": "me.testnet",
       "cto_token_id": "cto.me.testnet",
       "max_supply": 500,
+      "voting_period_secs": 2592000,
       "metadata": {
         "spec": "nft-1.0.0", "name": "CTOads", "symbol": "CTOAD",
         "icon": null, "base_uri": null, "reference": null, "reference_hash": null
@@ -177,6 +179,7 @@ fn deploy_script_init_args_parse() {
     }"#;
     let args: NewArgs = near_sdk::serde_json::from_str(json).unwrap();
     args.metadata.assert_valid();
+    assert_eq!(args.voting_period_secs, Some(30 * 24 * 60 * 60));
 }
 
 // ---------------------------------------------------------------------------------------------
