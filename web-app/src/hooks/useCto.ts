@@ -1,0 +1,61 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import useSWR from "swr";
+
+import { CONFIGURED } from "@/config";
+import { getConfig, getHolder, getMarket, quoteBuy, quoteSell } from "@/lib/cto";
+
+/** Any valid account ID works for previews when nobody is signed in. */
+const GUEST = "guest.near";
+
+export function useMarket() {
+  return useSWR(CONFIGURED ? "market" : null, getMarket, { refreshInterval: 5_000 });
+}
+
+export function useTokenConfig() {
+  return useSWR(CONFIGURED ? "config" : null, getConfig, { revalidateOnFocus: false });
+}
+
+export function useHolder(accountId: string | null) {
+  return useSWR(CONFIGURED && accountId ? ["holder", accountId] : null, ([, id]) => getHolder(id), {
+    refreshInterval: 10_000,
+  });
+}
+
+export function useBuyQuote(accountId: string | null, nearAmount: bigint | null) {
+  const amount = useDebounced(nearAmount, 300);
+  return useSWR(
+    CONFIGURED && amount && amount > 0n ? ["quoteBuy", accountId ?? GUEST, amount.toString()] : null,
+    ([, id, amt]) => quoteBuy(id, BigInt(amt)),
+    { refreshInterval: 5_000, keepPreviousData: true },
+  );
+}
+
+export function useSellQuote(accountId: string | null, amount: bigint | null) {
+  const debounced = useDebounced(amount, 300);
+  return useSWR(
+    CONFIGURED && accountId && debounced && debounced > 0n ? ["quoteSell", accountId, debounced.toString()] : null,
+    ([, id, amt]) => quoteSell(id, BigInt(amt)),
+    { refreshInterval: 5_000, keepPreviousData: true },
+  );
+}
+
+export function useDebounced<T>(value: T, ms: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(value), ms);
+    return () => clearTimeout(t);
+  }, [value, ms]);
+  return debounced;
+}
+
+/** Current time, refreshed every `ms`. */
+export function useNow(ms = 15_000): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), ms);
+    return () => clearInterval(t);
+  }, [ms]);
+  return now;
+}

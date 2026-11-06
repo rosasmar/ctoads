@@ -1,0 +1,153 @@
+"use client";
+
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
+import { useState } from "react";
+import useSWR from "swr";
+
+import { CONFIGURED, EXPLORER_URL, NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
+import { Frog } from "@/components/Frog";
+import { useMarket, useTokenConfig } from "@/hooks/useCto";
+import { ctoadClaimable, nftTokensForOwner, TX } from "@/lib/cto";
+import { formatNear } from "@/lib/near";
+
+export function ClaimPage() {
+  const { signedAccountId, signIn, callFunction } = useWalletSelector();
+  const { data: market } = useMarket();
+  const { data: config } = useTokenConfig();
+  const { data: tokens } = useSWR(CONFIGURED && signedAccountId ? ["mine", signedAccountId] : null, ([, id]) =>
+    nftTokensForOwner(id),
+  );
+  const ids = (tokens ?? []).map((t) => t.token_id).sort((a, b) => Number(a) - Number(b));
+  const { data: claimable, mutate } = useSWR(
+    ids.length ? ["claimable", ids.join(",")] : null,
+    () => Promise.all(ids.map(async (id) => ({ id, ...(await ctoadClaimable(id)) }))),
+    { refreshInterval: 10_000 },
+  );
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  if (!signedAccountId) {
+    return (
+      <div className="py-20 text-center">
+        <h1 className="text-3xl font-bold">Your CTOads</h1>
+        <p className="mt-2 text-white/60">Connect the wallet that holds your CTOads to see and claim their fees.</p>
+        <button onClick={() => signIn()} className="mt-6 rounded-xl bg-frog px-5 py-3 font-semibold text-black">
+          Connect wallet
+        </button>
+      </div>
+    );
+  }
+
+  const total = (claimable ?? []).reduce((sum, c) => sum + c.total, 0n);
+
+  const claimAll = async () => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      for (let i = 0; i < ids.length; i += TX.claim.batch) {
+        await callFunction({
+          contractId: NFT_CONTRACT,
+          method: "claim",
+          args: { token_ids: ids.slice(i, i + TX.claim.batch) },
+          gas: TX.claim.gas,
+        });
+      }
+      setStatus("Claimed. Fees are on their way to your wallet.");
+      mutate();
+    } catch (e) {
+      setStatus(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const createAccount = (id: string) =>
+    callFunction({
+      contractId: TOKEN_CONTRACT,
+      method: "create_ctoad_account",
+      args: { token_id: id },
+      gas: 50_000_000_000_000n,
+      deposit: config ? BigInt(config.ctoad_account_deposit) : 0n,
+    }).then(() => mutate());
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Your CTOads</h1>
+          <p className="mt-1 text-white/60">
+            {tokens ? `You hold ${tokens.length}.` : "Loading…"} Each CTOad&apos;s fees collect in its own account, and
+            whoever holds it can claim them.
+          </p>
+        </div>
+        {ids.length > 0 && (
+          <div className="text-right">
+            <p className="text-sm text-white/50">Claimable now</p>
+            <p className="text-2xl font-bold text-frog">{formatNear(total)} NEAR</p>
+            <button
+              onClick={claimAll}
+              disabled={busy || total === 0n}
+              className="mt-2 rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40"
+            >
+              {busy ? "Confirm in your wallet…" : "Claim all"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {market && !market.takeover && (
+        <p className="rounded-xl bg-white/5 p-4 text-sm text-white/70">
+          CTOads start earning at the takeover, when all {market.max_ctoads} are minted ({market.ctoads_minted} so far).
+          Until then, every fee goes to the deployer.
+        </p>
+      )}
+      {status && <p className="text-sm text-white/70">{status}</p>}
+      {tokens && tokens.length === 0 && (
+        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">
+          No CTOads in this wallet. Lose at least {config ? formatNear(config.loss_threshold) : "1"} NEAR on a single
+          sell to earn one, or buy one from a holder.
+        </p>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+        {ids.map((id) => {
+          const c = claimable?.find((x) => x.id === id);
+          return (
+            <div key={id} className="flex gap-4 rounded-xl border border-white/10 bg-panel p-3">
+              <Frog id={Number(id)} className="h-20 w-20 shrink-0 rounded-lg" />
+              <div className="min-w-0 space-y-1 text-sm">
+                <p className="font-semibold">CTOad #{id}</p>
+                {c ? (
+                  <>
+                    <p>
+                      <span className="text-frog">{formatNear(c.total)} NEAR</span>{" "}
+                      <span className="text-white/40">claimable</span>
+                    </p>
+                    {c.account.state === "Ready" ? (
+                      <a
+                        href={`${EXPLORER_URL}/address/${c.account.account_id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block truncate font-mono text-xs text-white/50 hover:text-white"
+                      >
+                        {c.account.account_id} ↗
+                      </a>
+                    ) : c.account.state === "Creating" ? (
+                      <p className="text-xs text-white/50">Account being created…</p>
+                    ) : (
+                      <button onClick={() => createAccount(id)} className="text-xs text-amber-300 hover:underline">
+                        No account yet. Create it (claims still pay you directly)
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <p className="text-white/40">Loading…</p>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
