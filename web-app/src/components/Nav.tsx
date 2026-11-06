@@ -11,6 +11,7 @@ const LINKS = [
   { href: "/", label: "Trade" },
   { href: "/ctoads", label: "CTOads" },
   { href: "/claim", label: "Claim" },
+  { href: "/vote", label: "Vote" },
 ];
 
 export function Nav() {

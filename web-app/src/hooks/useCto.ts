@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED } from "@/config";
-import { getConfig, getHolder, getMarket, quoteBuy, quoteSell } from "@/lib/cto";
+import { getConfig, getHolder, getMarket, getProposals, quoteBuy, quoteSell } from "@/lib/cto";
 
 /** Any valid account ID works for previews when nobody is signed in. */
 const GUEST = "guest.near";
@@ -15,6 +15,11 @@ export function useMarket() {
 
 export function useTokenConfig() {
   return useSWR(CONFIGURED ? "config" : null, getConfig, { revalidateOnFocus: false });
+}
+
+/** Every proposal, oldest first. Refreshes so votes and closing periods show up on their own. */
+export function useProposals() {
+  return useSWR(CONFIGURED ? "proposals" : null, () => getProposals(), { refreshInterval: 5_000 });
 }
 
 export function useHolder(accountId: string | null) {
