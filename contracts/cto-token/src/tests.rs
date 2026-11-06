@@ -320,7 +320,7 @@ fn failed_mint_keeps_the_slot_and_can_be_retried() {
 }
 
 #[test]
-fn takeover_after_last_mint_then_holders_get_all_fees() {
+fn takeover_after_last_mint_then_holders_get_the_fees() {
     let (t, mut c) = setup(config(3, true, 0));
     let wallets = [acct("a"), acct("b"), acct("c")];
     for (i, w) in wallets.iter().enumerate() {
@@ -355,6 +355,79 @@ fn takeover_after_last_mint_then_holders_get_all_fees() {
     assert_eq!(c.ctoad_unclaimed(vec!["1".into()])[0].0, 0);
     let paid_again = c.ctoad_payout(vec!["1".into()], wallets[0].clone());
     assert_eq!(paid_again.0, 0);
+}
+
+#[test]
+fn treasury_gets_10_percent_after_takeover() {
+    let (t, mut c) = setup(config(3, true, 0));
+    for (i, w) in [acct("a"), acct("b"), acct("c")].iter().enumerate() {
+        let tokens = buy(&t, &mut c, w, 60 * NEAR);
+        sell(&t, &mut c, w, tokens);
+        confirm_mint(&t, &mut c, w, i as u32 + 1);
+    }
+    // Fees from before the takeover all went to the deployer.
+    assert_eq!(c.get_market().treasury_total.0, 0);
+
+    buy(&t, &mut c, &acct("dave"), 100 * NEAR);
+    let m = c.get_market();
+    let fee = m.treasury_total.0 + m.holder_fees_total.0;
+    assert_eq!(m.treasury_total.0, fee / 10);
+    assert_eq!(m.treasury_balance.0, m.treasury_total.0);
+    assert_eq!(m.fees_per_ctoad.0, m.holder_fees_total.0 / 3);
+}
+
+/// Mints all 3 CTOads, then trades so the treasury holds some fees.
+fn treasury_with_fees() -> (T, Contract, u128) {
+    let (t, mut c) = setup(config(3, true, 0));
+    for (i, w) in [acct("a"), acct("b"), acct("c")].iter().enumerate() {
+        let tokens = buy(&t, &mut c, w, 60 * NEAR);
+        sell(&t, &mut c, w, tokens);
+        confirm_mint(&t, &mut c, w, i as u32 + 1);
+    }
+    buy(&t, &mut c, &acct("dave"), 100 * NEAR);
+    let balance = c.get_market().treasury_balance.0;
+    (t, c, balance)
+}
+
+#[test]
+fn treasury_payout_sends_near_and_refills_if_the_transfer_fails() {
+    let (t, mut c, balance) = treasury_with_fees();
+    let artist = acct("artist");
+    t.set(&ctoads_id(), 0);
+    let _ = c.treasury_payout(artist.clone(), U128(balance / 2));
+    assert_eq!(c.get_market().treasury_balance.0, balance - balance / 2);
+    assert!(actions_to(&artist).iter().any(|a| matches!(
+        a,
+        MockAction::Transfer { deposit, .. } if deposit.as_yoctonear() == balance / 2
+    )));
+
+    t.set_with_result(&curve_id(), PromiseResult::Successful(vec![]));
+    assert!(c.on_treasury_payout(artist.clone(), U128(balance / 2)));
+    assert_eq!(c.get_market().treasury_balance.0, balance - balance / 2);
+
+    // A second payout whose transfer fails puts the NEAR back.
+    t.set(&ctoads_id(), 0);
+    let _ = c.treasury_payout(artist.clone(), U128(balance / 4));
+    t.set_with_result(&curve_id(), PromiseResult::Failed);
+    assert!(!c.on_treasury_payout(artist, U128(balance / 4)));
+    assert_eq!(c.get_market().treasury_balance.0, balance - balance / 2);
+    assert_eq!(c.get_market().treasury_total.0, balance);
+}
+
+#[test]
+#[should_panic(expected = "Only the CTOad contract can pay from the treasury")]
+fn only_ctoad_contract_can_pay_from_the_treasury() {
+    let (t, mut c, balance) = treasury_with_fees();
+    t.set(&acct("mallory"), 0);
+    let _ = c.treasury_payout(acct("mallory"), U128(balance));
+}
+
+#[test]
+#[should_panic(expected = "The treasury doesn't hold that much")]
+fn treasury_payout_is_capped_at_the_balance() {
+    let (t, mut c, balance) = treasury_with_fees();
+    t.set(&ctoads_id(), 0);
+    let _ = c.treasury_payout(acct("artist"), U128(balance + 1));
 }
 
 #[test]

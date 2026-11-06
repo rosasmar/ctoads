@@ -1,6 +1,6 @@
 //! $CTO: a NEP-141 memecoin that trades on its own bonding curve, tracks every wallet's cost
 //! basis, and mints a CTOad NFT to any wallet that sells at a loss of at least `loss_threshold`.
-//! Once the last CTOad is minted, all trading fees go to CTOad holders.
+//! Once the last CTOad is minted, trading fees go to CTOad holders and the treasury.
 //!
 //! Lifecycle:
 //!   buy()  -> NEAR in, $CTO out. Adds the NEAR spent (fee included) to the buyer's cost basis.
@@ -12,6 +12,8 @@
 //!   sweep() -> moves fees a CTOad has earned into its account. Anyone can call it.
 //!   ctoad_payout() -> only the CTOad contract can call it, after checking ownership in `claim`.
 //!             Sends the CTOad its earned fees, then has its account pay the holder.
+//!   treasury_payout() -> only the CTOad contract can call it, for a proposal that passed.
+//!             Sends NEAR from the treasury.
 //!
 //! The contract has no admin functions. Every setting is fixed at `new`.
 
@@ -518,6 +520,39 @@ impl Contract {
         }
     }
 
+    /// Sends `amount` from the treasury to `receiver_id`. Only the CTOad contract can call this,
+    /// for a proposal that passed. Resolves to true once the NEAR is sent, or false if the
+    /// transfer failed and the amount went back into the treasury.
+    pub fn treasury_payout(&mut self, receiver_id: AccountId, amount: U128) -> Promise {
+        require!(
+            env::predecessor_account_id() == self.config.ctoad_contract_id,
+            "Only the CTOad contract can pay from the treasury"
+        );
+        require!(
+            amount.0 > 0 && amount.0 <= self.fees.treasury_balance,
+            "The treasury doesn't hold that much"
+        );
+        self.fees.treasury_balance -= amount.0;
+        Promise::new(receiver_id.clone())
+            .transfer(NearToken::from_yoctonear(amount.0))
+            .then(
+                Self::ext(env::current_account_id())
+                    .with_static_gas(GAS_FOR_ON_TRANSFER)
+                    .on_treasury_payout(receiver_id, amount),
+            )
+    }
+
+    #[private]
+    pub fn on_treasury_payout(&mut self, receiver_id: AccountId, amount: U128) -> bool {
+        if transfer_failed() {
+            self.fees.treasury_balance += amount.0;
+            log!("Treasury payout to {} failed. The NEAR stays in the treasury.", receiver_id);
+            return false;
+        }
+        events::emit("treasury_payout", json!({ "receiver_id": receiver_id, "amount": amount }));
+        true
+    }
+
     // ---------------------------------------------------------------------------------------
     // Views
     // ---------------------------------------------------------------------------------------
@@ -546,6 +581,8 @@ impl Contract {
             deployer_fees_total: U128(self.fees.deployer_total),
             holder_fees_total: U128(self.fees.holders_total),
             fees_per_ctoad: U128(self.fees.per_ctoad),
+            treasury_balance: U128(self.fees.treasury_balance),
+            treasury_total: U128(self.fees.treasury_total),
         }
     }
 
@@ -886,6 +923,8 @@ pub struct MarketView {
     pub deployer_fees_total: U128,
     pub holder_fees_total: U128,
     pub fees_per_ctoad: U128,
+    pub treasury_balance: U128,
+    pub treasury_total: U128,
 }
 
 #[near(serializers = [json])]

@@ -6,6 +6,8 @@
 //! Holders call `claim` here. This contract checks ownership on the spot, then tells the
 //! $CTO contract to pay out the fees those CTOads have earned. Fees belong to the token ID,
 //! so they move with the NFT when it's sold.
+//!
+//! Holders also propose and vote on spending the treasury here (see `voting`).
 
 use std::collections::HashMap;
 
@@ -24,22 +26,28 @@ use near_sdk::{
     json_types::U128,
     log, near, require,
     serde_json::json,
+    store::Vector,
     AccountId, BorshStorageKey, Gas, PanicOnDefault, Promise, PromiseOrValue,
 };
 
+use voting::Proposal;
+
 #[cfg(test)]
 mod tests;
+mod voting;
 
 const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(20);
 /// Each CTOad in a claim makes its own call to its account, so batches are kept small enough
 /// to fit in 300 Tgas.
 const MAX_CLAIM_BATCH: usize = 20;
 const YOCTO_PER_CENTI_NEAR: u128 = 10u128.pow(22);
+const DEFAULT_VOTING_PERIOD_SECS: u64 = 30 * 24 * 60 * 60;
 
 #[ext_contract(ext_cto)]
 #[allow(dead_code)]
 trait CtoToken {
     fn ctoad_payout(&mut self, token_ids: Vec<TokenId>, receiver_id: AccountId) -> U128;
+    fn treasury_payout(&mut self, receiver_id: AccountId, amount: U128) -> bool;
 }
 
 #[derive(BorshStorageKey)]
@@ -50,6 +58,7 @@ enum StorageKey {
     TokenMetadata,
     Enumeration,
     Approval,
+    Proposals,
 }
 
 #[near(contract_state)]
@@ -62,6 +71,8 @@ pub struct Contract {
     cto_token_id: AccountId,
     max_supply: u32,
     minted: u32,
+    proposals: Vector<Proposal>,
+    voting_period_ns: u64,
 }
 
 #[near(serializers = [json])]
@@ -76,14 +87,18 @@ pub struct CtoadStatus {
 impl Contract {
     /// `max_supply` must equal `max_ctoads` on the token contract.
     /// Fund this account at deploy: it pays for each CTOad's storage from its own balance.
+    /// `voting_period_secs` is how long proposals stay open (default 30 days).
     #[init]
     pub fn new(
         owner_id: AccountId,
         cto_token_id: AccountId,
         max_supply: u32,
         metadata: NFTContractMetadata,
+        voting_period_secs: Option<u64>,
     ) -> Self {
         require!(max_supply > 0, "max_supply must be positive");
+        let voting_period_secs = voting_period_secs.unwrap_or(DEFAULT_VOTING_PERIOD_SECS);
+        require!(voting_period_secs > 0, "voting_period_secs must be positive");
         metadata.assert_valid();
         Self {
             tokens: NonFungibleToken::new(
@@ -98,6 +113,8 @@ impl Contract {
             cto_token_id,
             max_supply,
             minted: 0,
+            proposals: Vector::new(StorageKey::Proposals),
+            voting_period_ns: voting_period_secs * 1_000_000_000,
         }
     }
 

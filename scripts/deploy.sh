@@ -2,7 +2,7 @@
 # Deploys $CTO, CTOads and the CTOad account wallet. See DEPLOY.md for the full guide.
 #
 #   DEPLOYER=you.testnet ./scripts/deploy.sh             # production settings (500 CTOads, 1 NEAR loss)
-#   DEPLOYER=you.testnet DEMO=1 ./scripts/deploy.sh      # small demo: 3 CTOads, 0.1 NEAR loss
+#   DEPLOYER=you.testnet DEMO=1 ./scripts/deploy.sh      # small demo: 3 CTOads, 0.1 NEAR loss, 5 min votes
 #
 # Every setting below can be overridden with an environment variable.
 set -euo pipefail
@@ -14,16 +14,17 @@ NFT=${NFT:-ctoads.$DEPLOYER}
 
 YOCTO_PER_NEAR=1000000000000000000000000
 if [[ "${DEMO:-0}" == "1" ]]; then
-  # Small enough to run the whole lifecycle (mint every CTOad, takeover, claim) with a few
+  # Small enough to run the whole lifecycle (mint every CTOad, takeover, claim, vote) with a few
   # testnet NEAR from a single wallet.
   : "${MAX_CTOADS:=3}" "${LOSS_THRESHOLD:=100000000000000000000000}" "${ONE_PER_WALLET:=false}"
-  : "${TOKEN_FUNDING:=3.5}" "${NFT_FUNDING:=3}"
+  : "${VOTING_PERIOD_SECS:=300}" "${TOKEN_FUNDING:=3.5}" "${NFT_FUNDING:=3.5}"
 fi
 MAX_CTOADS=${MAX_CTOADS:-500}
 FEE_BPS=${FEE_BPS:-100}                                  # 1% per buy and per sell
 LOSS_THRESHOLD=${LOSS_THRESHOLD:-$YOCTO_PER_NEAR}        # 1 NEAR
 ONE_PER_WALLET=${ONE_PER_WALLET:-true}
 MIN_HOLD_SECS=${MIN_HOLD_SECS:-0}
+VOTING_PERIOD_SECS=${VOTING_PERIOD_SECS:-2592000}                     # 30 days per proposal
 ACCOUNT_DEPOSIT=${ACCOUNT_DEPOSIT:-5000000000000000000000}           # 0.005 NEAR per CTOad account
 TOTAL_SUPPLY=${TOTAL_SUPPLY:-1000000000000000000000000000}            # 1B $CTO (18 decimals)
 VIRTUAL_NEAR=${VIRTUAL_NEAR:-30000000000000000000000000}              # 30 NEAR virtual reserve
@@ -91,6 +92,7 @@ NFT_ARGS=$(cat <<EOF
   "owner_id": "$DEPLOYER",
   "cto_token_id": "$TOKEN",
   "max_supply": $MAX_CTOADS,
+  "voting_period_secs": $VOTING_PERIOD_SECS,
   "metadata": {
     "spec": "nft-1.0.0", "name": "CTOads", "symbol": "CTOAD",
     "icon": null, "base_uri": $BASE_URI_JSON, "reference": null, "reference_hash": null
