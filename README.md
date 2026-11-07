@@ -7,13 +7,14 @@ CTOad is minted, the deployer's cut ends: trading fees go to CTOad holders
 and to a treasury they vote on.
 
 Every CTOad has its own NEAR account, and whoever holds the NFT controls it.
+Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 
 ## Contracts
 
 | Contract | Path | What it does |
 |---|---|---|
 | $CTO token | [`contracts/cto-token`](contracts/cto-token) | NEP-141 token that trades on its own bonding curve, tracks each wallet's cost basis, and mints CTOads for losing sells. |
-| CTOad NFT | [`contracts/ctoad-nft`](contracts/ctoad-nft) | Capped NEP-171 collection. Only the token contract can mint. Holders claim fees and vote on the treasury here. |
+| CTOad NFT | [`contracts/ctoad-nft`](contracts/ctoad-nft) | Capped NEP-171 collection. Only the token contract can mint. Holders claim fees and vote on the treasury here. Stores the art and builds each CTOad's image. |
 | CTOad account | [`contracts/ctoad-account`](contracts/ctoad-account) | Small wallet contract every CTOad's account runs. It has no keys, and only the token contract can withdraw from it. |
 
 ## How it works
@@ -51,6 +52,19 @@ Every CTOad has its own NEAR account, and whoever holds the NFT controls it.
 - **Executing.** Anyone can call `execute` on a passed proposal, and the
   treasury sends the amount. If the treasury doesn't hold enough yet, the
   proposal stays passed and can be executed again later.
+- **Art.** The NFT contract stores SVG layers in seven categories, from
+  background to held item (see [`art/`](art)). The owner uploads them and can
+  replace them until `freeze_art` locks the art for good.
+- **Traits.** At mint, each CTOad gets one layer per category, picked at
+  random. Each layer has a weight, 1 by default, so some traits can be made
+  rarer. A category with no layers is skipped, so a mint never fails because
+  of the art.
+- **Images.** When a CTOad is read, the contract stacks its layers into one
+  SVG and returns it in `media` as a `data:` URI, with the traits in
+  `extra`. Nothing is hosted anywhere else.
+- **Randomness.** Traits use NEAR's block random seed, mixed with the token
+  ID. That's enough for cartoon traits, but a validator could in theory
+  influence it, so it isn't strong enough for rare traits worth real money.
 
 ## Methods
 
@@ -70,6 +84,10 @@ Every CTOad has its own NEAR account, and whoever holds the NFT controls it.
 | NFT | `vote({ proposal_id, token_ids, approve })` | Up to 100 CTOads you own. Votes are final. |
 | NFT | `execute({ proposal_id })` | Pays out a passed proposal. Anyone can call it. Attach 50 Tgas. |
 | NFT | `get_proposal` / `get_proposals` / `has_voted` | Free views: votes, status (`Open`, `Passed`, `Failed`, `Executed`) and when voting ends. |
+| NFT | `add_layer({ category, name, svg, weight? })` | Owner only, until the art is frozen. Attach NEAR for storage; the rest is refunded. |
+| NFT | `replace_layer({ category, index, name, svg, weight? })` | Owner only, until the art is frozen. Every CTOad with that layer shows the new one. |
+| NFT | `freeze_art()` | Owner only. Locks the art for good. Attach 1 yoctoNEAR. |
+| NFT | `get_art` / `get_layer` / `ctoad_traits` / `ctoad_svg` | Free views: every layer's name and weight, one layer's SVG, a CTOad's traits and image. |
 
 ## Settings
 
@@ -104,7 +122,7 @@ cargo build --workspace --target wasm32-unknown-unknown --release
 ## Deploy
 
 [`scripts/deploy.sh`](scripts/deploy.sh) builds and deploys all three contracts
-to testnet or mainnet. `DEMO=1` deploys 3 CTOads with a 0.1 NEAR loss
+to testnet or mainnet, and uploads the art. `DEMO=1` deploys 3 CTOads with a 0.1 NEAR loss
 threshold and 5-minute votes, so the whole lifecycle can be tried with a few
 testnet NEAR. See
 [DEPLOY.md](DEPLOY.md) for the tools, the settings and a step-by-step walkthrough.

@@ -1,6 +1,6 @@
 # Deployment guide
 
-This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad, take over, claim, vote on the treasury. Mainnet uses the same steps (see [Mainnet](#mainnet)).
+This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad with its on-chain image, take over, claim, vote on the treasury. Mainnet uses the same steps (see [Mainnet](#mainnet)).
 
 ## What gets deployed
 
@@ -19,7 +19,7 @@ This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to 
 | Rust + `wasm32-unknown-unknown` | Builds the contracts | [rustup.rs](https://rustup.rs), then `rustup target add wasm32-unknown-unknown` |
 | [`cargo-near`](https://github.com/near/cargo-near) | Builds deployable wasm | `cargo install cargo-near --locked` |
 | [`near-cli-rs`](https://github.com/near/near-cli-rs) | Deploys and calls contracts | `cargo install near-cli-rs --locked` |
-| Python 3 | Computes the wallet contract's code hash | Preinstalled on macOS and most Linux |
+| Python 3 | Computes the wallet contract's code hash and prepares the art layers | Preinstalled on macOS and most Linux |
 
 ## 2. Get a funded testnet account
 
@@ -39,7 +39,7 @@ If you already have a testnet account, import it with `near account import-accou
 | Demo (`DEMO=1`, 3 CTOads) | ~9.5 to deploy, ~16 to also run [Try it](#4-try-it) |
 | Full (500 CTOads) | ~15 |
 
-That covers code storage (~2.9 NEAR for the token contract, ~2.8 NEAR for the NFT contract), storage for 500 mints (~3.6 NEAR), the global contract deploy (~2.3 NEAR), and gas. Deploying again from the same deployer costs ~2.3 NEAR less, since the CTOad account code is already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
+That covers code storage (~2.9 NEAR for the token contract, ~3.3 NEAR for the NFT contract), storage for 500 mints (~4.3 NEAR), the art layers (about 0.01 NEAR per KB, ~0.1 NEAR for the ones in `art/`), the global contract deploy (~2.3 NEAR), and gas. Deploying again from the same deployer costs ~2.3 NEAR less, since the CTOad account code is already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
 
 ## 3. Deploy
 
@@ -58,9 +58,10 @@ Use `DEMO=1` to try the whole lifecycle with a few testnet NEAR. The demo only c
 2. **Computes the wallet contract's code hash** with `scripts/code-hash.py`, which prints the base58 SHA-256 of `ctoad_account.wasm`.
 3. **Deploys the wallet contract as a global contract by hash**, signed by `<you>`. Because it's referenced by hash, it can never change.
 4. **Creates `cto.<you>` and `ctoads.<you>`**, funded by `<you>`. Their keys go into your keychain.
-5. **Deploys the token contract and calls `new`** with the settings below and the code hash.
-6. **Deploys the NFT contract and calls `new`** with `cto_token_id = cto.<you>` and `max_supply = MAX_CTOADS`.
-7. **Prints `get_market` and `ctoad_status`** so you can check that both contracts are live.
+5. **Deploys the NFT contract and calls `new`** with `cto_token_id = cto.<you>` and `max_supply = MAX_CTOADS`.
+6. **Uploads the art** in `art/` with `scripts/upload-art.sh`, one `add_layer` call per layer, signed by `<you>`. See [art/README.md](art/README.md).
+7. **Deploys the token contract and calls `new`** with the settings below and the code hash. It comes after the art, so no CTOad can be minted without it.
+8. **Prints `get_market` and `ctoad_status`** so you can check that both contracts are live.
 
 ### Settings
 
@@ -135,6 +136,17 @@ near contract call-function as-read-only $TOKEN get_ctoad_account \
 ```
 
 The `state` is `"Ready"` once `ctoad-1.$TOKEN` exists. You can also look the account up in a [testnet explorer](https://testnet.nearblocks.io).
+
+The token's `media` is its image as a `data:` URI. To see its traits, and the image as plain SVG:
+
+```sh
+near contract call-function as-read-only $NFT ctoad_traits \
+  json-args '{"token_id":"1"}' network-config testnet now
+near contract call-function as-read-only $NFT ctoad_svg \
+  json-args '{"token_id":"1"}' network-config testnet now
+```
+
+Save the SVG output to a `.svg` file to open it in a browser.
 
 **6. Mint the rest.** Repeat steps 1 to 4 twice more. After CTOad #3, `get_market` shows `"takeover": true`:
 
@@ -248,6 +260,7 @@ Use the same script with `NETWORK=mainnet DEPLOYER=<you>.near`, and the defaults
 
 - Set `MIN_HOLD_SECS`, so a wallet can't buy and sell in the same minute just to earn a CTOad.
 - Run the testnet demo end to end with the same commit.
+- Freeze the art with `freeze_art` once it's final.
 - Lock both contracts (step 6).
 
 ## If something goes wrong
