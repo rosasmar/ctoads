@@ -60,7 +60,7 @@ fn token_contract_mints_sequential_ctoads() {
     assert_eq!(t.owner_id, alice);
     let md = t.metadata.unwrap();
     assert_eq!(md.title.as_deref(), Some("CTOad #1"));
-    assert_eq!(md.media.as_deref(), Some("1.png"));
+    assert!(md.media.unwrap().starts_with("data:image/svg+xml;base64,"));
     let description = md.description.unwrap();
     assert!(description.contains("losing 1.25 NEAR"));
     assert!(description.contains("ctoad-1.cto.testnet"));
@@ -392,4 +392,256 @@ fn a_failed_payout_can_be_executed_again() {
     set_at(&acct("anyone"), 0, DAY_NS);
     let _ = c.execute(1);
     assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Executed);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Art
+// ---------------------------------------------------------------------------------------------
+
+use crate::art::Category;
+
+const CIRCLE: &str = r##"<circle cx="500" cy="500" r="300" fill="#4ade80"/>"##;
+
+fn add_layer(c: &mut Contract, category: Category, name: &str, svg: &str) -> u32 {
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(category, name.into(), svg.into(), None)
+}
+
+#[test]
+fn owner_adds_layers_by_category() {
+    let mut c = setup(3);
+    assert_eq!(add_layer(&mut c, Category::Eyes, "smug", CIRCLE), 0);
+    assert_eq!(add_layer(&mut c, Category::Eyes, "crying", CIRCLE), 1);
+    assert_eq!(add_layer(&mut c, Category::Background, "green", CIRCLE), 0);
+
+    let art = c.get_art();
+    assert!(!art.frozen);
+    assert_eq!(art.categories.len(), 7);
+    assert_eq!(art.categories[0].category, Category::Background);
+    assert_eq!(art.categories[0].layers[0].name, "green");
+    let eyes = art.categories.iter().find(|v| v.category == Category::Eyes).unwrap();
+    let names: Vec<_> = eyes.layers.iter().map(|l| (l.name.as_str(), l.weight)).collect();
+    assert_eq!(names, vec![("smug", 1), ("crying", 1)]);
+    assert_eq!(c.get_layer(Category::Eyes, 1).svg, CIRCLE);
+}
+
+#[test]
+#[should_panic(expected = "Only the owner")]
+fn only_the_owner_adds_layers() {
+    let mut c = setup(3);
+    set(&acct("mallory"), NEAR / 10);
+    c.add_layer(Category::Eyes, "smug".into(), CIRCLE.into(), None);
+}
+
+#[test]
+fn adding_a_layer_pays_its_storage_and_refunds_the_rest() {
+    let mut c = setup(3);
+    let svg = "x".repeat(3 * 1024);
+    add_layer(&mut c, Category::Body, "green", &svg);
+    let refund = get_created_receipts()
+        .into_iter()
+        .find(|r| r.receiver_id == acct("deployer"))
+        .and_then(|r| match &r.actions[0] {
+            MockAction::Transfer { deposit, .. } => Some(deposit.as_yoctonear()),
+            _ => None,
+        })
+        .expect("no refund");
+    let cost = NEAR / 10 - refund;
+    println!("one 3 KB layer: {} NEAR", format_near(cost));
+    assert!(cost > 3 * NEAR / 100 && cost < 4 * NEAR / 100);
+}
+
+#[test]
+#[should_panic(expected = "A layer must be 1 to 8192 bytes")]
+fn layers_have_a_size_limit() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Body, "huge", &"x".repeat(8 * 1024 + 1));
+}
+
+#[test]
+fn owner_replaces_a_layer_in_place() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "placeholder", CIRCLE);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), "<path d=\"M0 0\"/>".into(), None);
+    let layer = c.get_layer(Category::Headwear, 0);
+    assert_eq!(layer.name, "crown");
+    assert_eq!(layer.svg, "<path d=\"M0 0\"/>");
+    assert_eq!(c.get_art().categories[5].layers[0].name, "crown");
+}
+
+#[test]
+#[should_panic(expected = "No layer at that index")]
+fn cannot_replace_a_missing_layer() {
+    let mut c = setup(3);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into(), None);
+}
+
+#[test]
+#[should_panic(expected = "The art is frozen")]
+fn frozen_art_cannot_change() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    set(&acct("deployer"), 1);
+    c.freeze_art();
+    assert!(c.get_art().frozen);
+    add_layer(&mut c, Category::Eyes, "crying", CIRCLE);
+}
+
+/// Two layers in every category: "<category> a" and "<category> b".
+fn full_art() -> Contract {
+    let mut c = setup(500);
+    for category in crate::art::CATEGORIES {
+        for suffix in ["a", "b"] {
+            add_layer(&mut c, category, &format!("{category:?} {suffix}"), CIRCLE);
+        }
+    }
+    c
+}
+
+#[test]
+fn mint_picks_one_layer_per_category() {
+    let mut c = full_art();
+    mint(&mut c, &acct("alice"));
+    let traits = c.ctoad_traits("1".into());
+    assert_eq!(traits.len(), 7);
+    for (t, category) in traits.iter().zip(crate::art::CATEGORIES) {
+        assert_eq!(t.category, category);
+        assert!(t.name.starts_with(&format!("{category:?} ")), "{}", t.name);
+    }
+}
+
+#[test]
+fn ctoads_minted_in_the_same_block_get_different_traits() {
+    let mut c = full_art();
+    for _ in 0..20 {
+        mint(&mut c, &acct("alice"));
+    }
+    let names = |id: &str| -> Vec<String> {
+        c.ctoad_traits(id.into()).into_iter().map(|t| t.name).collect()
+    };
+    let first = names("1");
+    assert!((2..=20).any(|id| names(&id.to_string()) != first));
+}
+
+#[test]
+fn an_empty_category_is_skipped_and_the_mint_still_works() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    mint(&mut c, &acct("alice"));
+    let traits = c.ctoad_traits("1".into());
+    assert_eq!(traits.len(), 1);
+    assert_eq!(traits[0].category, Category::Eyes);
+    assert_eq!(traits[0].name, "smug");
+}
+
+#[test]
+fn minting_works_without_any_art() {
+    let mut c = setup(3);
+    mint(&mut c, &acct("alice"));
+    assert!(c.ctoad_traits("1".into()).is_empty());
+}
+
+#[test]
+fn weights_make_a_layer_rarer() {
+    let mut c = setup(500);
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "cap".into(), CIRCLE.into(), Some(9));
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "crown".into(), CIRCLE.into(), None);
+    for _ in 0..400 {
+        mint(&mut c, &acct("alice"));
+    }
+    let crowns = (1..=400)
+        .filter(|id| c.ctoad_traits(id.to_string())[0].name == "crown")
+        .count();
+    println!("crowns: {crowns} of 400");
+    // Expect about 40 (1 in 10).
+    assert!((20..=60).contains(&crowns), "{crowns}");
+}
+
+#[test]
+fn replacing_a_layer_can_change_its_weight() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "crown", CIRCLE);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into(), Some(5));
+    assert_eq!(c.get_art().categories[5].layers[0].weight, 5);
+}
+
+#[test]
+#[should_panic(expected = "The weight must be positive")]
+fn weights_must_be_positive() {
+    let mut c = setup(3);
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "crown".into(), CIRCLE.into(), Some(0));
+}
+
+#[test]
+#[should_panic(expected = "CTOad #9 doesn't exist")]
+fn no_traits_for_a_missing_ctoad() {
+    let c = setup(3);
+    c.ctoad_traits("9".into());
+}
+
+fn decode_media(token: &Token) -> String {
+    use near_sdk::base64::{engine::general_purpose::STANDARD, Engine};
+    let media = token.metadata.as_ref().unwrap().media.as_deref().unwrap();
+    let b64 = media.strip_prefix("data:image/svg+xml;base64,").expect("not an SVG data URI");
+    String::from_utf8(STANDARD.decode(b64).unwrap()).unwrap()
+}
+
+#[test]
+fn the_image_stacks_the_layers_background_first() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Item, "bag", "<g id=\"item\"/>");
+    add_layer(&mut c, Category::Background, "green", "<g id=\"bg\"/>");
+    add_layer(&mut c, Category::Eyes, "smug", "<g id=\"eyes\"/>");
+    mint(&mut c, &acct("alice"));
+    assert_eq!(
+        c.ctoad_svg("1".into()),
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><g id="bg"/><g id="eyes"/><g id="item"/></svg>"#
+    );
+}
+
+#[test]
+fn without_art_the_image_shows_the_ctoad_number() {
+    let mut c = setup(3);
+    mint(&mut c, &acct("alice"));
+    mint(&mut c, &acct("bob"));
+    let svg = c.ctoad_svg("2".into());
+    assert!(svg.contains(">CTOad #2</text>"), "{svg}");
+}
+
+#[test]
+fn media_is_the_image_and_extra_has_the_traits() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    let alice = acct("alice");
+    mint(&mut c, &alice);
+
+    let token = c.nft_token("1".into()).unwrap();
+    assert_eq!(decode_media(&token), c.ctoad_svg("1".into()));
+    let extra: near_sdk::serde_json::Value =
+        near_sdk::serde_json::from_str(token.metadata.unwrap().extra.as_deref().unwrap()).unwrap();
+    assert_eq!(extra["traits"][0]["category"], "Eyes");
+    assert_eq!(extra["traits"][0]["name"], "smug");
+    assert_eq!(extra["first_owner"], "alice.testnet");
+
+    // The lists wallets and marketplaces read have the image too.
+    let mine = c.nft_tokens_for_owner(alice, None, None);
+    assert_eq!(decode_media(&mine[0]), c.ctoad_svg("1".into()));
+    assert_eq!(decode_media(&c.nft_tokens(None, None)[0]), c.ctoad_svg("1".into()));
+}
+
+#[test]
+fn replacing_a_layer_changes_ctoads_already_minted() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "placeholder", "<g id=\"old\"/>");
+    mint(&mut c, &acct("alice"));
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), "<g id=\"crown\"/>".into(), None);
+    let token = c.nft_token("1".into()).unwrap();
+    assert!(decode_media(&token).contains("<g id=\"crown\"/>"));
 }

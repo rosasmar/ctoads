@@ -8,6 +8,8 @@
 //! so they move with the NFT when it's sold.
 //!
 //! Holders also propose and vote on spending the treasury here (see `voting`).
+//!
+//! The art lives here too, as SVG layers the owner uploads (see `art`).
 
 use std::collections::HashMap;
 
@@ -20,18 +22,19 @@ use near_contract_standards::non_fungible_token::{
     NonFungibleToken, Token, TokenId,
 };
 use near_sdk::{
-    assert_one_yocto,
     collections::LazyOption,
     env, ext_contract,
     json_types::U128,
     log, near, require,
     serde_json::json,
-    store::Vector,
+    store::{LookupMap, Vector},
     AccountId, BorshStorageKey, Gas, PanicOnDefault, Promise, PromiseOrValue,
 };
 
+use art::{Layer, Traits, CATEGORIES};
 use voting::Proposal;
 
+mod art;
 #[cfg(test)]
 mod tests;
 mod voting;
@@ -59,6 +62,8 @@ enum StorageKey {
     Enumeration,
     Approval,
     Proposals,
+    Layers,
+    Traits,
 }
 
 #[near(contract_state)]
@@ -73,6 +78,13 @@ pub struct Contract {
     minted: u32,
     proposals: Vector<Proposal>,
     voting_period_ns: u64,
+    /// Art layers by (category, index).
+    layers: LookupMap<(u8, u32), Layer>,
+    /// Each layer's weight, by category in `CATEGORIES` order. Its length is the layer count.
+    layer_weights: [Vec<u32>; CATEGORIES.len()],
+    art_frozen: bool,
+    /// Each CTOad's layers, picked at mint.
+    traits: LookupMap<TokenId, Traits>,
 }
 
 #[near(serializers = [json])]
@@ -115,6 +127,10 @@ impl Contract {
             minted: 0,
             proposals: Vector::new(StorageKey::Proposals),
             voting_period_ns: voting_period_secs * 1_000_000_000,
+            layers: LookupMap::new(StorageKey::Layers),
+            layer_weights: Default::default(),
+            art_frozen: false,
+            traits: LookupMap::new(StorageKey::Traits),
         }
     }
 
@@ -138,7 +154,7 @@ impl Contract {
                 format_near(loss.0),
                 self.max_supply
             )),
-            media: Some(format!("{token_id}.png")),
+            // `media` is filled in when the token is read: see `art::with_art`.
             copies: Some(1),
             issued_at: Some(env::block_timestamp_ms().to_string()),
             extra: Some(
@@ -154,6 +170,8 @@ impl Contract {
             Some(metadata),
             None,
         );
+        let traits = self.pick_traits(&token_id);
+        self.traits.insert(token_id.clone(), traits);
         NftMint { owner_id: &receiver_id, token_ids: &[&token_id], memo: Some("rekt") }.emit();
         if self.minted == self.max_supply {
             log!("CTOad #{} minted. The bagholders have taken over.", token_id);
@@ -181,17 +199,6 @@ impl Contract {
             .with_static_gas(GAS_FOR_PAYOUT)
             .with_unused_gas_weight(1)
             .ctoad_payout(token_ids, caller)
-    }
-
-    /// Points `media` at the art once it's hosted. Only cosmetic: this contract has no
-    /// say over minting rules or fees.
-    #[payable]
-    pub fn set_base_uri(&mut self, base_uri: String) {
-        assert_one_yocto();
-        require!(env::predecessor_account_id() == self.owner_id, "Only the owner");
-        let mut metadata = self.metadata.get().unwrap();
-        metadata.base_uri = Some(base_uri);
-        self.metadata.set(&metadata);
     }
 
     /// The account that holds CTOad `token_id`'s fees, e.g. `ctoad-42.cto.near`. It's a
@@ -254,7 +261,7 @@ impl NonFungibleTokenCore for Contract {
     }
 
     fn nft_token(&self, token_id: TokenId) -> Option<Token> {
-        self.tokens.nft_token(token_id)
+        self.tokens.nft_token(token_id).map(|t| self.with_art(t))
     }
 }
 
@@ -316,7 +323,8 @@ impl NonFungibleTokenEnumeration for Contract {
     }
 
     fn nft_tokens(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<Token> {
-        self.tokens.nft_tokens(from_index, limit)
+        let tokens = self.tokens.nft_tokens(from_index, limit);
+        tokens.into_iter().map(|t| self.with_art(t)).collect()
     }
 
     fn nft_supply_for_owner(&self, account_id: AccountId) -> U128 {
@@ -329,7 +337,8 @@ impl NonFungibleTokenEnumeration for Contract {
         from_index: Option<U128>,
         limit: Option<u64>,
     ) -> Vec<Token> {
-        self.tokens.nft_tokens_for_owner(account_id, from_index, limit)
+        let tokens = self.tokens.nft_tokens_for_owner(account_id, from_index, limit);
+        tokens.into_iter().map(|t| self.with_art(t)).collect()
     }
 }
 

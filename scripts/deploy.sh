@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Deploys $CTO, CTOads and the CTOad account wallet. See DEPLOY.md for the full guide.
+# Deploys $CTO, CTOads and the CTOad account wallet, and uploads the art in art/. See DEPLOY.md
+# for the full guide.
 #
 #   DEPLOYER=you.testnet ./scripts/deploy.sh             # production settings (500 CTOads, 1 NEAR loss)
 #   DEPLOYER=you.testnet DEMO=1 ./scripts/deploy.sh      # small demo: 3 CTOads, 0.1 NEAR loss, 5 min votes
@@ -30,7 +31,6 @@ TOTAL_SUPPLY=${TOTAL_SUPPLY:-1000000000000000000000000000}            # 1B $CTO 
 VIRTUAL_NEAR=${VIRTUAL_NEAR:-30000000000000000000000000}              # 30 NEAR virtual reserve
 TOKEN_FUNDING=${TOKEN_FUNDING:-4}                                     # NEAR: code storage + holders
 NFT_FUNDING=${NFT_FUNDING:-8}                                         # NEAR: code storage + 500 mints
-BASE_URI=${BASE_URI:-}
 
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 WASM="$ROOT/target/near"
@@ -85,8 +85,6 @@ TOKEN_ARGS=$(cat <<EOF
 EOF
 )
 
-BASE_URI_JSON=null
-[[ -n "$BASE_URI" ]] && BASE_URI_JSON="\"$BASE_URI\""
 NFT_ARGS=$(cat <<EOF
 {
   "owner_id": "$DEPLOYER",
@@ -95,21 +93,26 @@ NFT_ARGS=$(cat <<EOF
   "voting_period_secs": $VOTING_PERIOD_SECS,
   "metadata": {
     "spec": "nft-1.0.0", "name": "CTOads", "symbol": "CTOAD",
-    "icon": null, "base_uri": $BASE_URI_JSON, "reference": null, "reference_hash": null
+    "icon": null, "base_uri": null, "reference": null, "reference_hash": null
   }
 }
 EOF
 )
 
-say "Deploying and initializing the \$CTO token contract on $TOKEN"
-near contract deploy "$TOKEN" use-file "$WASM/cto_token/cto_token.wasm" \
-  with-init-call new json-args "$TOKEN_ARGS" \
-  prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' \
-  network-config "$NETWORK" sign-with-keychain send
-
+# The CTOad contract goes first so the art is uploaded before the token contract exists. No
+# CTOad can be minted without its art.
 say "Deploying and initializing the CTOad contract on $NFT"
 near contract deploy "$NFT" use-file "$WASM/ctoad_nft/ctoad_nft.wasm" \
   with-init-call new json-args "$NFT_ARGS" \
+  prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' \
+  network-config "$NETWORK" sign-with-keychain send
+
+say "Uploading the art layers (signed by $DEPLOYER)"
+OWNER="$DEPLOYER" NFT="$NFT" NETWORK="$NETWORK" "$ROOT/scripts/upload-art.sh"
+
+say "Deploying and initializing the \$CTO token contract on $TOKEN"
+near contract deploy "$TOKEN" use-file "$WASM/cto_token/cto_token.wasm" \
+  with-init-call new json-args "$TOKEN_ARGS" \
   prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' \
   network-config "$NETWORK" sign-with-keychain send
 
