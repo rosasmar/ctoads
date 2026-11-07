@@ -32,7 +32,7 @@ use near_sdk::{
     AccountId, BorshStorageKey, Gas, PanicOnDefault, Promise, PromiseOrValue,
 };
 
-use art::{Layer, CATEGORIES};
+use art::{Layer, Traits, CATEGORIES};
 use voting::Proposal;
 
 mod art;
@@ -64,6 +64,7 @@ enum StorageKey {
     Approval,
     Proposals,
     Layers,
+    Traits,
 }
 
 #[near(contract_state)]
@@ -80,9 +81,11 @@ pub struct Contract {
     voting_period_ns: u64,
     /// Art layers by (category, index).
     layers: LookupMap<(u8, u32), Layer>,
-    /// How many layers each category has, in `CATEGORIES` order.
-    layer_counts: [u32; CATEGORIES.len()],
+    /// Each layer's weight, by category in `CATEGORIES` order. Its length is the layer count.
+    layer_weights: [Vec<u32>; CATEGORIES.len()],
     art_frozen: bool,
+    /// Each CTOad's layers, picked at mint.
+    traits: LookupMap<TokenId, Traits>,
 }
 
 #[near(serializers = [json])]
@@ -126,8 +129,9 @@ impl Contract {
             proposals: Vector::new(StorageKey::Proposals),
             voting_period_ns: voting_period_secs * 1_000_000_000,
             layers: LookupMap::new(StorageKey::Layers),
-            layer_counts: [0; CATEGORIES.len()],
+            layer_weights: Default::default(),
             art_frozen: false,
+            traits: LookupMap::new(StorageKey::Traits),
         }
     }
 
@@ -167,6 +171,8 @@ impl Contract {
             Some(metadata),
             None,
         );
+        let traits = self.pick_traits(&token_id);
+        self.traits.insert(token_id.clone(), traits);
         NftMint { owner_id: &receiver_id, token_ids: &[&token_id], memo: Some("rekt") }.emit();
         if self.minted == self.max_supply {
             log!("CTOad #{} minted. The bagholders have taken over.", token_id);

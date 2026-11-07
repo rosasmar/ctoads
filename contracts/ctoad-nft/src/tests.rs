@@ -404,7 +404,7 @@ const CIRCLE: &str = r##"<circle cx="500" cy="500" r="300" fill="#4ade80"/>"##;
 
 fn add_layer(c: &mut Contract, category: Category, name: &str, svg: &str) -> u32 {
     set(&acct("deployer"), NEAR / 10);
-    c.add_layer(category, name.into(), svg.into())
+    c.add_layer(category, name.into(), svg.into(), None)
 }
 
 #[test]
@@ -418,9 +418,10 @@ fn owner_adds_layers_by_category() {
     assert!(!art.frozen);
     assert_eq!(art.categories.len(), 7);
     assert_eq!(art.categories[0].category, Category::Background);
-    assert_eq!(art.categories[0].layers, vec!["green"]);
+    assert_eq!(art.categories[0].layers[0].name, "green");
     let eyes = art.categories.iter().find(|v| v.category == Category::Eyes).unwrap();
-    assert_eq!(eyes.layers, vec!["smug", "crying"]);
+    let names: Vec<_> = eyes.layers.iter().map(|l| (l.name.as_str(), l.weight)).collect();
+    assert_eq!(names, vec![("smug", 1), ("crying", 1)]);
     assert_eq!(c.get_layer(Category::Eyes, 1).svg, CIRCLE);
 }
 
@@ -429,7 +430,7 @@ fn owner_adds_layers_by_category() {
 fn only_the_owner_adds_layers() {
     let mut c = setup(3);
     set(&acct("mallory"), NEAR / 10);
-    c.add_layer(Category::Eyes, "smug".into(), CIRCLE.into());
+    c.add_layer(Category::Eyes, "smug".into(), CIRCLE.into(), None);
 }
 
 #[test]
@@ -462,11 +463,11 @@ fn owner_replaces_a_layer_in_place() {
     let mut c = setup(3);
     add_layer(&mut c, Category::Headwear, "placeholder", CIRCLE);
     set(&acct("deployer"), NEAR / 10);
-    c.replace_layer(Category::Headwear, 0, "crown".into(), "<path d=\"M0 0\"/>".into());
+    c.replace_layer(Category::Headwear, 0, "crown".into(), "<path d=\"M0 0\"/>".into(), None);
     let layer = c.get_layer(Category::Headwear, 0);
     assert_eq!(layer.name, "crown");
     assert_eq!(layer.svg, "<path d=\"M0 0\"/>");
-    assert_eq!(c.get_art().categories[5].layers, vec!["crown"]);
+    assert_eq!(c.get_art().categories[5].layers[0].name, "crown");
 }
 
 #[test]
@@ -474,7 +475,7 @@ fn owner_replaces_a_layer_in_place() {
 fn cannot_replace_a_missing_layer() {
     let mut c = setup(3);
     set(&acct("deployer"), NEAR / 10);
-    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into());
+    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into(), None);
 }
 
 #[test]
@@ -486,4 +487,100 @@ fn frozen_art_cannot_change() {
     c.freeze_art();
     assert!(c.get_art().frozen);
     add_layer(&mut c, Category::Eyes, "crying", CIRCLE);
+}
+
+/// Two layers in every category: "<category> a" and "<category> b".
+fn full_art() -> Contract {
+    let mut c = setup(500);
+    for category in crate::art::CATEGORIES {
+        for suffix in ["a", "b"] {
+            add_layer(&mut c, category, &format!("{category:?} {suffix}"), CIRCLE);
+        }
+    }
+    c
+}
+
+#[test]
+fn mint_picks_one_layer_per_category() {
+    let mut c = full_art();
+    mint(&mut c, &acct("alice"));
+    let traits = c.ctoad_traits("1".into());
+    assert_eq!(traits.len(), 7);
+    for (t, category) in traits.iter().zip(crate::art::CATEGORIES) {
+        assert_eq!(t.category, category);
+        assert!(t.name.starts_with(&format!("{category:?} ")), "{}", t.name);
+    }
+}
+
+#[test]
+fn ctoads_minted_in_the_same_block_get_different_traits() {
+    let mut c = full_art();
+    for _ in 0..20 {
+        mint(&mut c, &acct("alice"));
+    }
+    let names = |id: &str| -> Vec<String> {
+        c.ctoad_traits(id.into()).into_iter().map(|t| t.name).collect()
+    };
+    let first = names("1");
+    assert!((2..=20).any(|id| names(&id.to_string()) != first));
+}
+
+#[test]
+fn an_empty_category_is_skipped_and_the_mint_still_works() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    mint(&mut c, &acct("alice"));
+    let traits = c.ctoad_traits("1".into());
+    assert_eq!(traits.len(), 1);
+    assert_eq!(traits[0].category, Category::Eyes);
+    assert_eq!(traits[0].name, "smug");
+}
+
+#[test]
+fn minting_works_without_any_art() {
+    let mut c = setup(3);
+    mint(&mut c, &acct("alice"));
+    assert!(c.ctoad_traits("1".into()).is_empty());
+}
+
+#[test]
+fn weights_make_a_layer_rarer() {
+    let mut c = setup(500);
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "cap".into(), CIRCLE.into(), Some(9));
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "crown".into(), CIRCLE.into(), None);
+    for _ in 0..400 {
+        mint(&mut c, &acct("alice"));
+    }
+    let crowns = (1..=400)
+        .filter(|id| c.ctoad_traits(id.to_string())[0].name == "crown")
+        .count();
+    println!("crowns: {crowns} of 400");
+    // Expect about 40 (1 in 10).
+    assert!((20..=60).contains(&crowns), "{crowns}");
+}
+
+#[test]
+fn replacing_a_layer_can_change_its_weight() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "crown", CIRCLE);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into(), Some(5));
+    assert_eq!(c.get_art().categories[5].layers[0].weight, 5);
+}
+
+#[test]
+#[should_panic(expected = "The weight must be positive")]
+fn weights_must_be_positive() {
+    let mut c = setup(3);
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(Category::Headwear, "crown".into(), CIRCLE.into(), Some(0));
+}
+
+#[test]
+#[should_panic(expected = "CTOad #9 doesn't exist")]
+fn no_traits_for_a_missing_ctoad() {
+    let c = setup(3);
+    c.ctoad_traits("9".into());
 }
