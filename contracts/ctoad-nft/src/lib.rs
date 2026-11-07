@@ -8,6 +8,8 @@
 //! so they move with the NFT when it's sold.
 //!
 //! Holders also propose and vote on spending the treasury here (see `voting`).
+//!
+//! The art lives here too, as SVG layers the owner uploads (see `art`).
 
 use std::collections::HashMap;
 
@@ -26,12 +28,14 @@ use near_sdk::{
     json_types::U128,
     log, near, require,
     serde_json::json,
-    store::Vector,
+    store::{LookupMap, Vector},
     AccountId, BorshStorageKey, Gas, PanicOnDefault, Promise, PromiseOrValue,
 };
 
+use art::{Layer, CATEGORIES};
 use voting::Proposal;
 
+mod art;
 #[cfg(test)]
 mod tests;
 mod voting;
@@ -59,6 +63,7 @@ enum StorageKey {
     Enumeration,
     Approval,
     Proposals,
+    Layers,
 }
 
 #[near(contract_state)]
@@ -73,6 +78,11 @@ pub struct Contract {
     minted: u32,
     proposals: Vector<Proposal>,
     voting_period_ns: u64,
+    /// Art layers by (category, index).
+    layers: LookupMap<(u8, u32), Layer>,
+    /// How many layers each category has, in `CATEGORIES` order.
+    layer_counts: [u32; CATEGORIES.len()],
+    art_frozen: bool,
 }
 
 #[near(serializers = [json])]
@@ -115,6 +125,9 @@ impl Contract {
             minted: 0,
             proposals: Vector::new(StorageKey::Proposals),
             voting_period_ns: voting_period_secs * 1_000_000_000,
+            layers: LookupMap::new(StorageKey::Layers),
+            layer_counts: [0; CATEGORIES.len()],
+            art_frozen: false,
         }
     }
 

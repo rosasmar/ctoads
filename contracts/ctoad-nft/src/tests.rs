@@ -393,3 +393,97 @@ fn a_failed_payout_can_be_executed_again() {
     let _ = c.execute(1);
     assert_eq!(status_at(&c, DAY_NS), ProposalStatus::Executed);
 }
+
+// ---------------------------------------------------------------------------------------------
+// Art
+// ---------------------------------------------------------------------------------------------
+
+use crate::art::Category;
+
+const CIRCLE: &str = r##"<circle cx="500" cy="500" r="300" fill="#4ade80"/>"##;
+
+fn add_layer(c: &mut Contract, category: Category, name: &str, svg: &str) -> u32 {
+    set(&acct("deployer"), NEAR / 10);
+    c.add_layer(category, name.into(), svg.into())
+}
+
+#[test]
+fn owner_adds_layers_by_category() {
+    let mut c = setup(3);
+    assert_eq!(add_layer(&mut c, Category::Eyes, "smug", CIRCLE), 0);
+    assert_eq!(add_layer(&mut c, Category::Eyes, "crying", CIRCLE), 1);
+    assert_eq!(add_layer(&mut c, Category::Background, "green", CIRCLE), 0);
+
+    let art = c.get_art();
+    assert!(!art.frozen);
+    assert_eq!(art.categories.len(), 7);
+    assert_eq!(art.categories[0].category, Category::Background);
+    assert_eq!(art.categories[0].layers, vec!["green"]);
+    let eyes = art.categories.iter().find(|v| v.category == Category::Eyes).unwrap();
+    assert_eq!(eyes.layers, vec!["smug", "crying"]);
+    assert_eq!(c.get_layer(Category::Eyes, 1).svg, CIRCLE);
+}
+
+#[test]
+#[should_panic(expected = "Only the owner")]
+fn only_the_owner_adds_layers() {
+    let mut c = setup(3);
+    set(&acct("mallory"), NEAR / 10);
+    c.add_layer(Category::Eyes, "smug".into(), CIRCLE.into());
+}
+
+#[test]
+fn adding_a_layer_pays_its_storage_and_refunds_the_rest() {
+    let mut c = setup(3);
+    let svg = "x".repeat(3 * 1024);
+    add_layer(&mut c, Category::Body, "green", &svg);
+    let refund = get_created_receipts()
+        .into_iter()
+        .find(|r| r.receiver_id == acct("deployer"))
+        .and_then(|r| match &r.actions[0] {
+            MockAction::Transfer { deposit, .. } => Some(deposit.as_yoctonear()),
+            _ => None,
+        })
+        .expect("no refund");
+    let cost = NEAR / 10 - refund;
+    println!("one 3 KB layer: {} NEAR", format_near(cost));
+    assert!(cost > 3 * NEAR / 100 && cost < 4 * NEAR / 100);
+}
+
+#[test]
+#[should_panic(expected = "A layer must be 1 to 8192 bytes")]
+fn layers_have_a_size_limit() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Body, "huge", &"x".repeat(8 * 1024 + 1));
+}
+
+#[test]
+fn owner_replaces_a_layer_in_place() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "placeholder", CIRCLE);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), "<path d=\"M0 0\"/>".into());
+    let layer = c.get_layer(Category::Headwear, 0);
+    assert_eq!(layer.name, "crown");
+    assert_eq!(layer.svg, "<path d=\"M0 0\"/>");
+    assert_eq!(c.get_art().categories[5].layers, vec!["crown"]);
+}
+
+#[test]
+#[should_panic(expected = "No layer at that index")]
+fn cannot_replace_a_missing_layer() {
+    let mut c = setup(3);
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), CIRCLE.into());
+}
+
+#[test]
+#[should_panic(expected = "The art is frozen")]
+fn frozen_art_cannot_change() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    set(&acct("deployer"), 1);
+    c.freeze_art();
+    assert!(c.get_art().frozen);
+    add_layer(&mut c, Category::Eyes, "crying", CIRCLE);
+}
