@@ -22,7 +22,6 @@ use near_contract_standards::non_fungible_token::{
     NonFungibleToken, Token, TokenId,
 };
 use near_sdk::{
-    assert_one_yocto,
     collections::LazyOption,
     env, ext_contract,
     json_types::U128,
@@ -200,17 +199,6 @@ impl Contract {
             .with_static_gas(GAS_FOR_PAYOUT)
             .with_unused_gas_weight(1)
             .ctoad_payout(token_ids, caller)
-    }
-
-    /// Points `media` at the art once it's hosted. Only cosmetic: this contract has no
-    /// say over minting rules or fees.
-    #[payable]
-    pub fn set_base_uri(&mut self, base_uri: String) {
-        assert_one_yocto();
-        require!(env::predecessor_account_id() == self.owner_id, "Only the owner");
-        let mut metadata = self.metadata.get().unwrap();
-        metadata.base_uri = Some(base_uri);
-        self.metadata.set(&metadata);
     }
 
     /// The account that holds CTOad `token_id`'s fees, e.g. `ctoad-42.cto.near`. It's a

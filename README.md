@@ -88,9 +88,9 @@ Fixed when the token contract is initialized. There are no admin functions.
 | `ctoad_account_deposit` | NEAR given to each new CTOad account for its storage |
 
 The NFT contract's only setting is `voting_period_secs`, how long proposals
-stay open (30 days by default). Its only owner action is `set_base_uri`,
-which points the images at hosted art. The 10% treasury share and the
-voting rules are fixed in the code.
+stay open (30 days by default). Its only owner actions are uploading and
+replacing art layers, until `freeze_art` locks them. The 10% treasury
+share and the voting rules are fixed in the code.
 
 ## Build and test
 

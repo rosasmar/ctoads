@@ -81,9 +81,8 @@ Override any of these with environment variables:
 | `TOTAL_SUPPLY` | 1B $CTO | | Minted to the curve at init (18 decimals) |
 | `ACCOUNT_DEPOSIT` | 0.005 NEAR | | Given to each new CTOad account for its storage |
 | `TOKEN_FUNDING` / `NFT_FUNDING` | `4` / `8` NEAR | `3.5` / `3.5` NEAR | Initial balance of each contract account |
-| `BASE_URI` | none | | Where the CTOad images are hosted |
 
-All of these are permanent once deployed. Neither contract has a function to change them. The only exception is the NFT owner's `set_base_uri`, which changes images only.
+All of these are permanent once deployed. Neither contract has a function to change them. The only exception is the NFT owner's art: layers can be added or replaced until `freeze_art` locks them.
 
 ## 4. Try it
 
@@ -248,7 +247,6 @@ The CTOad accounts never have keys, and the wallet contract is a global contract
 Use the same script with `NETWORK=mainnet DEPLOYER=<you>.near`, and the defaults: 500 CTOads, 1 NEAR, one per wallet. Before launch:
 
 - Set `MIN_HOLD_SECS`, so a wallet can't buy and sell in the same minute just to earn a CTOad.
-- Set `BASE_URI` once the images are hosted. The owner can also set it later with `set_base_uri`.
 - Run the testnet demo end to end with the same commit.
 - Lock both contracts (step 6).
 
