@@ -4,15 +4,25 @@
 //! an SVG fragment drawn on a 1000×1000 canvas. Layers can be added or replaced until the owner
 //! calls `freeze_art`. After that the art can never change.
 //!
+//! Each CTOad's image is built when it's read: its layers stacked into one SVG, returned as a
+//! `data:` URI in `media`. Nothing is hosted anywhere else.
+//!
 //! At mint, each CTOad gets one layer per category. Every layer has a weight (1 by default), so
 //! a layer with weight 1 next to one with weight 9 is picked 1 time in 10. The picks use NEAR's
 //! random seed, mixed with the token ID. That's fine for cartoon traits, but a validator could
 //! in theory influence it, so it isn't strong enough for traits worth real money.
 
-use near_contract_standards::non_fungible_token::TokenId;
-use near_sdk::{env, near, require, NearToken, Promise};
+use near_contract_standards::non_fungible_token::{Token, TokenId};
+use near_sdk::{
+    base64::{engine::general_purpose::STANDARD as BASE64, Engine},
+    env, near, require,
+    serde_json::{self, json},
+    NearToken, Promise,
+};
 
 use crate::{Contract, ContractExt};
+
+const SVG_OPEN: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">"#;
 
 /// Largest layer, in bytes. The art brief aims for 2–3 KB.
 const MAX_LAYER_BYTES: usize = 8 * 1024;
@@ -162,21 +172,59 @@ impl Contract {
 
     /// The layers CTOad `token_id` got at mint, background first.
     pub fn ctoad_traits(&self, token_id: TokenId) -> Vec<Trait> {
-        let traits = self
-            .traits
-            .get(&token_id)
-            .unwrap_or_else(|| env::panic_str(&format!("CTOad #{token_id} doesn't exist")));
         CATEGORIES
             .iter()
-            .zip(traits)
+            .zip(self.traits_of(&token_id))
             .filter_map(|(&category, pick)| {
                 pick.map(|index| Trait { category, name: self.layer(category, index).name.clone() })
             })
             .collect()
     }
+
+    /// CTOad `token_id`'s image: its layers stacked into one 1000×1000 SVG. Without any
+    /// layers, a plain card with its number.
+    pub fn ctoad_svg(&self, token_id: TokenId) -> String {
+        let mut svg = String::from(SVG_OPEN);
+        let mut drawn = false;
+        for (&category, pick) in CATEGORIES.iter().zip(self.traits_of(&token_id)) {
+            if let Some(index) = pick {
+                svg.push_str(&self.layer(category, *index).svg);
+                drawn = true;
+            }
+        }
+        if !drawn {
+            svg.push_str(&format!(
+                r##"<rect width="1000" height="1000" fill="#121a14"/><text x="500" y="530" font-family="sans-serif" font-size="96" fill="#4ade80" text-anchor="middle">CTOad #{token_id}</text>"##
+            ));
+        }
+        svg.push_str("</svg>");
+        svg
+    }
 }
 
 impl Contract {
+    fn traits_of(&self, token_id: &TokenId) -> &Traits {
+        self.traits
+            .get(token_id)
+            .unwrap_or_else(|| env::panic_str(&format!("CTOad #{token_id} doesn't exist")))
+    }
+
+    /// Fills in a token's `media` with its image, and adds its traits to `extra`.
+    pub(crate) fn with_art(&self, mut token: Token) -> Token {
+        if let Some(metadata) = token.metadata.as_mut() {
+            let svg = self.ctoad_svg(token.token_id.clone());
+            metadata.media = Some(format!("data:image/svg+xml;base64,{}", BASE64.encode(svg)));
+            let mut extra: serde_json::Value = metadata
+                .extra
+                .as_deref()
+                .and_then(|e| serde_json::from_str(e).ok())
+                .unwrap_or_else(|| json!({}));
+            extra["traits"] = json!(self.ctoad_traits(token.token_id.clone()));
+            metadata.extra = Some(extra.to_string());
+        }
+        token
+    }
+
     fn layer(&self, category: Category, index: u32) -> &Layer {
         self.layers.get(&(category as u8, index)).unwrap()
     }

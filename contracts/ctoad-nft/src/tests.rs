@@ -60,7 +60,7 @@ fn token_contract_mints_sequential_ctoads() {
     assert_eq!(t.owner_id, alice);
     let md = t.metadata.unwrap();
     assert_eq!(md.title.as_deref(), Some("CTOad #1"));
-    assert_eq!(md.media.as_deref(), Some("1.png"));
+    assert!(md.media.unwrap().starts_with("data:image/svg+xml;base64,"));
     let description = md.description.unwrap();
     assert!(description.contains("losing 1.25 NEAR"));
     assert!(description.contains("ctoad-1.cto.testnet"));
@@ -583,4 +583,65 @@ fn weights_must_be_positive() {
 fn no_traits_for_a_missing_ctoad() {
     let c = setup(3);
     c.ctoad_traits("9".into());
+}
+
+fn decode_media(token: &Token) -> String {
+    use near_sdk::base64::{engine::general_purpose::STANDARD, Engine};
+    let media = token.metadata.as_ref().unwrap().media.as_deref().unwrap();
+    let b64 = media.strip_prefix("data:image/svg+xml;base64,").expect("not an SVG data URI");
+    String::from_utf8(STANDARD.decode(b64).unwrap()).unwrap()
+}
+
+#[test]
+fn the_image_stacks_the_layers_background_first() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Item, "bag", "<g id=\"item\"/>");
+    add_layer(&mut c, Category::Background, "green", "<g id=\"bg\"/>");
+    add_layer(&mut c, Category::Eyes, "smug", "<g id=\"eyes\"/>");
+    mint(&mut c, &acct("alice"));
+    assert_eq!(
+        c.ctoad_svg("1".into()),
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><g id="bg"/><g id="eyes"/><g id="item"/></svg>"#
+    );
+}
+
+#[test]
+fn without_art_the_image_shows_the_ctoad_number() {
+    let mut c = setup(3);
+    mint(&mut c, &acct("alice"));
+    mint(&mut c, &acct("bob"));
+    let svg = c.ctoad_svg("2".into());
+    assert!(svg.contains(">CTOad #2</text>"), "{svg}");
+}
+
+#[test]
+fn media_is_the_image_and_extra_has_the_traits() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Eyes, "smug", CIRCLE);
+    let alice = acct("alice");
+    mint(&mut c, &alice);
+
+    let token = c.nft_token("1".into()).unwrap();
+    assert_eq!(decode_media(&token), c.ctoad_svg("1".into()));
+    let extra: near_sdk::serde_json::Value =
+        near_sdk::serde_json::from_str(token.metadata.unwrap().extra.as_deref().unwrap()).unwrap();
+    assert_eq!(extra["traits"][0]["category"], "Eyes");
+    assert_eq!(extra["traits"][0]["name"], "smug");
+    assert_eq!(extra["first_owner"], "alice.testnet");
+
+    // The lists wallets and marketplaces read have the image too.
+    let mine = c.nft_tokens_for_owner(alice, None, None);
+    assert_eq!(decode_media(&mine[0]), c.ctoad_svg("1".into()));
+    assert_eq!(decode_media(&c.nft_tokens(None, None)[0]), c.ctoad_svg("1".into()));
+}
+
+#[test]
+fn replacing_a_layer_changes_ctoads_already_minted() {
+    let mut c = setup(3);
+    add_layer(&mut c, Category::Headwear, "placeholder", "<g id=\"old\"/>");
+    mint(&mut c, &acct("alice"));
+    set(&acct("deployer"), NEAR / 10);
+    c.replace_layer(Category::Headwear, 0, "crown".into(), "<g id=\"crown\"/>".into(), None);
+    let token = c.nft_token("1".into()).unwrap();
+    assert!(decode_media(&token).contains("<g id=\"crown\"/>"));
 }

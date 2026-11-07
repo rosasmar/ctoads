@@ -155,7 +155,7 @@ impl Contract {
                 format_near(loss.0),
                 self.max_supply
             )),
-            media: Some(format!("{token_id}.png")),
+            // `media` is filled in when the token is read: see `art::with_art`.
             copies: Some(1),
             issued_at: Some(env::block_timestamp_ms().to_string()),
             extra: Some(
@@ -273,7 +273,7 @@ impl NonFungibleTokenCore for Contract {
     }
 
     fn nft_token(&self, token_id: TokenId) -> Option<Token> {
-        self.tokens.nft_token(token_id)
+        self.tokens.nft_token(token_id).map(|t| self.with_art(t))
     }
 }
 
@@ -335,7 +335,8 @@ impl NonFungibleTokenEnumeration for Contract {
     }
 
     fn nft_tokens(&self, from_index: Option<U128>, limit: Option<u64>) -> Vec<Token> {
-        self.tokens.nft_tokens(from_index, limit)
+        let tokens = self.tokens.nft_tokens(from_index, limit);
+        tokens.into_iter().map(|t| self.with_art(t)).collect()
     }
 
     fn nft_supply_for_owner(&self, account_id: AccountId) -> U128 {
@@ -348,7 +349,8 @@ impl NonFungibleTokenEnumeration for Contract {
         from_index: Option<U128>,
         limit: Option<u64>,
     ) -> Vec<Token> {
-        self.tokens.nft_tokens_for_owner(account_id, from_index, limit)
+        let tokens = self.tokens.nft_tokens_for_owner(account_id, from_index, limit);
+        tokens.into_iter().map(|t| self.with_art(t)).collect()
     }
 }
 
