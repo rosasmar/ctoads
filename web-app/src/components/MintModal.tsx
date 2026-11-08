@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import useSWR from "swr";
 
 import { TOKEN_CONTRACT } from "@/config";
-import { nftToken, nftTokensForOwner } from "@/lib/cto";
+import { nftTokensForOwner } from "@/lib/cto";
+import { useCtoad } from "@/hooks/useCto";
 import { formatNear } from "@/lib/near";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 
@@ -15,7 +15,7 @@ export type MintMoment = { accountId: string; tokenId: string | null; loss: stri
 /** "You got rekt, here's your CTOad." Shown after a sell that earned one. */
 export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: () => void }) {
   const [tokenId, setTokenId] = useState(moment.tokenId);
-  const { data: token } = useSWR(tokenId ? ["ctoad", tokenId] : null, ([, id]) => nftToken(id));
+  const { data: token } = useCtoad(tokenId);
 
   // The mint lands a block or two after the sell. If the transaction didn't include it, poll for it.
   useEffect(() => {

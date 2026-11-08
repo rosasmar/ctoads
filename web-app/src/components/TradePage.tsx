@@ -2,13 +2,12 @@
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useCallback, useEffect, useState } from "react";
-import useSWR from "swr";
 
-import { CONFIGURED, TOKEN_CONTRACT } from "@/config";
+import { TOKEN_CONTRACT } from "@/config";
 import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
 import { MintModal, type MintMoment } from "@/components/MintModal";
-import { useBuyQuote, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
-import { nftTokens, TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
+import { useBuyQuote, useCtoad, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
+import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
 import { eventsFrom, formatCto, formatNear, parseCto, parseNear, txStatus } from "@/lib/near";
 
 export function TradePage() {
@@ -77,7 +76,6 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
   const minted = market?.ctoads_minted ?? 0;
   const max = market?.max_ctoads ?? 500;
   const pct = Math.min(100, (minted / max) * 100);
-  const { data: first } = useSWR(CONFIGURED ? "firstCtoads" : null, () => nftTokens(0, 4), { refreshInterval: 15_000 });
   return (
     <section className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
       <div>
@@ -112,16 +110,19 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
         </div>
       </div>
       <div className="hidden grid-cols-2 gap-2 md:grid">
-        {[0, 1, 2, 3].map((i) =>
-          first?.[i] ? (
-            <CtoadImage key={i} token={first[i]} className="h-24 w-24 rounded-xl" />
-          ) : (
-            <UnmintedCtoad key={i} className="h-24 w-24 rounded-xl text-2xl" />
-          ),
-        )}
+        {[1, 2, 3, 4].map((id) => (
+          <HeroCtoad key={id} id={id} minted={minted} />
+        ))}
       </div>
     </section>
   );
+}
+
+/** One of the first four CTOads, or a "?" until it's minted. */
+function HeroCtoad({ id, minted }: { id: number; minted: number }) {
+  const { data: token } = useCtoad(id <= minted ? String(id) : null);
+  if (id > minted) return <UnmintedCtoad className="h-24 w-24 rounded-xl text-2xl" />;
+  return <CtoadImage token={token ?? undefined} className="h-24 w-24 rounded-xl" />;
 }
 
 function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {

@@ -98,8 +98,6 @@ export const getCtoadAccount = (tokenId: string) =>
 
 export const nftTotalSupply = async () => Number(await view<string>(NFT_CONTRACT, "nft_total_supply"));
 export const nftToken = (tokenId: string) => view<NftToken | null>(NFT_CONTRACT, "nft_token", { token_id: tokenId });
-export const nftTokens = (fromIndex: number, limit: number) =>
-  view<NftToken[]>(NFT_CONTRACT, "nft_tokens", { from_index: String(fromIndex), limit });
 export const nftTokensForOwner = (accountId: string) =>
   view<NftToken[]>(NFT_CONTRACT, "nft_tokens_for_owner", { account_id: accountId, from_index: "0", limit: 500 });
 
