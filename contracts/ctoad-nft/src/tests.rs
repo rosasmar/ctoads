@@ -135,6 +135,107 @@ fn cannot_claim_someone_elses_ctoad() {
     let _ = c.claim(vec!["1".into()]);
 }
 
+// ---------------------------------------------------------------------------------------------
+// CTOad accounts calling other contracts
+// ---------------------------------------------------------------------------------------------
+
+fn ctoad_call(c: &mut Contract, by: &AccountId, deposit: u128) -> Promise {
+    set(by, deposit);
+    c.ctoad_call(
+        "1".into(),
+        cto_id(),
+        "buy".into(),
+        r#"{"min_tokens_out":"1"}"#.into(),
+        U128(NEAR / 2),
+        U64(30_000_000_000_000),
+    )
+}
+
+#[test]
+fn holder_makes_their_ctoad_account_call_another_contract() {
+    let mut c = setup(500);
+    let alice = acct("alice");
+    mint(&mut c, &alice);
+    let _ = ctoad_call(&mut c, &alice, 1);
+
+    let call = get_created_receipts()
+        .into_iter()
+        .find(|r| r.receiver_id == cto_id())
+        .expect("no call to the token contract");
+    match &call.actions[0] {
+        MockAction::FunctionCallWeight { method_name, args, prepaid_gas, .. } => {
+            assert_eq!(method_name, b"ctoad_execute");
+            assert_eq!(prepaid_gas.as_tgas(), 40);
+            let args: near_sdk::serde_json::Value = near_sdk::serde_json::from_slice(args).unwrap();
+            assert_eq!(args["token_id"], "1");
+            assert_eq!(args["receiver_id"], "cto.testnet");
+            assert_eq!(args["method_name"], "buy");
+            assert_eq!(args["args"], r#"{"min_tokens_out":"1"}"#);
+            assert_eq!(args["deposit"], (NEAR / 2).to_string());
+            assert_eq!(args["gas"], "30000000000000");
+        }
+        other => panic!("unexpected action {other:?}"),
+    }
+}
+
+#[test]
+#[should_panic(expected = "You don't own CTOad #1")]
+fn a_stranger_cant_use_a_ctoad_account() {
+    let mut c = setup(500);
+    mint(&mut c, &acct("alice"));
+    let _ = ctoad_call(&mut c, &acct("mallory"), 1);
+}
+
+#[test]
+#[should_panic(expected = "You don't own CTOad #1")]
+fn a_past_holder_cant_use_a_ctoad_account() {
+    let mut c = setup(500);
+    let alice = acct("alice");
+    mint(&mut c, &alice);
+    set(&alice, 1);
+    c.nft_transfer(acct("bob"), "1".into(), None, None);
+    let _ = ctoad_call(&mut c, &alice, 1);
+}
+
+#[test]
+fn the_new_holder_can_use_a_ctoad_account() {
+    let mut c = setup(500);
+    let (alice, bob) = (acct("alice"), acct("bob"));
+    mint(&mut c, &alice);
+    set(&alice, 1);
+    c.nft_transfer(bob.clone(), "1".into(), None, None);
+    let _ = ctoad_call(&mut c, &bob, 1);
+    assert!(get_created_receipts().iter().any(|r| r.receiver_id == cto_id()));
+}
+
+#[test]
+#[should_panic(expected = "You don't own CTOad #1")]
+fn an_approved_marketplace_cant_use_a_ctoad_account() {
+    let mut c = setup(500);
+    let (alice, market) = (acct("alice"), acct("market"));
+    mint(&mut c, &alice);
+    set(&alice, NEAR / 100);
+    let _ = c.nft_approve("1".into(), market.clone(), None);
+    assert!(c.nft_is_approved("1".into(), market.clone(), None));
+    let _ = ctoad_call(&mut c, &market, 1);
+}
+
+#[test]
+#[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
+fn a_ctoad_call_needs_one_yocto() {
+    let mut c = setup(500);
+    let alice = acct("alice");
+    mint(&mut c, &alice);
+    let _ = ctoad_call(&mut c, &alice, 0);
+}
+
+#[test]
+#[should_panic(expected = "CTOad #1 doesn't exist")]
+fn cant_use_a_ctoad_that_isnt_minted() {
+    let mut c = setup(500);
+    let _ = ctoad_call(&mut c, &acct("alice"), 1);
+}
+
 #[test]
 fn mint_storage_cost_per_ctoad() {
     let mut c = setup(500);
