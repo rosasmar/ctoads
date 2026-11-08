@@ -7,6 +7,8 @@
 //! $CTO contract to pay out the fees those CTOads have earned. Fees belong to the token ID,
 //! so they move with the NFT when it's sold.
 //!
+//! Holders also make their CTOad's account call other contracts here, with `ctoad_call`.
+//!
 //! Holders also propose and vote on spending the treasury here (see `voting`).
 //!
 //! The art lives here too, as SVG layers the owner uploads (see `art`).
@@ -24,7 +26,7 @@ use near_contract_standards::non_fungible_token::{
 use near_sdk::{
     collections::LazyOption,
     env, ext_contract,
-    json_types::U128,
+    json_types::{U128, U64},
     log, near, require,
     serde_json::json,
     store::{LookupMap, Vector},
@@ -40,6 +42,8 @@ mod tests;
 mod voting;
 
 const GAS_FOR_PAYOUT: Gas = Gas::from_tgas(20);
+/// What the $CTO contract and the CTOad account need on top of the call a CTOad makes.
+const GAS_FOR_CTOAD_CALL: Gas = Gas::from_tgas(10);
 /// Each CTOad in a claim makes its own call to its account, so batches are kept small enough
 /// to fit in 300 Tgas.
 const MAX_CLAIM_BATCH: usize = 20;
@@ -50,6 +54,15 @@ const DEFAULT_VOTING_PERIOD_SECS: u64 = 30 * 24 * 60 * 60;
 #[allow(dead_code)]
 trait CtoToken {
     fn ctoad_payout(&mut self, token_ids: Vec<TokenId>, receiver_id: AccountId) -> U128;
+    fn ctoad_execute(
+        &self,
+        token_id: TokenId,
+        receiver_id: AccountId,
+        method_name: String,
+        args: String,
+        deposit: U128,
+        gas: U64,
+    ) -> Promise;
     fn treasury_payout(&mut self, receiver_id: AccountId, amount: U128) -> bool;
 }
 
@@ -199,6 +212,37 @@ impl Contract {
             .with_static_gas(GAS_FOR_PAYOUT)
             .with_unused_gas_weight(1)
             .ctoad_payout(token_ids, caller)
+    }
+
+    /// Makes CTOad `token_id`'s account call `method_name` on `receiver_id`, with `args` (usually
+    /// JSON), `deposit` yoctoNEAR from the account's balance, and `gas` for the call. Only the
+    /// CTOad's holder can call this, at the moment of the call: an approved marketplace or a
+    /// past holder can't. Attach 1 yoctoNEAR, and prepay `gas` plus about 15 Tgas. Returns the
+    /// call's result.
+    #[payable]
+    pub fn ctoad_call(
+        &mut self,
+        token_id: TokenId,
+        receiver_id: AccountId,
+        method_name: String,
+        args: String,
+        deposit: U128,
+        gas: U64,
+    ) -> Promise {
+        near_sdk::assert_one_yocto();
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .unwrap_or_else(|| env::panic_str(&format!("CTOad #{token_id} doesn't exist")));
+        require!(
+            owner == env::predecessor_account_id(),
+            format!("You don't own CTOad #{token_id}")
+        );
+        ext_cto::ext(self.cto_token_id.clone())
+            .with_static_gas(Gas::from_gas(gas.0).saturating_add(GAS_FOR_CTOAD_CALL))
+            .with_unused_gas_weight(1)
+            .ctoad_execute(token_id, receiver_id, method_name, args, deposit, gas)
     }
 
     /// The account that holds CTOad `token_id`'s fees, e.g. `ctoad-42.cto.near`. It's a

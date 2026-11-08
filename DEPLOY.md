@@ -1,6 +1,6 @@
 # Deployment guide
 
-This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad with its on-chain image, take over, claim, vote on the treasury. Mainnet uses the same steps (see [Mainnet](#mainnet)).
+This guide deploys $CTO, the CTOad NFT contract and the CTOad account wallet to NEAR testnet, then walks through the full lifecycle: buy, sell at a loss, mint a CTOad with its on-chain image, take over, claim, vote on the treasury, and make a CTOad's account buy $CTO. Mainnet uses the same steps (see [Mainnet](#mainnet)).
 
 ## What gets deployed
 
@@ -39,7 +39,7 @@ If you already have a testnet account, import it with `near account import-accou
 | Demo (`DEMO=1`, 3 CTOads) | ~9.5 to deploy, ~16 to also run [Try it](#4-try-it) |
 | Full (500 CTOads) | ~15 |
 
-That covers code storage (~2.9 NEAR for the token contract, ~3.3 NEAR for the NFT contract), storage for 500 mints (~4.3 NEAR), the art layers (about 0.01 NEAR per KB, ~0.1 NEAR for the ones in `art/`), the global contract deploy (~2.3 NEAR), and gas. Deploying again from the same deployer costs ~2.3 NEAR less, since the CTOad account code is already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
+That covers code storage (~2.9 NEAR for the token contract, ~3.3 NEAR for the NFT contract), storage for 500 mints (~4.3 NEAR), the art layers (about 0.01 NEAR per KB, ~0.1 NEAR for the ones in `art/`), the global contract deploy (~2.4 NEAR), and gas. Deploying again from the same deployer costs ~2.4 NEAR less, as long as the CTOad account code hasn't changed since, because it's already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
 
 ## 3. Deploy
 
@@ -220,9 +220,36 @@ near contract call-function as-transaction $NFT execute \
   sign-as $ME network-config testnet sign-with-keychain send
 ```
 
+**13. Make CTOad #1's account buy $CTO.** Its account can call other contracts, paying from its own balance, and only its holder can make it. First give it fees to spend: trade once more (step 1 again), then move the fees into the CTOad accounts. Anyone can do this:
+
+```sh
+near contract call-function as-transaction $TOKEN sweep \
+  json-args '{"token_ids":["1","2","3"]}' \
+  prepaid-gas '50.0 Tgas' attached-deposit '0 NEAR' \
+  sign-as $ME network-config testnet sign-with-keychain send
+```
+
+Then, as CTOad #1's holder, make its account spend 0.01 NEAR on `buy`. `args` is the call's own JSON arguments, as a string:
+
+```sh
+near contract call-function as-transaction $NFT ctoad_call \
+  json-args "{\"token_id\":\"1\",\"receiver_id\":\"$TOKEN\",\"method_name\":\"buy\",\"args\":\"{}\",\"deposit\":\"10000000000000000000000\",\"gas\":\"30000000000000\"}" \
+  prepaid-gas '100.0 Tgas' attached-deposit '1 yoctoNEAR' \
+  sign-as $ME network-config testnet sign-with-keychain send
+```
+
+The CTOad's account now holds $CTO. Selling CTOad #1 hands that bag to the new holder:
+
+```sh
+near contract call-function as-read-only $TOKEN get_holder \
+  json-args "{\"account_id\":\"ctoad-1.$TOKEN\"}" network-config testnet now
+```
+
+Signing the same `ctoad_call` from an account that doesn't hold CTOad #1 fails with "You don't own CTOad #1".
+
 ## 5. Run the frontend
 
-The web app does everything in step 4 in the browser.
+The web app does steps 1 to 12 of step 4 in the browser.
 
 ```sh
 cd web-app

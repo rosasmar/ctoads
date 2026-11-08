@@ -747,3 +747,84 @@ fn deploy_script_init_args_parse() {
     let hash: [u8; 32] = args.config.ctoad_account_code_hash.into();
     assert_ne!(hash, [0u8; 32]);
 }
+
+// -------------------------------------------------------------------------------------------
+// CTOad accounts calling other contracts
+// -------------------------------------------------------------------------------------------
+
+/// One CTOad minted to alice, with its account ready.
+fn one_ctoad_with_account() -> (T, Contract) {
+    let (t, mut c) = setup(config(1, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    confirm_mint(&t, &mut c, &alice, 1);
+    account_ready(&t, &mut c, 1);
+    (t, c)
+}
+
+fn execute_buy(c: &mut Contract, token_id: &str) -> Promise {
+    c.ctoad_execute(
+        token_id.into(),
+        curve_id(),
+        "buy".into(),
+        r#"{"min_tokens_out":"1"}"#.into(),
+        U128(NEAR / 2),
+        U64(30_000_000_000_000),
+    )
+}
+
+#[test]
+fn ctoad_contract_makes_the_account_call_another_contract() {
+    let (t, mut c) = one_ctoad_with_account();
+    t.set(&ctoads_id(), 0);
+    let _ = execute_buy(&mut c, "1");
+
+    let actions = actions_to(&ctoad_account(1));
+    assert_eq!(actions.len(), 1);
+    let MockAction::FunctionCallWeight { method_name, args, attached_deposit, prepaid_gas, .. } =
+        &actions[0]
+    else {
+        panic!("expected a function call");
+    };
+    assert_eq!(method_name, b"execute");
+    assert_eq!(attached_deposit.as_yoctonear(), 0);
+    assert_eq!(prepaid_gas.as_tgas(), 35);
+    // Exactly the bytes the account's `execute` decodes.
+    let expected = ctoad_account::Call {
+        receiver_id: curve_id(),
+        method_name: "buy".into(),
+        args: br#"{"min_tokens_out":"1"}"#.to_vec(),
+        deposit: NEAR / 2,
+        gas: 30_000_000_000_000,
+    };
+    assert_eq!(args, &borsh::to_vec(&expected).unwrap());
+}
+
+#[test]
+#[should_panic(expected = "Only the CTOad contract can make a CTOad account call")]
+fn only_ctoad_contract_can_execute() {
+    let (t, mut c) = one_ctoad_with_account();
+    t.set(&acct("alice"), 0);
+    let _ = execute_buy(&mut c, "1");
+}
+
+#[test]
+#[should_panic(expected = "CTOad #1 has no account yet")]
+fn execute_needs_the_account() {
+    let (t, mut c) = setup(config(1, true, 0));
+    let alice = acct("alice");
+    let tokens = buy(&t, &mut c, &alice, 60 * NEAR);
+    sell(&t, &mut c, &alice, tokens);
+    confirm_mint(&t, &mut c, &alice, 1);
+    t.set(&ctoads_id(), 0);
+    let _ = execute_buy(&mut c, "1");
+}
+
+#[test]
+#[should_panic(expected = "2 is not a CTOad id")]
+fn execute_rejects_a_bad_ctoad_id() {
+    let (t, mut c) = one_ctoad_with_account();
+    t.set(&ctoads_id(), 0);
+    let _ = execute_buy(&mut c, "2");
+}

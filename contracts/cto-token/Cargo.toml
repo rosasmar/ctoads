@@ -14,3 +14,5 @@ uint.workspace = true
 
 [dev-dependencies]
 near-sdk = { workspace = true, features = ["unit-testing"] }
+# Only to check that `ctoad_execute` encodes what the account's `execute` expects.
+ctoad-account = { path = "../ctoad-account" }
