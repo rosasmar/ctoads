@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { TOKEN_CONTRACT } from "@/config";
 import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
 import { MintModal, type MintMoment } from "@/components/MintModal";
+import { AmountInput, errorText, Row } from "@/components/TradeFields";
 import { useBuyQuote, useCtoad, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
 import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
 import { eventsFrom, formatCto, formatNear, parseCto, parseNear, txStatus } from "@/lib/near";
@@ -378,52 +379,4 @@ function HowItWorks({ config }: { config?: TokenConfig }) {
       ))}
     </section>
   );
-}
-
-function AmountInput(props: {
-  label: string;
-  unit: string;
-  value: string;
-  onChange: (v: string) => void;
-  onMax?: () => void;
-  hint?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="flex justify-between text-xs text-white/50">
-        <span>{props.label}</span>
-        {props.hint && <span>{props.hint}</span>}
-      </span>
-      <span className="mt-1 flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-        <input
-          inputMode="decimal"
-          placeholder="0.0"
-          value={props.value}
-          onChange={(e) => props.onChange(e.target.value.replace(/[^\d.]/g, ""))}
-          className="w-full bg-transparent text-2xl outline-none"
-        />
-        {props.onMax && (
-          <button type="button" onClick={props.onMax} className="rounded bg-white/10 px-2 py-0.5 text-xs">
-            Max
-          </button>
-        )}
-        <span className="text-white/60">{props.unit}</span>
-      </span>
-    </label>
-  );
-}
-
-function Row({ label, value, valueClass }: { label: string; value: string; valueClass?: string }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-white/50">{label}</dt>
-      <dd className={valueClass}>{value}</dd>
-    </div>
-  );
-}
-
-function errorText(e: unknown): string {
-  const text = e instanceof Error ? e.message : String(e);
-  if (/reject|cancel/i.test(text)) return "Cancelled in the wallet.";
-  return text.length > 200 ? `${text.slice(0, 200)}…` : text;
 }

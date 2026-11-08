@@ -1,12 +1,16 @@
 "use client";
 
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
+import { useState } from "react";
 
+import { NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
 import { AccountLink } from "@/components/AccountLink";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
-import { useCtoad, useCtoadFunds, useHolder, useSellQuote } from "@/hooks/useCto";
-import { ctoadAccountId, ctoadExtra } from "@/lib/cto";
-import { formatCto, formatNear } from "@/lib/near";
+import { AmountInput, errorText, Row } from "@/components/TradeFields";
+import { useBuyQuote, useCtoad, useCtoadFunds, useHolder, useSellQuote } from "@/hooks/useCto";
+import { ctoadAccountId, ctoadCallArgs, ctoadExtra, TX, withSlippage, type SellQuote } from "@/lib/cto";
+import { formatCto, formatNear, parseNear } from "@/lib/near";
 
 /** One CTOad: its image, traits, holder, and its backpack, the account it owns. */
 export function CtoadPage({ id }: { id: string }) {
@@ -44,7 +48,7 @@ export function CtoadPage({ id }: { id: string }) {
             )}
           </div>
           {token && <CtoadTraits token={token} className="w-fit text-sm" />}
-          {token && <Backpack id={id} />}
+          {token && <Backpack id={id} holder={token.owner_id} />}
         </div>
       </div>
     </div>
@@ -52,10 +56,11 @@ export function CtoadPage({ id }: { id: string }) {
 }
 
 /** What the CTOad's own account holds. Its holder controls it, and it moves with the CTOad. */
-function Backpack({ id }: { id: string }) {
+function Backpack({ id, holder }: { id: string; holder: string }) {
+  const { signedAccountId } = useWalletSelector();
   const account = ctoadAccountId(id);
-  const { data: funds } = useCtoadFunds(id);
-  const { data: bag } = useHolder(account);
+  const { data: funds, mutate: refreshFunds } = useCtoadFunds(id);
+  const { data: bag, mutate: refreshBag } = useHolder(account);
   const balance = bag ? BigInt(bag.balance) : 0n;
   const { data: worth } = useSellQuote(balance > 0n ? account : null, balance);
   const unswept = funds ? BigInt(funds.account.unswept_fees) : 0n;
@@ -79,18 +84,129 @@ function Backpack({ id }: { id: string }) {
           note={worth ? `worth about ${formatNear(worth.near_out)} NEAR` : undefined}
         />
       </dl>
+      {signedAccountId === holder && funds?.account.state === "Ready" && (
+        <BackpackActions
+          id={id}
+          available={funds.inAccount}
+          unswept={unswept}
+          bag={balance}
+          sellQuote={worth}
+          onDone={() => {
+            refreshFunds();
+            refreshBag();
+          }}
+        />
+      )}
     </section>
   );
 }
 
-function Row({ label, value, note }: { label: string; value: string; note?: string }) {
+/**
+ * The holder's controls: the CTOad's account buys $CTO with its own NEAR, or sells its whole bag.
+ * Each is a `ctoad_call`. A buy that needs fees not yet in the account sweeps them in first.
+ */
+function BackpackActions(props: {
+  id: string;
+  available: bigint;
+  unswept: bigint;
+  bag: bigint;
+  sellQuote?: SellQuote;
+  onDone: () => void;
+}) {
+  const { id, available, unswept, bag, sellQuote, onDone } = props;
+  const { callFunction } = useWalletSelector();
+  const account = ctoadAccountId(id);
+  const [input, setInput] = useState("");
+  const amount = parseNear(input);
+  const { data: buyQuote } = useBuyQuote(account, amount);
+  const [status, setStatus] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const tooMuch = amount !== null && amount > available + unswept;
+  const needsSweep = amount !== null && amount > available;
+
+  const run = async (action: () => Promise<unknown>, done: string) => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      await action();
+      setStatus(done);
+      setInput("");
+      onDone();
+    } catch (e) {
+      setStatus(errorText(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const ctoadCall = (method: string, args: object, deposit: bigint, gas: bigint) =>
+    callFunction({
+      contractId: NFT_CONTRACT,
+      method: "ctoad_call",
+      args: ctoadCallArgs(id, TOKEN_CONTRACT, method, args, deposit, gas),
+      gas: gas + TX.ctoadCall.extraGas,
+      deposit: TX.ctoadCall.deposit,
+    });
+
+  const buy = () =>
+    run(async () => {
+      if (!amount || !buyQuote) return;
+      if (needsSweep) {
+        await callFunction({ contractId: TOKEN_CONTRACT, method: "sweep", args: { token_ids: [id] }, gas: TX.sweep.gas });
+      }
+      const min = withSlippage(BigInt(buyQuote.tokens_out));
+      await ctoadCall("buy", { min_tokens_out: min.toString() }, amount, TX.buy.gas);
+    }, `CTOad #${id} bought $CTO.`);
+
+  const sell = () =>
+    run(async () => {
+      if (!sellQuote) return;
+      const min = withSlippage(BigInt(sellQuote.near_out));
+      await ctoadCall("sell", { amount: bag.toString(), min_near_out: min.toString() }, TX.sell.deposit, TX.sell.gas);
+    }, `CTOad #${id} sold its $CTO. The NEAR is in its backpack, ready to claim.`);
+
   return (
-    <div className="flex justify-between gap-4">
-      <dt className="text-white/50">{label}</dt>
-      <dd className="text-right">
-        {value}
-        {note && <span className="block text-xs text-white/40">{note}</span>}
-      </dd>
+    <div className="mt-5 space-y-4 border-t border-white/10 pt-5">
+      <p className="text-sm text-white/60">You hold this CTOad, so you decide what its account does.</p>
+      <AmountInput
+        label="Buy $CTO with the backpack's NEAR"
+        unit="NEAR"
+        value={input}
+        onChange={setInput}
+        hint={`${formatNear(available + unswept)} NEAR available`}
+      />
+      {buyQuote && amount && (
+        <dl className="space-y-1 text-sm">
+          <Row label="It gets (about)" value={`${formatCto(buyQuote.tokens_out)} $CTO`} />
+          <Row label="Fee" value={`${formatNear(buyQuote.fee)} NEAR`} />
+          {BigInt(buyQuote.storage_cost) > 0n && (
+            <Row label="One-time storage" value={`${formatNear(buyQuote.storage_cost, 5)} NEAR`} />
+          )}
+        </dl>
+      )}
+      {tooMuch && <p className="text-sm text-rekt">The backpack doesn&apos;t hold that much NEAR.</p>}
+      {needsSweep && !tooMuch && (
+        <p className="text-xs text-white/50">
+          This first moves the fees waiting outside into the backpack, so your wallet asks twice.
+        </p>
+      )}
+      <button
+        disabled={!amount || !buyQuote || tooMuch || busy}
+        onClick={buy}
+        className="w-full rounded-xl bg-frog py-3 font-semibold text-black disabled:opacity-40"
+      >
+        {busy ? "Confirm in your wallet…" : "Buy $CTO"}
+      </button>
+      {bag > 0n && (
+        <button
+          disabled={!sellQuote || busy}
+          onClick={sell}
+          className="w-full rounded-xl border border-rekt/60 py-3 font-semibold text-rekt disabled:opacity-40"
+        >
+          {sellQuote ? `Sell all ${formatCto(bag)} $CTO for about ${formatNear(sellQuote.near_out)} NEAR` : "Sell all $CTO"}
+        </button>
+      )}
+      {status && <p className="text-sm text-white/70">{status}</p>}
     </div>
   );
 }
