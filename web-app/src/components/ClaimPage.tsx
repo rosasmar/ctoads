@@ -4,20 +4,18 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import useSWR from "swr";
 
-import { CONFIGURED, EXPLORER_URL, NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
+import { EXPLORER_URL, NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
 import { CtoadImage } from "@/components/CtoadImage";
-import { useMarket, useTokenConfig } from "@/hooks/useCto";
-import { ctoadClaimable, nftTokensForOwner, TX } from "@/lib/cto";
+import { useMarket, useOwnedCtoads, useTokenConfig } from "@/hooks/useCto";
+import { ctoadClaimable, TX } from "@/lib/cto";
 import { formatNear } from "@/lib/near";
 
 export function ClaimPage() {
   const { signedAccountId, signIn, callFunction } = useWalletSelector();
   const { data: market } = useMarket();
   const { data: config } = useTokenConfig();
-  const { data: tokens } = useSWR(CONFIGURED && signedAccountId ? ["mine", signedAccountId] : null, ([, id]) =>
-    nftTokensForOwner(id),
-  );
-  const ids = (tokens ?? []).map((t) => t.token_id).sort((a, b) => Number(a) - Number(b));
+  const { data: tokens } = useOwnedCtoads(signedAccountId);
+  const ids = (tokens ?? []).map((t) => t.token_id);
   const { data: claimable, mutate } = useSWR(
     ids.length ? ["claimable", ids.join(",")] : null,
     () => Promise.all(ids.map(async (id) => ({ id, ...(await ctoadClaimable(id)) }))),

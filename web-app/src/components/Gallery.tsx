@@ -1,12 +1,13 @@
 "use client";
 
+import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED, EXPLORER_URL, TOKEN_CONTRACT } from "@/config";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
-import { useCtoad, useMarket } from "@/hooks/useCto";
-import { ctoadExtra, nftTotalSupply } from "@/lib/cto";
+import { useCtoad, useMarket, useOwnedCtoads } from "@/hooks/useCto";
+import { ctoadExtra, nftTotalSupply, type NftToken } from "@/lib/cto";
 import { formatNear, shortAccount } from "@/lib/near";
 
 /** CTOads shown at first, and added by each "Show more". Every CTOad carries its whole image. */
@@ -20,6 +21,10 @@ export function Gallery() {
   const ids = total ? Array.from({ length: Math.min(shown, total) }, (_, i) => String(total - i)) : [];
   const { data: market } = useMarket();
   const max = market?.max_ctoads ?? 500;
+  const { signedAccountId } = useWalletSelector();
+  const [view, setView] = useState<"all" | "mine">("all");
+  const mine = view === "mine" && !!signedAccountId;
+  const { data: owned } = useOwnedCtoads(mine ? signedAccountId : null);
 
   return (
     <div className="space-y-6">
@@ -29,16 +34,32 @@ export function Gallery() {
           {total ?? "…"} of {max} minted. Each one was earned by losing NEAR on a single $CTO sell.
         </p>
       </div>
+      {signedAccountId && (
+        <div className="flex w-fit gap-1 rounded-xl bg-white/5 p-1 text-sm">
+          {(["all", "mine"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={`rounded-lg px-4 py-1.5 ${view === v ? "bg-white/10 font-medium" : "text-white/50"}`}
+            >
+              {v === "all" ? "All" : "Mine"}
+            </button>
+          ))}
+        </div>
+      )}
       {error && <p className="text-rekt">Couldn&apos;t load CTOads: {String(error.message ?? error)}</p>}
-      {total === 0 && (
+      {mine && owned?.length === 0 && (
+        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">No CTOads in this wallet yet.</p>
+      )}
+      {!mine && total === 0 && (
         <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">No CTOads yet. Somebody has to get rekt first.</p>
       )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
-        {ids.map((id) => (
-          <GalleryCard key={id} id={id} />
-        ))}
+        {mine
+          ? owned?.map((t) => <CtoadCard key={t.token_id} id={t.token_id} token={t} />)
+          : ids.map((id) => <GalleryCard key={id} id={id} />)}
       </div>
-      {total !== undefined && shown < total && (
+      {!mine && total !== undefined && shown < total && (
         <div className="text-center">
           <button onClick={() => setShown(shown + PAGE)} className="rounded-xl border border-white/20 px-5 py-2 text-sm">
             Show more
@@ -50,11 +71,16 @@ export function Gallery() {
 }
 
 function GalleryCard({ id }: { id: string }) {
-  const { data: t } = useCtoad(id);
+  const { data: token } = useCtoad(id);
+  return <CtoadCard id={id} token={token ?? undefined} />;
+}
+
+/** `token` is undefined while it loads. */
+function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
   const extra = t ? ctoadExtra(t) : {};
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-panel">
-      <CtoadImage token={t ?? undefined} className="aspect-square w-full" />
+      <CtoadImage token={t} className="aspect-square w-full" />
       <div className="space-y-0.5 p-3 text-xs">
         <p className="text-sm font-semibold">CTOad #{id}</p>
         {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
