@@ -1,6 +1,7 @@
 "use client";
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
+import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
@@ -80,9 +81,13 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
   const extra = t ? ctoadExtra(t) : {};
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-panel">
-      <CtoadImage token={t} className="aspect-square w-full" />
+      <Link href={`/ctoads/${id}`}>
+        <CtoadImage token={t} className="aspect-square w-full" />
+      </Link>
       <div className="space-y-0.5 p-3 text-xs">
-        <p className="text-sm font-semibold">CTOad #{id}</p>
+        <Link href={`/ctoads/${id}`} className="block text-sm font-semibold hover:text-frog">
+          CTOad #{id}
+        </Link>
         {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
         {t && <CtoadTraits token={t} className="py-1" />}
         {t && (

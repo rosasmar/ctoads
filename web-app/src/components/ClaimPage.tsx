@@ -1,6 +1,7 @@
 "use client";
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
+import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
@@ -112,9 +113,13 @@ export function ClaimPage() {
           const c = claimable?.find((x) => x.id === id);
           return (
             <div key={id} className="flex gap-4 rounded-xl border border-white/10 bg-panel p-3">
-              <CtoadImage token={tokens?.find((t) => t.token_id === id)} className="h-20 w-20 shrink-0 rounded-lg" />
+              <Link href={`/ctoads/${id}`} className="shrink-0">
+                <CtoadImage token={tokens?.find((t) => t.token_id === id)} className="h-20 w-20 rounded-lg" />
+              </Link>
               <div className="min-w-0 space-y-1 text-sm">
-                <p className="font-semibold">CTOad #{id}</p>
+                <Link href={`/ctoads/${id}`} className="block font-semibold hover:text-frog">
+                  CTOad #{id}
+                </Link>
                 {c ? (
                   <>
                     <p>
