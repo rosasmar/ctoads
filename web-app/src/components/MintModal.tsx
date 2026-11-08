@@ -3,8 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { TOKEN_CONTRACT } from "@/config";
-import { nftTokensForOwner } from "@/lib/cto";
+import { ctoadAccountId, nftTokensForOwner } from "@/lib/cto";
 import { useCtoad } from "@/hooks/useCto";
 import { formatNear } from "@/lib/near";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
@@ -65,7 +64,7 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
             <>
               {" "}
               Once all CTOads are minted, this one&apos;s share of every fee collects in{" "}
-              <span className="font-mono text-white">ctoad-{tokenId}.{TOKEN_CONTRACT}</span>.
+              <span className="font-mono text-white">{ctoadAccountId(tokenId)}</span>.
             </>
           )}
         </p>

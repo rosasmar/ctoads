@@ -4,7 +4,17 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED } from "@/config";
-import { getConfig, getHolder, getMarket, getProposals, nftToken, nftTokensForOwner, quoteBuy, quoteSell } from "@/lib/cto";
+import {
+  ctoadClaimable,
+  getConfig,
+  getHolder,
+  getMarket,
+  getProposals,
+  nftToken,
+  nftTokensForOwner,
+  quoteBuy,
+  quoteSell,
+} from "@/lib/cto";
 
 /** Any valid account ID works for previews when nobody is signed in. */
 const GUEST = "guest.near";
@@ -25,6 +35,16 @@ export function useProposals() {
 /** One CTOad by its number, with its image and traits. `null` loads nothing. */
 export function useCtoad(tokenId: string | null) {
   return useSWR(CONFIGURED && tokenId ? ["ctoad", tokenId] : null, ([, id]) => nftToken(id));
+}
+
+/**
+ * The NEAR in CTOad `tokenId`'s account, and its fees not yet swept there. Its $CTO is
+ * `useHolder(ctoadAccountId(tokenId))`, like any other holder's.
+ */
+export function useCtoadFunds(tokenId: string | null) {
+  return useSWR(CONFIGURED && tokenId ? ["ctoadFunds", tokenId] : null, ([, id]) => ctoadClaimable(id), {
+    refreshInterval: 10_000,
+  });
 }
 
 /** Every CTOad `accountId` holds, lowest number first. */

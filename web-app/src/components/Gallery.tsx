@@ -4,10 +4,10 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import useSWR from "swr";
 
-import { CONFIGURED, EXPLORER_URL, TOKEN_CONTRACT } from "@/config";
+import { CONFIGURED, EXPLORER_URL } from "@/config";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 import { useCtoad, useMarket, useOwnedCtoads } from "@/hooks/useCto";
-import { ctoadExtra, nftTotalSupply, type NftToken } from "@/lib/cto";
+import { ctoadAccountId, ctoadExtra, nftTotalSupply, type NftToken } from "@/lib/cto";
 import { formatNear, shortAccount } from "@/lib/near";
 
 /** CTOads shown at first, and added by each "Show more". Every CTOad carries its whole image. */
@@ -91,7 +91,7 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
           </p>
         )}
         <a
-          href={`${EXPLORER_URL}/address/ctoad-${id}.${TOKEN_CONTRACT}`}
+          href={`${EXPLORER_URL}/address/${ctoadAccountId(id)}`}
           target="_blank"
           rel="noreferrer"
           className="text-frog/80 hover:text-frog"
