@@ -14,8 +14,7 @@
 //! contracts are priced by size.
 
 use near_sdk::{
-    borsh::{self, BorshSerialize},
-    env, require, AccountId, Gas, GasWeight, NearToken, Promise,
+    borsh::BorshSerialize, env, require, AccountId, Gas, GasWeight, NearToken, Promise,
 };
 
 /// One function call for a CTOad account to make, sent to `execute` as Borsh bytes.
@@ -52,7 +51,8 @@ pub extern "C" fn execute() {
     let input = env::input().unwrap_or_default();
     let call = decode_call(&input)
         .unwrap_or_else(|| env::panic_str("Input must be a Borsh-encoded Call"));
-    execute_call(call).as_return();
+    // Hand the call's result back to whoever asked.
+    let _ = execute_call(call).as_return();
 }
 
 /// View: yoctoNEAR this account could pay out right now, as a decimal string.
@@ -135,6 +135,7 @@ fn parse_account(bytes: &[u8]) -> AccountId {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use near_sdk::borsh;
     use near_sdk::mock::MockAction;
     use near_sdk::test_utils::{get_created_receipts, VMContextBuilder};
     use near_sdk::testing_env;
@@ -192,7 +193,7 @@ mod tests {
     #[test]
     fn parent_makes_the_account_call_another_contract() {
         set("cto.testnet", 2 * NEAR, 150);
-        execute_call(call("cto.testnet"));
+        let _ = execute_call(call("cto.testnet"));
 
         let receipts = get_created_receipts();
         assert_eq!(receipts.len(), 1);
@@ -211,21 +212,21 @@ mod tests {
     #[should_panic(expected = "Only the $CTO token contract can make a CTOad account call")]
     fn nobody_else_can_execute() {
         set("alice.testnet", 2 * NEAR, 150);
-        execute_call(call("cto.testnet"));
+        let _ = execute_call(call("cto.testnet"));
     }
 
     #[test]
     #[should_panic(expected = "Only the $CTO token contract can make a CTOad account call")]
     fn the_account_cant_order_itself() {
         set("ctoad-42.cto.testnet", 2 * NEAR, 150);
-        execute_call(call("cto.testnet"));
+        let _ = execute_call(call("cto.testnet"));
     }
 
     #[test]
     #[should_panic(expected = "A CTOad account can't call itself")]
     fn the_account_cant_call_itself() {
         set("cto.testnet", 2 * NEAR, 150);
-        execute_call(call("ctoad-42.cto.testnet"));
+        let _ = execute_call(call("ctoad-42.cto.testnet"));
     }
 
     #[test]

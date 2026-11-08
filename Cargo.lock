@@ -375,6 +375,7 @@ dependencies = [
 name = "cto-token"
 version = "0.1.0"
 dependencies = [
+ "ctoad-account",
  "near-contract-standards",
  "near-sdk",
  "uint 0.10.2",

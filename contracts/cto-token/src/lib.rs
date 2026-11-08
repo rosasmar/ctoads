@@ -12,6 +12,8 @@
 //!   sweep() -> moves fees a CTOad has earned into its account. Anyone can call it.
 //!   ctoad_payout() -> only the CTOad contract can call it, after checking ownership in `claim`.
 //!             Sends the CTOad its earned fees, then has its account pay the holder.
+//!   ctoad_execute() -> only the CTOad contract can call it, for whoever holds that CTOad right
+//!             now. Makes the CTOad's account call another contract.
 //!   treasury_payout() -> only the CTOad contract can call it, for a proposal that passed.
 //!             Sends NEAR from the treasury.
 //!
@@ -29,13 +31,14 @@ use near_contract_standards::storage_management::{
 };
 use near_sdk::{
     assert_one_yocto,
+    borsh::{self, BorshSerialize},
     collections::LazyOption,
     env, ext_contract,
     json_types::{Base58CryptoHash, U128, U64},
     log, near, require,
     serde_json::{self, json},
     store::LookupMap,
-    AccountId, BorshStorageKey, Gas, NearToken, PanicOnDefault, Promise, PromiseError,
+    AccountId, BorshStorageKey, Gas, GasWeight, NearToken, PanicOnDefault, Promise, PromiseError,
     PromiseOrValue,
 };
 
@@ -50,6 +53,8 @@ const GAS_FOR_MINT: Gas = Gas::from_tgas(30);
 const GAS_FOR_ON_MINTED: Gas = Gas::from_tgas(20);
 const GAS_FOR_ON_TRANSFER: Gas = Gas::from_tgas(5);
 const GAS_FOR_ACCOUNT_WITHDRAW: Gas = Gas::from_tgas(5);
+/// What a CTOad account's `execute` needs on top of the call it makes.
+const GAS_FOR_ACCOUNT_EXECUTE: Gas = Gas::from_tgas(5);
 /// A sell that earns a CTOad must carry enough gas to finish the mint. Otherwise the whole
 /// sell fails, so the seller can retry with more gas instead of losing the CTOad.
 const MIN_GAS_FOR_MINTING_SELL: Gas = Gas::from_tgas(100);
@@ -115,6 +120,18 @@ pub struct Holder {
     pub cost_basis: u128,
     pub last_buy_ns: u64,
     pub earned_ctoad: bool,
+}
+
+/// The input of a CTOad account's `execute`, as Borsh bytes. Same fields in the same order as
+/// `Call` in contracts/ctoad-account.
+#[derive(BorshSerialize)]
+#[borsh(crate = "near_sdk::borsh")]
+struct AccountCall {
+    receiver_id: AccountId,
+    method_name: String,
+    args: Vec<u8>,
+    deposit: u128,
+    gas: u64,
 }
 
 #[near(contract_state)]
@@ -494,6 +511,46 @@ impl Contract {
             }
             log!("Payout to {} failed. The fees stay with the CTOads.", receiver_id);
         }
+    }
+
+    /// Makes CTOad `token_id`'s account call `method_name` on `receiver_id`, with `args` (usually
+    /// JSON) and `deposit` yoctoNEAR from the account's own balance. Only the CTOad contract can
+    /// call this, after its `ctoad_call` has checked that the caller holds that CTOad right now.
+    /// The account must be ready. Fees it has earned reach it through `sweep`. Returns the
+    /// call's result.
+    pub fn ctoad_execute(
+        &self,
+        token_id: String,
+        receiver_id: AccountId,
+        method_name: String,
+        args: String,
+        deposit: U128,
+        gas: U64,
+    ) -> Promise {
+        require!(
+            env::predecessor_account_id() == self.config.ctoad_contract_id,
+            "Only the CTOad contract can make a CTOad account call other contracts"
+        );
+        let n = self.parse_ctoad(&token_id);
+        require!(self.ctoad_account_ready(n), format!("CTOad #{n} has no account yet"));
+        events::emit(
+            "ctoad_execute",
+            json!({ "token_id": token_id, "receiver_id": receiver_id, "method_name": method_name }),
+        );
+        let call = AccountCall {
+            receiver_id,
+            method_name,
+            args: args.into_bytes(),
+            deposit: deposit.0,
+            gas: gas.0,
+        };
+        Promise::new(self.ctoad_account(n)).function_call_weight(
+            "execute".to_string(),
+            borsh::to_vec(&call).unwrap(),
+            NearToken::from_yoctonear(0),
+            Gas::from_gas(gas.0).saturating_add(GAS_FOR_ACCOUNT_EXECUTE),
+            GasWeight(1),
+        )
     }
 
     /// Sends the deployer's pre-takeover fees to `owner_id`. Anyone can call it, but the money
