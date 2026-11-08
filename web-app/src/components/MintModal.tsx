@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 
 import { TOKEN_CONTRACT } from "@/config";
 import { nftTokensForOwner } from "@/lib/cto";
+import { useCtoad } from "@/hooks/useCto";
 import { formatNear } from "@/lib/near";
-import { Frog } from "@/components/Frog";
+import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 
 /** `sinceMs`: only CTOads issued after this time count, so an older CTOad isn't mistaken for the new one. */
 export type MintMoment = { accountId: string; tokenId: string | null; loss: string; sinceMs: number };
@@ -14,6 +15,7 @@ export type MintMoment = { accountId: string; tokenId: string | null; loss: stri
 /** "You got rekt, here's your CTOad." Shown after a sell that earned one. */
 export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: () => void }) {
   const [tokenId, setTokenId] = useState(moment.tokenId);
+  const { data: token } = useCtoad(tokenId);
 
   // The mint lands a block or two after the sell. If the transaction didn't include it, poll for it.
   useEffect(() => {
@@ -49,13 +51,14 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
         <h2 className="mt-1 text-2xl font-bold">Here&apos;s your CTOad{tokenId ? ` #${tokenId}` : ""}</h2>
         <div className="mx-auto my-5 aspect-square w-48 overflow-hidden rounded-xl">
           {tokenId ? (
-            <Frog id={Number(tokenId)} className="h-full w-full" />
+            <CtoadImage token={token ?? undefined} className="h-full w-full" />
           ) : (
             <div className="flex h-full w-full animate-pulse items-center justify-center bg-white/5 text-sm text-white/50">
               Minting…
             </div>
           )}
         </div>
+        {token && <CtoadTraits token={token} className="mx-auto mb-4 w-fit text-left text-sm" />}
         <p className="text-sm text-white/70">
           You lost <span className="font-semibold text-rekt">{formatNear(moment.loss)} NEAR</span> on that sell.
           {tokenId && (

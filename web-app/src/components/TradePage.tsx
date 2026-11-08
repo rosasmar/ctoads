@@ -4,9 +4,9 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useCallback, useEffect, useState } from "react";
 
 import { TOKEN_CONTRACT } from "@/config";
-import { Frog } from "@/components/Frog";
+import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
 import { MintModal, type MintMoment } from "@/components/MintModal";
-import { useBuyQuote, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
+import { useBuyQuote, useCtoad, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
 import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
 import { eventsFrom, formatCto, formatNear, parseCto, parseNear, txStatus } from "@/lib/near";
 
@@ -111,11 +111,18 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
       </div>
       <div className="hidden grid-cols-2 gap-2 md:grid">
         {[1, 2, 3, 4].map((id) => (
-          <Frog key={id} id={id} className="h-24 w-24 rounded-xl" />
+          <HeroCtoad key={id} id={id} minted={minted} />
         ))}
       </div>
     </section>
   );
+}
+
+/** One of the first four CTOads, or a "?" until it's minted. */
+function HeroCtoad({ id, minted }: { id: number; minted: number }) {
+  const { data: token } = useCtoad(id <= minted ? String(id) : null);
+  if (id > minted) return <UnmintedCtoad className="h-24 w-24 rounded-xl text-2xl" />;
+  return <CtoadImage token={token ?? undefined} className="h-24 w-24 rounded-xl" />;
 }
 
 function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {
@@ -274,7 +281,7 @@ function SellForm({ onSellOutcome }: { onSellOutcome: (outcome: unknown, account
           </dl>
           {quote.earns_ctoad ? (
             <div className="flex items-center gap-3 rounded-xl border border-frog/40 bg-frog/10 p-3">
-              {nextId && <Frog id={nextId} className="h-12 w-12 shrink-0 rounded-lg" />}
+              <UnmintedCtoad className="h-12 w-12 shrink-0 rounded-lg text-xl" />
               <p className="text-sm">
                 <span className="font-semibold text-frog">This sell earns CTOad #{nextId}.</span>{" "}
                 <span className="text-white/70">Getting rekt has never paid this well.</span>

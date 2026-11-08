@@ -61,7 +61,7 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
   of the art.
 - **Images.** When a CTOad is read, the contract stacks its layers into one
   SVG and returns it in `media` as a `data:` URI, with the traits in
-  `extra`. Nothing is hosted anywhere else.
+  `extra`. Nothing is hosted anywhere else. Meteor shows it in its NFT tab.
 - **Randomness.** Traits use NEAR's block random seed, mixed with the token
   ID. That's enough for cartoon traits, but a validator could in theory
   influence it, so it isn't strong enough for rare traits worth real money.
@@ -131,7 +131,8 @@ testnet NEAR. See
 
 [`web-app`](web-app) is a Next.js frontend for the deployed contracts:
 trade $CTO, see whether a sell earns a CTOad, the mint moment, a gallery
-of every CTOad, claiming, and voting on the treasury. See
+of every CTOad with its on-chain image and traits, claiming, and voting on
+the treasury. See
 [web-app/README.md](web-app/README.md).
 
 ## Team

@@ -65,7 +65,10 @@ export type NftToken = {
   } | null;
 };
 
-export type CtoadExtra = { loss?: string; first_owner?: string; account?: string };
+/** One of a CTOad's layers, picked at mint. Matches `Trait` in contracts/ctoad-nft/src/art.rs. */
+export type Trait = { category: string; name: string };
+
+export type CtoadExtra = { loss?: string; first_owner?: string; account?: string; traits?: Trait[] };
 
 export type ProposalStatus = "Open" | "Passed" | "Failed" | "Executed";
 
@@ -94,8 +97,7 @@ export const getCtoadAccount = (tokenId: string) =>
   view<CtoadAccount>(TOKEN_CONTRACT, "get_ctoad_account", { token_id: tokenId });
 
 export const nftTotalSupply = async () => Number(await view<string>(NFT_CONTRACT, "nft_total_supply"));
-export const nftTokens = (fromIndex: number, limit: number) =>
-  view<NftToken[]>(NFT_CONTRACT, "nft_tokens", { from_index: String(fromIndex), limit });
+export const nftToken = (tokenId: string) => view<NftToken | null>(NFT_CONTRACT, "nft_token", { token_id: tokenId });
 export const nftTokensForOwner = (accountId: string) =>
   view<NftToken[]>(NFT_CONTRACT, "nft_tokens_for_owner", { account_id: accountId, from_index: "0", limit: 500 });
 

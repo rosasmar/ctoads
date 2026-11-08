@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED } from "@/config";
-import { getConfig, getHolder, getMarket, getProposals, quoteBuy, quoteSell } from "@/lib/cto";
+import { getConfig, getHolder, getMarket, getProposals, nftToken, nftTokensForOwner, quoteBuy, quoteSell } from "@/lib/cto";
 
 /** Any valid account ID works for previews when nobody is signed in. */
 const GUEST = "guest.near";
@@ -20,6 +20,18 @@ export function useTokenConfig() {
 /** Every proposal, oldest first. Refreshes so votes and closing periods show up on their own. */
 export function useProposals() {
   return useSWR(CONFIGURED ? "proposals" : null, () => getProposals(), { refreshInterval: 5_000 });
+}
+
+/** One CTOad by its number, with its image and traits. `null` loads nothing. */
+export function useCtoad(tokenId: string | null) {
+  return useSWR(CONFIGURED && tokenId ? ["ctoad", tokenId] : null, ([, id]) => nftToken(id));
+}
+
+/** Every CTOad `accountId` holds, lowest number first. */
+export function useOwnedCtoads(accountId: string | null) {
+  return useSWR(CONFIGURED && accountId ? ["mine", accountId] : null, async ([, id]) =>
+    (await nftTokensForOwner(id)).sort((a, b) => Number(a.token_id) - Number(b.token_id)),
+  );
 }
 
 export function useHolder(accountId: string | null) {
