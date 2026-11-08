@@ -81,7 +81,8 @@ function Backpack({ id, holder }: { id: string; holder: string }) {
         <Row
           label="$CTO"
           value={bag ? `${formatCto(balance)} $CTO` : "…"}
-          note={worth ? `worth about ${formatNear(worth.near_out)} NEAR` : undefined}
+          // The quote keeps its last value after a sell empties the bag, so check the bag too.
+          note={worth && balance > 0n ? `worth about ${formatNear(worth.near_out)} NEAR` : undefined}
         />
       </dl>
       {signedAccountId === holder && funds?.account.state === "Ready" && (
