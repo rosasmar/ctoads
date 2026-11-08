@@ -6,7 +6,9 @@ Sell $CTO at a big enough loss and you mint a CTOad NFT. Once the last
 CTOad is minted, the deployer's cut ends: trading fees go to CTOad holders
 and to a treasury they vote on.
 
-Every CTOad has its own NEAR account, and whoever holds the NFT controls it.
+Every CTOad has its own NEAR account, and whoever holds the NFT controls it:
+it collects the CTOad's fees, and it can call other contracts, such as buying
+$CTO with those fees. Selling the CTOad hands over everything in its account.
 Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 
 ## Contracts
@@ -15,7 +17,7 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 |---|---|---|
 | $CTO token | [`contracts/cto-token`](contracts/cto-token) | NEP-141 token that trades on its own bonding curve, tracks each wallet's cost basis, and mints CTOads for losing sells. |
 | CTOad NFT | [`contracts/ctoad-nft`](contracts/ctoad-nft) | Capped NEP-171 collection. Only the token contract can mint. Holders claim fees and vote on the treasury here. Stores the art and builds each CTOad's image. |
-| CTOad account | [`contracts/ctoad-account`](contracts/ctoad-account) | Small wallet contract every CTOad's account runs. It has no keys, and only the token contract can withdraw from it. |
+| CTOad account | [`contracts/ctoad-account`](contracts/ctoad-account) | Small wallet contract every CTOad's account runs. It has no keys. Only the token contract can use it: to pay out fees, or to make a call for the CTOad's holder. |
 
 ## How it works
 
@@ -39,6 +41,13 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
   go into its account, and the account sends its whole balance to the
   holder. A CTOad without an account is paid directly. Fees belong to the
   CTOad, not the wallet, so unclaimed fees move with the NFT when it's sold.
+- **Account calls.** The holder can make their CTOad's account call any
+  contract with `ctoad_call` on the NFT contract, attaching NEAR from the
+  account's balance. The NFT contract checks the holder at the moment of the
+  call, so a past holder or an approved marketplace can't. The call passes
+  through the token contract to the account, which can only make function
+  calls: it can never get keys or new code. Fees reach the account through
+  `sweep`.
 - **Treasury.** The token contract holds the treasury's NEAR. Only the NFT
   contract can pay it out, and only for a proposal that passed.
 - **Proposals.** Once every CTOad is minted, any holder can propose sending
@@ -78,8 +87,10 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 | token | `create_ctoad_account({ token_id })` | Opens a CTOad's account if the deployer's fees couldn't. Attach `ctoad_account_deposit`. |
 | token | `sweep({ token_ids })` | Moves earned fees into up to 50 CTOad accounts. Anyone can call it. |
 | token | `get_ctoad_account({ token_id })` | A CTOad's account name, state and fees not yet swept. |
+| token | `ctoad_execute({ token_id, receiver_id, method_name, args, deposit, gas })` | Only the NFT contract can call it, from `ctoad_call`. |
 | token | `treasury_payout({ receiver_id, amount })` | Only the NFT contract can call it, from `execute`. |
 | NFT | `claim({ token_ids })` | Up to 20 CTOads you own. Attach 300 Tgas. |
+| NFT | `ctoad_call({ token_id, receiver_id, method_name, args, deposit, gas })` | Holder only. Makes the CTOad's account call `method_name` on `receiver_id`. `args` is a string, usually JSON. `deposit` comes from the account. Attach 1 yoctoNEAR and `gas` plus about 15 Tgas. |
 | NFT | `propose({ description, receiver_id, amount })` | Description up to 280 bytes. Attach 0.01 NEAR for storage; the rest is refunded. |
 | NFT | `vote({ proposal_id, token_ids, approve })` | Up to 100 CTOads you own. Votes are final. |
 | NFT | `execute({ proposal_id })` | Pays out a passed proposal. Anyone can call it. Attach 50 Tgas. |
