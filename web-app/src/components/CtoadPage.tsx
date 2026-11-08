@@ -1,5 +1,6 @@
 "use client";
 
+import { actionCreators } from "@near-js/transactions";
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
 import { useState } from "react";
@@ -115,7 +116,7 @@ function BackpackActions(props: {
   onDone: () => void;
 }) {
   const { id, available, unswept, bag, sellQuote, onDone } = props;
-  const { callFunction } = useWalletSelector();
+  const { signedAccountId, callFunction, signAndSendTransactions } = useWalletSelector();
   const account = ctoadAccountId(id);
   const [input, setInput] = useState("");
   const amount = parseNear(input);
@@ -140,30 +141,46 @@ function BackpackActions(props: {
     }
   };
 
-  const ctoadCall = (method: string, args: object, deposit: bigint, gas: bigint) =>
-    callFunction({
-      contractId: NFT_CONTRACT,
-      method: "ctoad_call",
-      args: ctoadCallArgs(id, TOKEN_CONTRACT, method, args, deposit, gas),
-      gas: gas + TX.ctoadCall.extraGas,
-      deposit: TX.ctoadCall.deposit,
-    });
+  /** A `ctoad_call` on the NFT contract that makes this CTOad's account call the token contract. */
+  const ctoadCall = (method: string, args: object, deposit: bigint, gas: bigint) => ({
+    contractId: NFT_CONTRACT,
+    method: "ctoad_call",
+    args: ctoadCallArgs(id, TOKEN_CONTRACT, method, args, deposit, gas),
+    gas: gas + TX.ctoadCall.extraGas,
+    deposit: TX.ctoadCall.deposit,
+  });
 
   const buy = () =>
     run(async () => {
-      if (!amount || !buyQuote) return;
-      if (needsSweep) {
-        await callFunction({ contractId: TOKEN_CONTRACT, method: "sweep", args: { token_ids: [id] }, gas: TX.sweep.gas });
-      }
+      if (!amount || !buyQuote || !signedAccountId) return;
       const min = withSlippage(BigInt(buyQuote.tokens_out));
-      await ctoadCall("buy", { min_tokens_out: min.toString() }, amount, TX.buy.gas);
+      const call = ctoadCall("buy", { min_tokens_out: min.toString() }, amount, TX.buy.gas);
+      if (!needsSweep) {
+        await callFunction(call);
+        return;
+      }
+      // One wallet request for both, so a popup wallet opens once, right on the click.
+      // Wallets send them in order: the sweep lands before the buy.
+      const sweep = actionCreators.functionCall("sweep", { token_ids: [id] }, TX.sweep.gas, 0n);
+      await signAndSendTransactions({
+        transactions: [
+          { signerId: signedAccountId, receiverId: TOKEN_CONTRACT, actions: [sweep] },
+          {
+            signerId: signedAccountId,
+            receiverId: call.contractId,
+            actions: [actionCreators.functionCall(call.method, call.args, call.gas, call.deposit)],
+          },
+        ],
+      });
     }, `CTOad #${id} bought $CTO.`);
 
   const sell = () =>
     run(async () => {
       if (!sellQuote) return;
       const min = withSlippage(BigInt(sellQuote.near_out));
-      await ctoadCall("sell", { amount: bag.toString(), min_near_out: min.toString() }, TX.sell.deposit, TX.sell.gas);
+      await callFunction(
+        ctoadCall("sell", { amount: bag.toString(), min_near_out: min.toString() }, TX.sell.deposit, TX.sell.gas),
+      );
     }, `CTOad #${id} sold its $CTO. The NEAR is in its backpack, ready to claim.`);
 
   return (
@@ -188,7 +205,8 @@ function BackpackActions(props: {
       {tooMuch && <p className="text-sm text-rekt">The backpack doesn&apos;t hold that much NEAR.</p>}
       {needsSweep && !tooMuch && (
         <p className="text-xs text-white/50">
-          This first moves the fees waiting outside into the backpack, so your wallet asks twice.
+          This also moves the fees waiting outside into the backpack first, so your wallet asks you to approve two
+          transactions at once.
         </p>
       )}
       <button
