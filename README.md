@@ -61,7 +61,7 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
   of the art.
 - **Images.** When a CTOad is read, the contract stacks its layers into one
   SVG and returns it in `media` as a `data:` URI, with the traits in
-  `extra`. Nothing is hosted anywhere else.
+  `extra`. Nothing is hosted anywhere else. Meteor shows it in its NFT tab.
 - **Randomness.** Traits use NEAR's block random seed, mixed with the token
   ID. That's enough for cartoon traits, but a validator could in theory
   influence it, so it isn't strong enough for rare traits worth real money.
