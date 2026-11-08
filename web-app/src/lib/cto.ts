@@ -65,7 +65,10 @@ export type NftToken = {
   } | null;
 };
 
-export type CtoadExtra = { loss?: string; first_owner?: string; account?: string };
+/** One of a CTOad's layers, picked at mint. Matches `Trait` in contracts/ctoad-nft/src/art.rs. */
+export type Trait = { category: string; name: string };
+
+export type CtoadExtra = { loss?: string; first_owner?: string; account?: string; traits?: Trait[] };
 
 export type ProposalStatus = "Open" | "Passed" | "Failed" | "Executed";
 

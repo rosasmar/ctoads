@@ -7,7 +7,7 @@ import useSWR from "swr";
 import { TOKEN_CONTRACT } from "@/config";
 import { nftToken, nftTokensForOwner } from "@/lib/cto";
 import { formatNear } from "@/lib/near";
-import { CtoadImage } from "@/components/CtoadImage";
+import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 
 /** `sinceMs`: only CTOads issued after this time count, so an older CTOad isn't mistaken for the new one. */
 export type MintMoment = { accountId: string; tokenId: string | null; loss: string; sinceMs: number };
@@ -58,6 +58,7 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
             </div>
           )}
         </div>
+        {token && <CtoadTraits token={token} className="mx-auto mb-4 w-fit text-left text-sm" />}
         <p className="text-sm text-white/70">
           You lost <span className="font-semibold text-rekt">{formatNear(moment.loss)} NEAR</span> on that sell.
           {tokenId && (

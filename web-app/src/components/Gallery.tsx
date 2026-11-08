@@ -3,7 +3,7 @@
 import useSWR from "swr";
 
 import { CONFIGURED, EXPLORER_URL, TOKEN_CONTRACT } from "@/config";
-import { CtoadImage } from "@/components/CtoadImage";
+import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 import { useMarket } from "@/hooks/useCto";
 import { ctoadExtra, nftTokens, nftTotalSupply, type NftToken } from "@/lib/cto";
 import { formatNear, shortAccount } from "@/lib/near";
@@ -44,6 +44,7 @@ export function Gallery() {
               <div className="space-y-0.5 p-3 text-xs">
                 <p className="text-sm font-semibold">CTOad #{t.token_id}</p>
                 {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
+                <CtoadTraits token={t} className="py-1" />
                 <p className="text-white/50">
                   Held by <span className="font-mono">{shortAccount(t.owner_id, 8)}</span>
                 </p>
