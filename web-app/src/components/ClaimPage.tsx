@@ -5,7 +5,7 @@ import { useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED, EXPLORER_URL, NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
-import { Frog } from "@/components/Frog";
+import { CtoadImage } from "@/components/CtoadImage";
 import { useMarket, useTokenConfig } from "@/hooks/useCto";
 import { ctoadClaimable, nftTokensForOwner, TX } from "@/lib/cto";
 import { formatNear } from "@/lib/near";
@@ -114,7 +114,7 @@ export function ClaimPage() {
           const c = claimable?.find((x) => x.id === id);
           return (
             <div key={id} className="flex gap-4 rounded-xl border border-white/10 bg-panel p-3">
-              <Frog id={Number(id)} className="h-20 w-20 shrink-0 rounded-lg" />
+              <CtoadImage token={tokens?.find((t) => t.token_id === id)} className="h-20 w-20 shrink-0 rounded-lg" />
               <div className="min-w-0 space-y-1 text-sm">
                 <p className="font-semibold">CTOad #{id}</p>
                 {c ? (

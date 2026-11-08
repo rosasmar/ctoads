@@ -3,7 +3,7 @@
 import useSWR from "swr";
 
 import { CONFIGURED, EXPLORER_URL, TOKEN_CONTRACT } from "@/config";
-import { Frog } from "@/components/Frog";
+import { CtoadImage } from "@/components/CtoadImage";
 import { useMarket } from "@/hooks/useCto";
 import { ctoadExtra, nftTokens, nftTotalSupply, type NftToken } from "@/lib/cto";
 import { formatNear, shortAccount } from "@/lib/near";
@@ -40,7 +40,7 @@ export function Gallery() {
           const extra = ctoadExtra(t);
           return (
             <div key={t.token_id} className="overflow-hidden rounded-xl border border-white/10 bg-panel">
-              <Frog id={Number(t.token_id)} className="aspect-square w-full" />
+              <CtoadImage token={t} className="aspect-square w-full" />
               <div className="space-y-0.5 p-3 text-xs">
                 <p className="text-sm font-semibold">CTOad #{t.token_id}</p>
                 {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}

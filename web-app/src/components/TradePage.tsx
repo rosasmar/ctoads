@@ -2,12 +2,13 @@
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useCallback, useEffect, useState } from "react";
+import useSWR from "swr";
 
-import { TOKEN_CONTRACT } from "@/config";
-import { Frog } from "@/components/Frog";
+import { CONFIGURED, TOKEN_CONTRACT } from "@/config";
+import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
 import { MintModal, type MintMoment } from "@/components/MintModal";
 import { useBuyQuote, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
-import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
+import { nftTokens, TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
 import { eventsFrom, formatCto, formatNear, parseCto, parseNear, txStatus } from "@/lib/near";
 
 export function TradePage() {
@@ -76,6 +77,7 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
   const minted = market?.ctoads_minted ?? 0;
   const max = market?.max_ctoads ?? 500;
   const pct = Math.min(100, (minted / max) * 100);
+  const { data: first } = useSWR(CONFIGURED ? "firstCtoads" : null, () => nftTokens(0, 4), { refreshInterval: 15_000 });
   return (
     <section className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
       <div>
@@ -110,9 +112,13 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
         </div>
       </div>
       <div className="hidden grid-cols-2 gap-2 md:grid">
-        {[1, 2, 3, 4].map((id) => (
-          <Frog key={id} id={id} className="h-24 w-24 rounded-xl" />
-        ))}
+        {[0, 1, 2, 3].map((i) =>
+          first?.[i] ? (
+            <CtoadImage key={i} token={first[i]} className="h-24 w-24 rounded-xl" />
+          ) : (
+            <UnmintedCtoad key={i} className="h-24 w-24 rounded-xl text-2xl" />
+          ),
+        )}
       </div>
     </section>
   );
@@ -274,7 +280,7 @@ function SellForm({ onSellOutcome }: { onSellOutcome: (outcome: unknown, account
           </dl>
           {quote.earns_ctoad ? (
             <div className="flex items-center gap-3 rounded-xl border border-frog/40 bg-frog/10 p-3">
-              {nextId && <Frog id={nextId} className="h-12 w-12 shrink-0 rounded-lg" />}
+              <UnmintedCtoad className="h-12 w-12 shrink-0 rounded-lg text-xl" />
               <p className="text-sm">
                 <span className="font-semibold text-frog">This sell earns CTOad #{nextId}.</span>{" "}
                 <span className="text-white/70">Getting rekt has never paid this well.</span>
