@@ -6,6 +6,8 @@ export type Email = {
   to: string;
   subject: string;
   text: string;
+  /** Optional HTML version; `text` stays as the fallback for plain-text mail apps. */
+  html?: string;
   attachment?: { filename: string; bytes: Uint8Array };
 };
 
@@ -25,6 +27,7 @@ export async function sendEmail(email: Email, idempotencyKey: string): Promise<v
       to: email.to,
       subject: email.subject,
       text: email.text,
+      html: email.html,
       attachments: email.attachment
         ? [{ filename: email.attachment.filename, content: Buffer.from(email.attachment.bytes).toString("base64") }]
         : undefined,

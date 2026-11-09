@@ -62,7 +62,18 @@ export const REMOVE_PATH = "/alerts/remove";
 
 /** The same for email: emails stop on the Alerts page, where the address can be deleted. */
 export const alertEmailText = (text: string, from: string, alertsUrl: string) =>
-  `${text}\n\n- ${from}, a CTOad holder.\n\nTo stop email alerts: ${alertsUrl}`;
+  `${text}\n\n- ${from}, a CTOad holder\n\nDon't want these anymore? You can turn off email alerts anytime on the Alerts page: ${alertsUrl}`;
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/** The HTML version: a small label, then the alert large and bold. Everything a holder wrote is escaped. */
+export const alertEmailHtml = (text: string, from: string, alertsUrl: string) => `<div style="font-family:system-ui,sans-serif;max-width:560px">
+<p style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#16a34a;margin:0 0 8px">CTOad alert</p>
+<p style="font-size:22px;font-weight:700;line-height:1.35;margin:0 0 12px;white-space:pre-wrap">${escapeHtml(text)}</p>
+<p style="font-size:14px;color:#6b7280;margin:0 0 32px">${escapeHtml(from)}, a CTOad holder</p>
+<p style="font-size:13px;color:#9ca3af;margin:0">Don't want these anymore? You can turn off email alerts anytime on the <a href="${escapeHtml(alertsUrl)}" style="color:#16a34a">Alerts page</a>.</p>
+</div>`;
 
 /**
  * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,

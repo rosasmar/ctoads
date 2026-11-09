@@ -8,6 +8,7 @@
 
 import { NextRequest } from "next/server";
 import {
+  alertEmailHtml,
   alertEmailText,
   alertText,
   DAILY_ALERT_LIMIT,
@@ -115,6 +116,7 @@ export async function POST(request: NextRequest) {
     }
 
     const emailBody = alertEmailText(text, sender, `${request.nextUrl.origin}/alerts`);
+    const emailHtml = alertEmailHtml(text, sender, `${request.nextUrl.origin}/alerts`);
     for (const r of emails) {
       const [result] = await Promise.allSettled([
         sendEmail(
@@ -122,6 +124,7 @@ export async function POST(request: NextRequest) {
             to: r.email!,
             subject: `CTOads alert from ${sender}`,
             text: emailBody,
+            html: emailHtml,
             attachment: image && key ? { filename: key.split("/")[1], bytes: image.bytes } : undefined,
           },
           `alert-email-${logged.id}-${r.account_id}`,
