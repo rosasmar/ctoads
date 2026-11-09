@@ -143,7 +143,9 @@ testnet NEAR. See
 [`web-app`](web-app) is a Next.js frontend for the deployed contracts:
 trade $CTO, see whether a sell earns a CTOad, the mint moment, a gallery
 of every CTOad with its on-chain image and traits, each CTOad's page with
-its backpack, claiming, and voting on the treasury. See
+its backpack, claiming, and voting on the treasury. CTOad holders can also
+sign up a phone number for alerts, proving with a wallet signature that they
+hold a CTOad. Sign-ups are stored in Supabase. See
 [web-app/README.md](web-app/README.md).
 
 ## Team
