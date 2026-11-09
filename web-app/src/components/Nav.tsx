@@ -3,6 +3,7 @@
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Suspense } from "react";
 
 import { CONFIGURED, NETWORK } from "@/config";
 import { shortAccount } from "@/lib/near";
@@ -15,7 +16,6 @@ const LINKS = [
 ];
 
 export function Nav() {
-  const pathname = usePathname();
   const { signedAccountId, signIn, signOut } = useWalletSelector();
 
   return (
@@ -25,15 +25,11 @@ export function Nav() {
           <span className="text-frog">$CTO</span>
         </Link>
         <div className="flex gap-4 text-sm">
-          {LINKS.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              className={pathname === l.href ? "text-white" : "text-white/50 hover:text-white/80"}
-            >
-              {l.label}
-            </Link>
-          ))}
+          {/* The current page is only known per request on pages like /ctoads/1, so the
+              highlight streams in. Until then, no link is highlighted. */}
+          <Suspense fallback={<NavLinks pathname={null} />}>
+            <CurrentNavLinks />
+          </Suspense>
         </div>
         <div className="ml-auto flex items-center gap-3 text-sm">
           {NETWORK === "testnet" && (
@@ -61,4 +57,20 @@ export function Nav() {
       )}
     </header>
   );
+}
+
+function CurrentNavLinks() {
+  return <NavLinks pathname={usePathname()} />;
+}
+
+/** `/ctoads/1` highlights CTOads. */
+function NavLinks({ pathname }: { pathname: string | null }) {
+  return LINKS.map((l) => {
+    const current = pathname === l.href || (l.href !== "/" && !!pathname?.startsWith(`${l.href}/`));
+    return (
+      <Link key={l.href} href={l.href} className={current ? "text-white" : "text-white/50 hover:text-white/80"}>
+        {l.label}
+      </Link>
+    );
+  });
 }

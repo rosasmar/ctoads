@@ -108,6 +108,9 @@ export const getProposal = (proposalId: number) =>
 export const hasVoted = (proposalId: number, tokenId: string) =>
   view<boolean>(NFT_CONTRACT, "has_voted", { proposal_id: proposalId, token_id: tokenId });
 
+/** CTOad `tokenId`'s own account, e.g. `ctoad-1.cto.near`. It exists once the CTOad is minted. */
+export const ctoadAccountId = (tokenId: string) => `ctoad-${tokenId}.${TOKEN_CONTRACT}`;
+
 /** What a holder could claim for one CTOad right now: unswept fees + its account's balance. */
 export async function ctoadClaimable(tokenId: string) {
   const account = await getCtoadAccount(tokenId);
@@ -138,7 +141,36 @@ export const TX = {
   /** Up to 100 CTOads per vote. */
   vote: { gas: 30_000_000_000_000n, batch: 100 },
   execute: { gas: 50_000_000_000_000n },
+  /** Moves earned fees into CTOad accounts. Anyone can call it. */
+  sweep: { gas: 50_000_000_000_000n },
+  /**
+   * The NFT contract's `ctoad_call`: 1 yoctoNEAR, and the call's own gas plus room for the hops
+   * through the NFT contract, the token contract and the CTOad's account.
+   */
+  ctoadCall: { extraGas: 50_000_000_000_000n, deposit: 1n },
 };
+
+/**
+ * Arguments for the NFT contract's `ctoad_call`: makes CTOad `tokenId`'s account call `method` on
+ * `receiverId` with `args`, attaching `deposit` yoctoNEAR from the account's own balance.
+ */
+export function ctoadCallArgs(
+  tokenId: string,
+  receiverId: string,
+  method: string,
+  args: object,
+  deposit: bigint,
+  gas: bigint,
+) {
+  return {
+    token_id: tokenId,
+    receiver_id: receiverId,
+    method_name: method,
+    args: JSON.stringify(args),
+    deposit: deposit.toString(),
+    gas: gas.toString(),
+  };
+}
 
 /**
  * Explains why a sell won't earn a CTOad, or returns null if it will. Mirrors the checks in the

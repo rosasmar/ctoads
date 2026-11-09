@@ -249,7 +249,7 @@ Signing the same `ctoad_call` from an account that doesn't hold CTOad #1 fails w
 
 ## 5. Run the frontend
 
-The web app does steps 1 to 12 of step 4 in the browser.
+The web app does everything in step 4 in the browser.
 
 ```sh
 cd web-app
@@ -266,6 +266,7 @@ Connect a testnet wallet, such as Meteor or MyNearWallet. Then:
 3. Sell. The mint moment pops up.
 4. See your CTOad on the CTOads and Claim pages.
 5. Once every CTOad is minted, propose, vote and execute on the Vote page.
+6. Open a CTOad's page from the gallery. As its holder, make its backpack buy $CTO, or sell its bag.
 
 See [web-app/README.md](web-app/README.md) for details.
 

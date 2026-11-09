@@ -4,10 +4,11 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import useSWR from "swr";
 
-import { CONFIGURED, EXPLORER_URL, NFT_CONTRACT } from "@/config";
+import { CONFIGURED, NFT_CONTRACT } from "@/config";
+import { AccountLink } from "@/components/AccountLink";
 import { useMarket, useNow, useProposals } from "@/hooks/useCto";
 import { hasVoted, nftTokensForOwner, TX, type Proposal, type ProposalStatus } from "@/lib/cto";
-import { formatNear, parseNear, shortAccount } from "@/lib/near";
+import { formatNear, parseNear } from "@/lib/near";
 
 /** Same limit as MAX_DESCRIPTION_LEN in voting.rs, in bytes. */
 const MAX_DESCRIPTION_BYTES = 280;
@@ -310,14 +311,6 @@ function ProposalCard({
       {busy && <p className="text-sm text-white/70">Confirm in your wallet…</p>}
       {status && <p className="text-sm text-white/70">{status}</p>}
     </div>
-  );
-}
-
-function AccountLink({ id }: { id: string }) {
-  return (
-    <a href={`${EXPLORER_URL}/address/${id}`} target="_blank" rel="noreferrer" className="font-mono hover:underline">
-      {shortAccount(id)}
-    </a>
   );
 }
 
