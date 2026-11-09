@@ -1,11 +1,13 @@
 // Sending an alert: a CTOad holder texts every other signed-up holder, from the msgbubbles number.
 //   GET  ?account=…        how many alerts that account can still send today
 //   POST { proof, text }   send one; the proof signs the exact text (lib/alerts.ts `sendAction`)
-// Only subscribers who still hold a CTOad get it, and never the sender.
+// OpenAI's moderation checks the text first. Only subscribers who still hold a CTOad get it, and
+// never the sender.
 
 import { NextRequest } from "next/server";
 import { alertText, DAILY_ALERT_LIMIT, MAX_ALERT_LENGTH, REMOVE_PATH, sendAction } from "@/lib/alerts";
 import { ctoadHolders } from "@/lib/cto";
+import { moderate } from "@/lib/moderation";
 import { sendText } from "@/lib/msgbubbles";
 import { supabase } from "@/lib/supabase";
 import { errorResponse, serverError } from "@/lib/api";
@@ -47,6 +49,11 @@ export async function POST(request: NextRequest) {
     const sender = await verifyHolder(body.proof, sendAction(text));
     const remaining = await remainingToday(sender);
     if (remaining === 0) return errorResponse(`You've sent ${DAILY_ALERT_LIMIT} alerts in the last 24 hours. Try again later.`, 429);
+
+    const moderation = await moderate(text);
+    if (moderation.flagged) {
+      return errorResponse(`This alert wasn't sent: it was flagged for ${moderation.categories.join(", ")}. See the terms.`, 422);
+    }
 
     const [holders, subscribers] = await Promise.all([
       ctoadHolders(),
