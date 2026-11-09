@@ -16,6 +16,21 @@ export function alertsMessage(action: string, signedAt: number): string {
 /** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
 export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
 export const UNSUBSCRIBE_ACTION = "Stop alerts";
+export const sendAction = (text: string) => `Send this alert to every signed-up holder:\n${text}`;
+
+/** Longest alert a holder can send, and how many each account can send in 24 hours. */
+export const MAX_ALERT_LENGTH = 500;
+export const DAILY_ALERT_LIMIT = 3;
+
+/**
+ * What each recipient gets: the alert, who sent it, and a link to stop. The number is outbound
+ * only, so replies (like STOP) never reach us.
+ */
+export const alertText = (text: string, from: string, removeUrl: string) =>
+  `${text}\n\n- ${from}, a CTOad holder. Stop these alerts: ${removeUrl}`;
+
+/** The page where anyone can remove their number, wallet or not. */
+export const REMOVE_PATH = "/alerts/remove";
 
 /**
  * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,
@@ -52,4 +67,16 @@ export async function signAlertsAction(
   const signed = await signMessage({ message, recipient: ALERTS_RECIPIENT, nonce, callbackUrl });
   if (!signed) throw new Error("This wallet didn't return a signature. Try Meteor, Intear, HERE or MyNearWallet.");
   return { ...signed, nonce: nonce.toString("base64"), signedAt, callbackUrl };
+}
+
+/** Calls /api/alerts`path` from the browser and returns its JSON, or throws its error message. */
+export async function alertsApi<T>(method: string, path: string, init?: { query?: string; body?: object }): Promise<T> {
+  const res = await fetch(`/api/alerts${path}${init?.query ?? ""}`, {
+    method,
+    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`);
+  return json;
 }

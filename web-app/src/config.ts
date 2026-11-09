@@ -16,6 +16,9 @@ export const RPC_URL =
 
 export const EXPLORER_URL = NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
 
+/** The number alerts are texted from, a msgbubbles number in international format. Empty if alerts can't be sent. */
+export const MSGBUBBLES_NUMBER = process.env.NEXT_PUBLIC_MSGBUBBLES_NUMBER ?? "";
+
 export const CONFIGURED = Boolean(TOKEN_CONTRACT && NFT_CONTRACT);
 
 /** Slippage allowed between the quote and the trade landing on-chain. */

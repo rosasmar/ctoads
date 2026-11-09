@@ -26,6 +26,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.{" "}
             <Link href="/privacy" className="hover:text-white">
               Privacy
+            </Link>{" "}
+            ·{" "}
+            <Link href="/terms" className="hover:text-white">
+              Terms
             </Link>
           </footer>
         </Providers>

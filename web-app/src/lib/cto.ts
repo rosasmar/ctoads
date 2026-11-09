@@ -101,6 +101,16 @@ export const nftToken = (tokenId: string) => view<NftToken | null>(NFT_CONTRACT,
 export const nftTokensForOwner = (accountId: string) =>
   view<NftToken[]>(NFT_CONTRACT, "nft_tokens_for_owner", { account_id: accountId, from_index: "0", limit: 500 });
 
+/** Every account that holds at least one CTOad, read 100 CTOads at a time. */
+export async function ctoadHolders(): Promise<Set<string>> {
+  const holders = new Set<string>();
+  for (let from = 0; ; from += 100) {
+    const page = await view<NftToken[]>(NFT_CONTRACT, "nft_tokens", { from_index: String(from), limit: 100 });
+    page.forEach((t) => holders.add(t.owner_id));
+    if (page.length < 100) return holders;
+  }
+}
+
 export const getProposals = (fromId = 1, limit = 50) =>
   view<Proposal[]>(NFT_CONTRACT, "get_proposals", { from_id: fromId, limit });
 export const getProposal = (proposalId: number) =>

@@ -21,6 +21,16 @@ const NEP413_SCHEMA = {
   },
 } as const;
 
+/** Whether a request body's `proof` has every WalletProof field. */
+export function isProof(value: unknown): value is WalletProof {
+  if (typeof value !== "object" || value === null) return false;
+  const p = value as Record<string, unknown>;
+  return (
+    ["accountId", "publicKey", "signature", "nonce", "callbackUrl"].every((k) => typeof p[k] === "string") &&
+    typeof p.signedAt === "number"
+  );
+}
+
 /** An error whose message is safe to show the user. */
 export class ProofError extends Error {}
 
