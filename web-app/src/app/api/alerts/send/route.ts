@@ -20,7 +20,7 @@ import {
 } from "@/lib/alerts";
 import { ctoadHolders } from "@/lib/cto";
 import { moderate } from "@/lib/moderation";
-import { sendText, stageAttachment } from "@/lib/msgbubbles";
+import { sendText, stageAttachment, textingEnabled } from "@/lib/msgbubbles";
 import { EMAIL_SPACING_MS, sendEmail } from "@/lib/resend";
 import { imageKey, readImage } from "@/lib/s3";
 import { supabase } from "@/lib/supabase";
@@ -85,8 +85,10 @@ export async function POST(request: NextRequest) {
     ]);
     if (subscribers.error) return serverError(subscribers.error);
     const recipients = subscribers.data.filter((s) => s.account_id !== sender && holders.has(s.account_id));
-    const texts = recipients.filter((r) => r.phone && r.channels !== "email");
-    const emails = recipients.filter((r) => r.email && r.channels !== "text");
+    // Without a msgbubbles key, everyone with a verified email gets it by email, whatever they chose.
+    const texting = textingEnabled();
+    const texts = texting ? recipients.filter((r) => r.phone && r.channels !== "email") : [];
+    const emails = recipients.filter((r) => r.email && (!texting || r.channels !== "text"));
 
     const { data: logged, error: logError } = await supabase()
       .from("alert_messages")

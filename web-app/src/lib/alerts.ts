@@ -25,7 +25,14 @@ export const CHANNELS = ["text", "email", "both"] as const;
 export type Channels = (typeof CHANNELS)[number];
 
 /** What /api/alerts says about an account. Never the number or address themselves. */
-export type AlertsStatus = { subscribed: boolean; hasPhone: boolean; hasEmail: boolean; channels: Channels | null };
+export type AlertsStatus = {
+  subscribed: boolean;
+  hasPhone: boolean;
+  hasEmail: boolean;
+  channels: Channels | null;
+  /** False when the server has no msgbubbles key, so alerts only go by email. */
+  textEnabled: boolean;
+};
 
 /** A lowercased email address, or null if it doesn't look like one. */
 export function normalizeEmail(input: string): string | null {

@@ -1,6 +1,7 @@
 // Signing up for alerts. Changes need a signed WalletProof (lib/walletProof.ts).
 //   GET    ?account=…            whether that account is signed up, how, and where alerts go
-//                                 (never the number or address)
+//                                 (never the number or address); without an account, only
+//                                 whether texting is on
 //   POST   { proof, phone }      sign up or change the number; only CTOad holders
 //   PATCH  { proof, channels }   get alerts by text, email or both
 //   DELETE { proof }             stop all alerts and delete the account's details; anyone signed up,
@@ -17,6 +18,7 @@ import {
   UNSUBSCRIBE_ACTION,
   type WalletProof,
 } from "@/lib/alerts";
+import { textingEnabled } from "@/lib/msgbubbles";
 import { supabase } from "@/lib/supabase";
 import { errorResponse, serverError } from "@/lib/api";
 import { isProof, ProofError, verifyHolder, verifySigner } from "@/lib/walletProof";
@@ -33,7 +35,8 @@ async function readBody(request: NextRequest): Promise<{ proof: WalletProof; pho
 
 export async function GET(request: NextRequest) {
   const account = request.nextUrl.searchParams.get("account");
-  if (!account) return errorResponse("Missing account.", 400);
+  // Without an account, only whether texting is on, so pages can describe alerts before sign-in.
+  if (!account) return Response.json({ textEnabled: textingEnabled() });
   try {
     const { data, error: dbError } = await supabase()
       .from(TABLE)
@@ -46,6 +49,7 @@ export async function GET(request: NextRequest) {
       hasPhone: !!data?.phone,
       hasEmail: !!data?.email,
       channels: data?.channels ?? null,
+      textEnabled: textingEnabled(),
     };
     return Response.json(status);
   } catch (e) {

@@ -8,6 +8,7 @@ import useSWR from "swr";
 import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
+import { useTextEnabled } from "@/hooks/useTextEnabled";
 import { MSGBUBBLES_NUMBER } from "@/config";
 import {
   alertsApi,
@@ -28,6 +29,7 @@ const CHANNEL_LABELS: Record<Channels, string> = { text: "Text", email: "Email",
 
 export function AlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
+  const textEnabled = useTextEnabled();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
   const { data: status, error: statusError, mutate } = useSWR(
     signedAccountId ? ["alerts", signedAccountId] : null,
@@ -43,8 +45,8 @@ export function AlertsPage() {
   if (!signedAccountId) {
     return (
       <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
-        <AlertsPitch title="Alerts" />
-        <p className="text-white/60">Connect the wallet that holds your CTOad to sign up for alerts by text or email.</p>
+        <AlertsPitch title="Alerts" textEnabled={textEnabled} />
+        <p className="text-white/60">Connect the wallet that holds your CTOad to sign up for alerts {textEnabled ? "by text or email" : "by email"}.</p>
         <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
           Connect wallet
         </button>
@@ -115,7 +117,7 @@ export function AlertsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <AlertsPitch title="Alerts" />
+      <AlertsPitch title="Alerts" textEnabled={textEnabled} />
       <div className="mx-auto max-w-md space-y-6">
 
       {statusError ? (
@@ -126,13 +128,19 @@ export function AlertsPage() {
             {!status
               ? "Loading…"
               : status.subscribed
-                ? `You're signed up. Alerts go by ${status.channels === "both" ? "text and email" : status.channels}.`
+                ? `You're signed up. Alerts go by ${
+                    !status.textEnabled ? "email" : status.channels === "both" ? "text and email" : status.channels
+                  }.`
                 : "You're not signed up yet."}
-            {MSGBUBBLES_NUMBER && <span className="text-white/50"> Alerts come from {MSGBUBBLES_NUMBER}.</span>}
+            {MSGBUBBLES_NUMBER && status?.textEnabled && (
+              <span className="text-white/50"> Texts come from {MSGBUBBLES_NUMBER}.</span>
+            )}
           </p>
 
           {tokens && !holder ? (
             <p className="text-sm text-white/60">Only CTOad holders can sign up. This wallet holds none.</p>
+          ) : status?.textEnabled === false ? (
+            <p className="text-sm text-white/60">Alerts go by email for now. Add your email below.</p>
           ) : (
             <form
               onSubmit={(e) => {
@@ -220,24 +228,28 @@ export function AlertsPage() {
 
           {status?.subscribed && (
             <div className="space-y-2 border-t border-white/10 pt-4">
-              <p className="text-xs text-white/50">Send my alerts by</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CHANNELS.map((c) => {
-                  const possible = c === "both" ? status.hasPhone && status.hasEmail : c === "text" ? status.hasPhone : status.hasEmail;
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => setChannels(c)}
-                      disabled={busy || !possible || status.channels === c}
-                      className={`rounded-lg px-3 py-1.5 text-sm disabled:cursor-default ${
-                        status.channels === c ? "bg-frog font-semibold text-black" : "bg-white/10 disabled:opacity-40"
-                      }`}
-                    >
-                      {CHANNEL_LABELS[c]}
-                    </button>
-                  );
-                })}
-              </div>
+              {status.textEnabled && (
+                <>
+                  <p className="text-xs text-white/50">Send my alerts by</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CHANNELS.map((c) => {
+                      const possible = c === "both" ? status.hasPhone && status.hasEmail : c === "text" ? status.hasPhone : status.hasEmail;
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => setChannels(c)}
+                          disabled={busy || !possible || status.channels === c}
+                          className={`rounded-lg px-3 py-1.5 text-sm disabled:cursor-default ${
+                            status.channels === c ? "bg-frog font-semibold text-black" : "bg-white/10 disabled:opacity-40"
+                          }`}
+                        >
+                          {CHANNEL_LABELS[c]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2">
                 {status.hasEmail && (
                   <button onClick={removeEmail} disabled={busy} className="text-sm text-white/50 hover:text-white disabled:opacity-40">
@@ -261,9 +273,11 @@ export function AlertsPage() {
         </Link>
       )}
 
-      <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
-        Getting alerts you didn&apos;t sign up for? Remove your number
-      </Link>
+      {textEnabled && (
+        <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
+          Getting alerts you didn&apos;t sign up for? Remove your number
+        </Link>
+      )}
       </div>
     </div>
   );
