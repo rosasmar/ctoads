@@ -24,16 +24,19 @@ export default function Privacy() {
         <h2>Alerts</h2>
         <p>
           If you sign up on <Link href="/alerts" className="text-frog hover:underline">Alerts</Link>, we store your
-          NEAR account name, your phone number, and when you signed up or last changed it. They&apos;re kept in a
-          Supabase database that only this app&apos;s server and its maintainers can read. Your number is never shown to other
-          holders or on the page.
+          NEAR account name, the phone number and/or email address you add, whether alerts go by text, email or
+          both, and when you signed up or last changed it. They&apos;re kept in a
+          Supabase database that only this app&apos;s server and its maintainers can read. Your number and address are never shown to
+          other holders or on the page.
         </p>
         <p>
           To prove the wallet is yours, your wallet signs a message naming your number. The server checks the
           signature and doesn&apos;t keep it.
         </p>
         <p>
-          Alerts are texted through msgbubbles, which receives your number and each alert&apos;s text to deliver it. Before an alert is sent, its text and image go to OpenAI&apos;s moderation service to check for harmful content.
+          Alerts are texted through msgbubbles and emailed through Resend, which receive your number or address and
+          each alert to deliver it. To verify an email, Resend sends it a code. We keep only a hash of the code, for 10
+          minutes. Before an alert is sent, its text and image go to OpenAI&apos;s moderation service to check for harmful content.
         </p>
         <p>
           When you <Link href="/send-alerts" className="text-frog hover:underline">send an alert</Link>, we keep its
@@ -46,7 +49,7 @@ export default function Privacy() {
           <Link href="/alerts/remove" className="text-frog hover:underline">
             remove page
           </Link>
-          , linked at the end of every alert.
+          , linked at the end of every text. You can delete just your email on the Alerts page too.
         </p>
       </section>
     </article>

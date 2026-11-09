@@ -144,8 +144,9 @@ testnet NEAR. See
 trade $CTO, see whether a sell earns a CTOad, the mint moment, a gallery
 of every CTOad with its on-chain image and traits, each CTOad's page with
 its backpack, claiming, and voting on the treasury. CTOad holders can also
-sign up a phone number for alerts and text every other signed-up holder from
-the app's number, through msgbubbles, without sharing their own number.
+sign up a phone number or a verified email for alerts and reach every other
+signed-up holder by text from the app's number, through msgbubbles, or by
+email, through Resend, without sharing their own contact details.
 Alerts can carry an image, stored in S3, and OpenAI's moderation checks
 each alert first. A
 wallet signature proves they hold a CTOad, and anyone can remove their number

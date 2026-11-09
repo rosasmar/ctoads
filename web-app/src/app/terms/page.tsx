@@ -26,7 +26,7 @@ export default function Terms() {
       <section className="space-y-2">
         <h2>Alerts</h2>
         <p>
-          Only sign up a phone number that&apos;s yours. Anyone can remove their number, without a wallet, on the{" "}
+          Only sign up a phone number or email that&apos;s yours. Emails are only sent to verified addresses. Anyone can remove their number, without a wallet, on the{" "}
           <Link href="/alerts/remove" className="text-frog hover:underline">
             remove page
           </Link>
