@@ -146,7 +146,8 @@ of every CTOad with its on-chain image and traits, each CTOad's page with
 its backpack, claiming, and voting on the treasury. CTOad holders can also
 sign up a phone number for alerts and text every other signed-up holder from
 the app's number, through msgbubbles, without sharing their own number.
-OpenAI's moderation checks each alert first. A
+Alerts can carry an image, stored in S3, and OpenAI's moderation checks
+each alert first. A
 wallet signature proves they hold a CTOad, and anyone can remove their number
 from a page linked in every alert.
 Sign-ups are stored in Supabase. See
