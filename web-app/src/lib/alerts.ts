@@ -16,6 +16,15 @@ export function alertsMessage(action: string, signedAt: number): string {
 /** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
 export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
 export const UNSUBSCRIBE_ACTION = "Stop alerts";
+export const sendAction = (text: string) => `Send this alert to every signed-up holder:\n${text}`;
+
+/** Longest alert a holder can send, and how many each account can send in 24 hours. */
+export const MAX_ALERT_LENGTH = 500;
+export const DAILY_ALERT_LIMIT = 3;
+
+/** What each recipient gets: the alert, who sent it, and how to stop. */
+export const alertText = (text: string, from: string) =>
+  `${text}\n\n- ${from}, a CTOad holder. Reply STOP to stop alerts.`;
 
 /**
  * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,
