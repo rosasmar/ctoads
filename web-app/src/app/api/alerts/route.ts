@@ -1,6 +1,7 @@
 // Signing up for alerts. Changes need a signed WalletProof (lib/walletProof.ts).
 //   GET    ?account=…            whether that account is signed up, how, and where alerts go
-//                                 (never the number or address)
+//                                 (never the number or address); without an account, only
+//                                 whether texting is on
 //   POST   { proof, phone }      sign up or change the number; only CTOad holders
 //   PATCH  { proof, channels }   get alerts by text, email or both
 //   DELETE { proof }             stop all alerts and delete the account's details; anyone signed up,
@@ -34,7 +35,8 @@ async function readBody(request: NextRequest): Promise<{ proof: WalletProof; pho
 
 export async function GET(request: NextRequest) {
   const account = request.nextUrl.searchParams.get("account");
-  if (!account) return errorResponse("Missing account.", 400);
+  // Without an account, only whether texting is on, so pages can describe alerts before sign-in.
+  if (!account) return Response.json({ textEnabled: textingEnabled() });
   try {
     const { data, error: dbError } = await supabase()
       .from(TABLE)

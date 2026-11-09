@@ -8,7 +8,9 @@ import useSWR from "swr";
 import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
+import { useTextEnabled } from "@/hooks/useTextEnabled";
 import {
+  alertEmailText,
   alertsApi,
   alertText,
   IMAGE_TYPES,
@@ -22,6 +24,7 @@ import {
 
 export function SendAlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
+  const textEnabled = useTextEnabled();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
   const { data: limit, mutate } = useSWR(signedAccountId ? ["alerts-remaining", signedAccountId] : null, () =>
     alertsApi<{ remaining: number }>("GET", "/send", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
@@ -36,8 +39,10 @@ export function SendAlertsPage() {
   if (!signedAccountId) {
     return (
       <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
-        <AlertsPitch title="Send an alert" />
-        <p className="text-white/60">Connect the wallet that holds your CTOad to text your fellow holders.</p>
+        <AlertsPitch title="Send an alert" textEnabled={textEnabled} />
+        <p className="text-white/60">
+          Connect the wallet that holds your CTOad to {textEnabled ? "text" : "email"} your fellow holders.
+        </p>
         <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
           Connect wallet
         </button>
@@ -91,7 +96,7 @@ export function SendAlertsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <AlertsPitch title="Send an alert" />
+      <AlertsPitch title="Send an alert" textEnabled={textEnabled} />
       <div className="mx-auto max-w-md space-y-6">
 
       {tokens && !holder ? (
@@ -132,7 +137,9 @@ export function SendAlertsPage() {
           {imageError && <p className="text-xs text-red-400">{imageError}</p>}
           {trimmed && (
             <p className="whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
-              {alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)}
+              {textEnabled
+                ? alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)
+                : alertEmailText(trimmed, signedAccountId, `${window.location.origin}/alerts`)}
             </p>
           )}
           <button

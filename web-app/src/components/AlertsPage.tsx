@@ -8,6 +8,7 @@ import useSWR from "swr";
 import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
+import { useTextEnabled } from "@/hooks/useTextEnabled";
 import { MSGBUBBLES_NUMBER } from "@/config";
 import {
   alertsApi,
@@ -28,6 +29,7 @@ const CHANNEL_LABELS: Record<Channels, string> = { text: "Text", email: "Email",
 
 export function AlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
+  const textEnabled = useTextEnabled();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
   const { data: status, error: statusError, mutate } = useSWR(
     signedAccountId ? ["alerts", signedAccountId] : null,
@@ -43,8 +45,8 @@ export function AlertsPage() {
   if (!signedAccountId) {
     return (
       <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
-        <AlertsPitch title="Alerts" />
-        <p className="text-white/60">Connect the wallet that holds your CTOad to sign up for alerts by text or email.</p>
+        <AlertsPitch title="Alerts" textEnabled={textEnabled} />
+        <p className="text-white/60">Connect the wallet that holds your CTOad to sign up for alerts {textEnabled ? "by text or email" : "by email"}.</p>
         <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
           Connect wallet
         </button>
@@ -115,7 +117,7 @@ export function AlertsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
-      <AlertsPitch title="Alerts" />
+      <AlertsPitch title="Alerts" textEnabled={textEnabled} />
       <div className="mx-auto max-w-md space-y-6">
 
       {statusError ? (
@@ -271,9 +273,11 @@ export function AlertsPage() {
         </Link>
       )}
 
-      <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
-        Getting alerts you didn&apos;t sign up for? Remove your number
-      </Link>
+      {textEnabled && (
+        <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
+          Getting alerts you didn&apos;t sign up for? Remove your number
+        </Link>
+      )}
       </div>
     </div>
   );

@@ -2,26 +2,35 @@ import Link from "next/link";
 
 import { DAILY_ALERT_LIMIT } from "@/lib/alerts";
 
-const POINTS = [
-  { title: "Ping about trades", body: "A big buy, a dip, a backpack move: tell every holder at once." },
-  { title: "Rally the vote", body: "Remind holders to vote before a treasury proposal closes." },
-  { title: "Only your account name shows", body: "Alerts come from one CTOads number. Holders see your account name, never your phone number." },
-];
+/** The words that change when alerts can only go by email. */
+const BY_TEXT = { verb: "Text", by: "by text", contact: "number", from: "one CTOads number", private: "phone number" };
+const BY_EMAIL = { verb: "Email", by: "by email", contact: "address", from: "one CTOads address", private: "email address" };
 
-/** What alerts are for, shown above the Alerts and Send pages. */
-export function AlertsPitch({ title }: { title: string }) {
+/** What alerts are for, shown above the Alerts and Send pages. `textEnabled` false means email only. */
+export function AlertsPitch({ title, textEnabled }: { title: string; textEnabled: boolean }) {
+  const w = textEnabled ? BY_TEXT : BY_EMAIL;
+  const points = [
+    { title: "Ping about trades", body: "A big buy, a dip, a backpack move: tell every holder at once." },
+    { title: "Rally the vote", body: "Remind holders to vote before a treasury proposal closes." },
+    {
+      title: "Only your account name shows",
+      body: `Alerts come from ${w.from}. Holders see your account name, never your ${w.private}.`,
+    },
+  ];
   return (
     <section className="space-y-6">
       <div className="text-center">
         <p className="text-sm font-medium uppercase tracking-widest text-frog">{title}</p>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Text your fellow holders, keep your number private</h1>
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
+          {w.verb} your fellow holders, keep your {w.contact} private
+        </h1>
         <p className="mx-auto mt-3 max-w-xl text-white/60">
-          Alerts let CTOad holders ping the whole community by text, about trades, votes, or anything worth knowing,
-          without sharing their own phone number.
+          Alerts let CTOad holders ping the whole community {w.by}, about trades, votes, or anything worth knowing,
+          without sharing their own {w.private}.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
-        {POINTS.map((p) => (
+        {points.map((p) => (
           <div key={p.title} className="rounded-xl border border-white/10 bg-panel p-4">
             <h2 className="font-semibold text-frog">{p.title}</h2>
             <p className="mt-1 text-sm text-white/60">{p.body}</p>
@@ -30,7 +39,9 @@ export function AlertsPitch({ title }: { title: string }) {
       </div>
       <p className="text-center text-xs text-white/40">
         Only CTOad holders can sign up and send, {DAILY_ALERT_LIMIT} alerts a day each, checked for harmful content.
-        Every alert links to a page where anyone can remove their number.{" "}
+        {textEnabled
+          ? "Every alert links to a page where anyone can remove their number."
+          : "Every alert email links to the Alerts page to turn them off."}{" "}
         <Link href="/terms" className="hover:text-white">
           Terms
         </Link>{" "}
