@@ -62,3 +62,15 @@ export async function signAlertsAction(
   if (!signed) throw new Error("This wallet didn't return a signature. Try Meteor, Intear, HERE or MyNearWallet.");
   return { ...signed, nonce: nonce.toString("base64"), signedAt, callbackUrl };
 }
+
+/** Calls /api/alerts`path` from the browser and returns its JSON, or throws its error message. */
+export async function alertsApi<T>(method: string, path: string, init?: { query?: string; body?: object }): Promise<T> {
+  const res = await fetch(`/api/alerts${path}${init?.query ?? ""}`, {
+    method,
+    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
+    body: init?.body ? JSON.stringify(init.body) : undefined,
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`);
+  return json;
+}

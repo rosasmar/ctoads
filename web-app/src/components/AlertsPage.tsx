@@ -7,26 +7,15 @@ import useSWR from "swr";
 
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
-import { normalizePhone, signAlertsAction, subscribeAction, UNSUBSCRIBE_ACTION } from "@/lib/alerts";
-
-/** Calls /api/alerts and returns its JSON, or throws its error message. */
-async function alertsApi(method: string, init?: { query?: string; body?: object }): Promise<{ subscribed: boolean }> {
-  const res = await fetch(`/api/alerts${init?.query ?? ""}`, {
-    method,
-    headers: init?.body ? { "Content-Type": "application/json" } : undefined,
-    body: init?.body ? JSON.stringify(init.body) : undefined,
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`);
-  return json;
-}
+import { MSGBUBBLES_NUMBER } from "@/config";
+import { alertsApi, normalizePhone, signAlertsAction, subscribeAction, UNSUBSCRIBE_ACTION } from "@/lib/alerts";
 
 export function AlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
   const { data: status, error: statusError, mutate } = useSWR(
     signedAccountId ? ["alerts", signedAccountId] : null,
-    () => alertsApi("GET", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
+    () => alertsApi<{ subscribed: boolean }>("GET", "", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
   );
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState<string | null>(null);
@@ -64,13 +53,13 @@ export function AlertsPage() {
   const subscribe = () =>
     run(async () => {
       const proof = await signAlertsAction(signMessage, subscribeAction(normalized!));
-      return alertsApi("POST", { body: { proof, phone: normalized } });
+      return alertsApi<{ subscribed: boolean }>("POST", "", { body: { proof, phone: normalized } });
     }, `Signed up. Alerts go to ${normalized}.`);
 
   const unsubscribe = () =>
     run(async () => {
       const proof = await signAlertsAction(signMessage, UNSUBSCRIBE_ACTION);
-      return alertsApi("DELETE", { body: { proof } });
+      return alertsApi<{ subscribed: boolean }>("DELETE", "", { body: { proof } });
     }, "Alerts stopped, and your number is deleted.");
 
   return (
@@ -92,6 +81,7 @@ export function AlertsPage() {
         <div className="space-y-4 rounded-xl border border-white/10 bg-panel p-4">
           <p className="text-sm">
             {!status ? "Loading…" : status.subscribed ? "You're signed up for alerts." : "You're not signed up yet."}
+            {MSGBUBBLES_NUMBER && <span className="text-white/50"> Alerts come from {MSGBUBBLES_NUMBER}.</span>}
           </p>
 
           {tokens && !holder ? (
@@ -144,6 +134,12 @@ export function AlertsPage() {
       )}
 
       {message && <p className="text-sm text-white/70">{message}</p>}
+
+      {holder && (
+        <Link href="/send-alerts" className="block text-sm text-white/60 hover:text-frog">
+          Send an alert to your fellow holders →
+        </Link>
+      )}
     </div>
   );
 }
