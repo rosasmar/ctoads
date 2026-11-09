@@ -7,7 +7,17 @@ import useSWR from "swr";
 
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
-import { alertsApi, alertText, MAX_ALERT_LENGTH, REMOVE_PATH, sendAction, signAlertsAction } from "@/lib/alerts";
+import {
+  alertsApi,
+  alertText,
+  IMAGE_TYPES,
+  MAX_ALERT_LENGTH,
+  MAX_IMAGE_BYTES,
+  REMOVE_PATH,
+  sendAction,
+  sha256Hex,
+  signAlertsAction,
+} from "@/lib/alerts";
 
 export function SendAlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
@@ -16,6 +26,9 @@ export function SendAlertsPage() {
     alertsApi<{ remaining: number }>("GET", "/send", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
   );
   const [text, setText] = useState("");
+  const [image, setImage] = useState<File | null>(null);
+  // Bumped after sending to clear the file input, which React can't set directly.
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -33,18 +46,36 @@ export function SendAlertsPage() {
 
   const trimmed = text.trim();
   const holder = (tokens?.length ?? 0) > 0;
-  const canSend = holder && trimmed.length > 0 && trimmed.length <= MAX_ALERT_LENGTH && limit?.remaining !== 0;
+  const imageError =
+    image && !(image.type in IMAGE_TYPES)
+      ? "Attach a JPEG, PNG, GIF or WebP image."
+      : image && image.size > MAX_IMAGE_BYTES
+        ? `Images can be up to ${MAX_IMAGE_BYTES / 1024 / 1024} MB.`
+        : null;
+  const canSend =
+    holder && trimmed.length > 0 && trimmed.length <= MAX_ALERT_LENGTH && !imageError && limit?.remaining !== 0;
 
   const send = async () => {
     setBusy(true);
     setMessage(null);
     try {
-      const proof = await signAlertsAction(signMessage, sendAction(trimmed));
+      // One signature covers the text and the image's hash. It's used to get an upload URL, then to send.
+      const sha256 = image ? await sha256Hex(await image.arrayBuffer()) : undefined;
+      const proof = await signAlertsAction(signMessage, sendAction(trimmed, sha256));
+      if (image) {
+        const { url } = await alertsApi<{ url: string }>("POST", "/upload", {
+          body: { proof, text: trimmed, image: { sha256, type: image.type, size: image.size } },
+        });
+        const upload = await fetch(url, { method: "PUT", headers: { "Content-Type": image.type }, body: image });
+        if (!upload.ok) throw new Error("The image didn't upload. Please try again.");
+      }
       const result = await alertsApi<{ sent: number; failed: number; remaining: number }>("POST", "/send", {
-        body: { proof, text: trimmed },
+        body: { proof, text: trimmed, image: image ? { sha256, type: image.type } : undefined },
       });
       await mutate({ remaining: result.remaining }, { revalidate: false });
       setText("");
+      setImage(null);
+      setFileInputKey((k) => k + 1);
       setMessage(
         result.sent === 0 && result.failed === 0
           ? "Sent, but no other holder is signed up yet."
@@ -92,6 +123,17 @@ export function SendAlertsPage() {
               className="mt-1 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none"
             />
           </label>
+          <label className="block text-xs text-white/50">
+            Image (optional, up to {MAX_IMAGE_BYTES / 1024 / 1024} MB)
+            <input
+              key={fileInputKey}
+              type="file"
+              accept={Object.keys(IMAGE_TYPES).join(",")}
+              onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+              className="mt-1 block w-full text-sm text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-white"
+            />
+          </label>
+          {imageError && <p className="text-xs text-red-400">{imageError}</p>}
           {trimmed && (
             <p className="whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
               {alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)}

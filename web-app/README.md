@@ -10,7 +10,7 @@ The Next.js frontend for $CTO and CTOads. See the [main README](../README.md) fo
 | `/claim` | Your CTOads, what each one can claim, and a button to claim it all |
 | `/vote` | The treasury and every proposal with its votes, status and time left. Once every CTOad is minted, holders can propose a payout, vote with their CTOads, and execute a passed proposal. |
 | `/alerts` | CTOad holders sign up with a phone number for alerts from fellow holders, change it, or stop alerts and delete it. Each change is signed by the wallet. |
-| `/send-alerts` | A CTOad holder writes an alert and texts it to every other signed-up holder, from the app's number, up to 3 a day |
+| `/send-alerts` | A CTOad holder writes an alert, optionally with an image, and texts it to every other signed-up holder, from the app's number, up to 3 a day |
 | `/alerts/remove` | Anyone removes their phone number from alerts, without a wallet |
 | `/privacy`, `/terms` | What the app stores and how to delete it, and the rules for alerts |
 
@@ -36,6 +36,8 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_MSGBUBBLES_NUMBER` | `+12025550123` | For sending alerts: the msgbubbles number they come from, shown on the Alerts page |
 | `MSGBUBBLES_API_KEY` | | For sending alerts: a msgbubbles API key. Server only. |
 | `OPENAI_API_KEY` | | For sending alerts: checks each alert with OpenAI's free moderation endpoint. Server only. |
+| `ALERTS_S3_BUCKET`, `AWS_REGION` | | For images in alerts: the S3 bucket they're uploaded to, and its region. Server only. |
+| `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | | For images in alerts: credentials that can put and get objects in that bucket. Server only. |
 
 The `NEXT_PUBLIC_` values are baked in at build time, so restart `npm run dev` or rebuild after changing them.
 
@@ -47,6 +49,7 @@ Alerts are optional. Without the two Supabase variables every other page works, 
 2. In its SQL Editor, run each file in [`supabase/migrations`](supabase/migrations), in order.
 3. From the project's API settings, copy the project URL and the service role (secret) key into `.env.local`, then restart `npm run dev`.
 4. To send alerts, set `NEXT_PUBLIC_MSGBUBBLES_NUMBER` and `MSGBUBBLES_API_KEY` from your [msgbubbles](https://docs.msgbubbles.com) account, and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com) for moderation.
+5. For images, create an S3 bucket with a CORS rule that allows `PUT` from the site's address, and credentials that can put and get objects in it, then set the four AWS variables.
 
 ## How it's built
 
@@ -56,6 +59,7 @@ Alerts are optional. Without the two Supabase variables every other page works, 
 - **Backpack:** the buy and sell on a CTOad's page are `ctoad_call` transactions on the NFT contract, which pass the call on to the CTOad's account. A buy that needs fees not yet swept into the account sends a `sweep` first, in the same wallet request, so a popup wallet opens only once.
 - **Alerts:** the wallet signs a message naming the action and phone number ([NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)), and `src/app/api/alerts/route.ts` checks it on the server (`src/lib/walletProof.ts`): the signature, that the key is a full access key of the account, and for sign-ups that the account holds a CTOad. Signatures expire after 5 minutes. Sign-ups are stored in Supabase (`src/lib/supabase.ts`) with row level security on and no policies, so only the server, with the service role key, can read them.
 - **Sending alerts:** the holder signs the exact text. `src/app/api/alerts/send/route.ts` checks the limit of 3 alerts in 24 hours (from the `alert_messages` log), checks the text with OpenAI's moderation endpoint (`src/lib/moderation.ts`) and refuses a flagged one, finds every subscriber who still holds a CTOad, other than the sender, and texts them through msgbubbles (`src/lib/msgbubbles.ts`), 5 at a time, each with an idempotency key so a retry never texts twice. Each text ends with the sender's account and a link to `/alerts/remove`, since the number is outbound only and replies never reach us.
+- **Images:** the holder signs the text and the image's SHA-256 together, once. `src/app/api/alerts/upload/route.ts` checks that signature and returns a 5-minute S3 upload URL for exactly that file (`src/lib/s3.ts`), named by its hash. The send route reads the file back, checks its hash, moderates text and image together, and stages a msgbubbles attachment for each recipient, since attachment ids work for one message only. JPEG, PNG, GIF or WebP, up to 5 MB.
 - **Removing a number:** `/alerts/remove` and `src/app/api/alerts/remove/route.ts` let anyone delete their number without a wallet, for numbers signed up by someone else. The answer is the same whether or not the number was signed up.
 - **Images:** `src/components/CtoadImage.tsx` shows the image the NFT contract returns in each CTOad's `media`, and its traits from `extra`. The app draws no art of its own. A CTOad that isn't minted yet shows a "?".
 

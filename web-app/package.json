@@ -9,6 +9,8 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "3.1156.0",
+    "@aws-sdk/s3-request-presigner": "3.1156.0",
     "@near-js/crypto": "2.5.1",
     "@near-js/transactions": "2.5.1",
     "@near-wallet-selector/core": "10.1.4",
