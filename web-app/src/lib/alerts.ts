@@ -16,7 +16,19 @@ export function alertsMessage(action: string, signedAt: number): string {
 /** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
 export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
 export const UNSUBSCRIBE_ACTION = "Stop alerts";
-export const sendAction = (text: string) => `Send this alert to every signed-up holder:\n${text}`;
+/** With an image, the signed text names its SHA-256, so the server can check it's the same file. */
+export const sendAction = (text: string, imageSha256?: string) =>
+  `Send this alert to every signed-up holder:\n${text}${imageSha256 ? `\nImage SHA-256: ${imageSha256}` : ""}`;
+
+/** Image types an alert can carry, with their file extension, and the largest size allowed. */
+export const IMAGE_TYPES = { "image/jpeg": "jpg", "image/png": "png", "image/gif": "gif", "image/webp": "webp" } as const;
+export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** The SHA-256 of a file, as hex. Works in the browser and on the server. */
+export async function sha256Hex(bytes: BufferSource): Promise<string> {
+  const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", bytes));
+  return Array.from(hash, (b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 /** Longest alert a holder can send, and how many each account can send in 24 hours. */
 export const MAX_ALERT_LENGTH = 500;
