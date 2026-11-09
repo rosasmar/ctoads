@@ -38,7 +38,7 @@ The `NEXT_PUBLIC_` values are baked in at build time, so restart `npm run dev` o
 
 Alerts are optional. Without the two Supabase variables every other page works, and Alerts says it isn't available.
 
-1. Create a project at [supabase.com](https://supabase.com).
+1. Create a project at [supabase.com](https://supabase.com). Keep "Enable Data API" and "Automatically expose new tables" on: the tables turn on row level security themselves, so only the server's secret key can read them.
 2. In its SQL Editor, run [`supabase/migrations/0001_alert_subscribers.sql`](supabase/migrations/0001_alert_subscribers.sql).
 3. From the project's API settings, copy the project URL and the service role (secret) key into `.env.local`, then restart `npm run dev`.
 
