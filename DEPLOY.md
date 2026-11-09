@@ -267,6 +267,7 @@ Connect a testnet wallet, such as Meteor or MyNearWallet. Then:
 4. See your CTOad on the CTOads and Claim pages.
 5. Once every CTOad is minted, propose, vote and execute on the Vote page.
 6. Open a CTOad's page from the gallery. As its holder, make its backpack buy $CTO, or sell its bag.
+7. Optional: with Supabase set up (see [Alerts setup](web-app/README.md#alerts-setup)), sign up a phone number on the Alerts page. The wallet asks you to sign a message, which costs nothing.
 
 See [web-app/README.md](web-app/README.md) for details.
 

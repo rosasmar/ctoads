@@ -13,6 +13,7 @@ const LINKS = [
   { href: "/ctoads", label: "CTOads" },
   { href: "/claim", label: "Claim" },
   { href: "/vote", label: "Vote" },
+  { href: "/alerts", label: "Alerts" },
 ];
 
 export function Nav() {

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 
 import { Nav } from "@/components/Nav";
 import { Providers } from "@/components/Providers";
@@ -22,7 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Nav />
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
           <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-white/40">
-            Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.
+            Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.{" "}
+            <Link href="/privacy" className="hover:text-white">
+              Privacy
+            </Link>
           </footer>
         </Providers>
       </body>

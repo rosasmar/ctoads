@@ -59,6 +59,22 @@ export async function viewAccount(accountId: string): Promise<AccountView | null
   }
 }
 
+/** Whether `publicKey` is a full access key of `accountId`. False if the key or account doesn't exist. */
+export async function isFullAccessKey(accountId: string, publicKey: string): Promise<boolean> {
+  try {
+    const key = await rpc<{ permission: unknown }>("query", {
+      request_type: "view_access_key",
+      finality: "optimistic",
+      account_id: accountId,
+      public_key: publicKey,
+    });
+    return key.permission === "FullAccess";
+  } catch (e) {
+    if (/UNKNOWN_ACCESS_KEY|UNKNOWN_ACCOUNT|does not exist/.test(String(e))) return false;
+    throw e;
+  }
+}
+
 /** NEAR an account can spend: its balance minus what its storage locks up. */
 export function availableBalance(account: AccountView): bigint {
   const free = BigInt(account.amount) - BigInt(account.storage_usage) * STORAGE_BYTE_COST;
