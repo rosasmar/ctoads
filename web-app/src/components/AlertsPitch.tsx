@@ -5,7 +5,7 @@ import { DAILY_ALERT_LIMIT } from "@/lib/alerts";
 const POINTS = [
   { title: "Ping about trades", body: "A big buy, a dip, a backpack move: tell every holder at once." },
   { title: "Rally the vote", body: "Remind holders to vote before a treasury proposal closes." },
-  { title: "Keep your number private", body: "Alerts come from one CTOads number. Holders see your account name, never your phone number." },
+  { title: "Only your account name shows", body: "Alerts come from one CTOads number. Holders see your account name, never your phone number." },
 ];
 
 /** What alerts are for, shown above the Alerts and Send pages. */
@@ -14,7 +14,7 @@ export function AlertsPitch({ title }: { title: string }) {
     <section className="space-y-6">
       <div className="text-center">
         <p className="text-sm font-medium uppercase tracking-widest text-frog">{title}</p>
-        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Text your fellow holders, not your number</h1>
+        <h1 className="mt-2 text-3xl font-bold sm:text-4xl">Text your fellow holders, keep your number private</h1>
         <p className="mx-auto mt-3 max-w-xl text-white/60">
           Alerts let CTOad holders ping the whole community by text, about trades, votes, or anything worth knowing,
           without sharing their own phone number.
