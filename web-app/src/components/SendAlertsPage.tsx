@@ -106,7 +106,11 @@ export function SendAlertsPage() {
           </button>
           <p className="text-xs text-white/40">
             {limit ? `You can send ${limit.remaining} more today.` : "Checking today's limit…"} Your wallet signs the exact
-            message, which costs nothing.
+            message, which costs nothing. Follow the{" "}
+            <Link href="/terms" className="text-white/60 hover:text-frog">
+              terms
+            </Link>
+            .
           </p>
         </form>
       )}

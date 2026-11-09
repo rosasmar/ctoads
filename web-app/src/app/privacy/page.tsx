@@ -8,7 +8,7 @@ export default function Privacy() {
     <article className="mx-auto max-w-2xl space-y-6 text-white/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white">
       <div>
         <h1 className="text-3xl font-bold text-white">Privacy</h1>
-        <p className="mt-1 text-sm text-white/50">What this app stores about you, and how to delete it.</p>
+        <p className="mt-1 text-sm text-white/50">What this app stores about you, and how to delete it. See also the <Link href="/terms" className="text-frog hover:underline">terms</Link>.</p>
       </div>
 
       <section className="space-y-2">
@@ -33,8 +33,16 @@ export default function Privacy() {
           signature and doesn&apos;t keep it.
         </p>
         <p>
+          Alerts are texted through msgbubbles, which receives your number and each alert&apos;s text to deliver it.
+        </p>
+        <p>
+          When you <Link href="/send-alerts" className="text-frog hover:underline">send an alert</Link>, we keep its
+          text, your account name, the time and how many holders it went to, to enforce the daily limit and look into
+          abuse. Recipients see the text and your account name, never your phone number.
+        </p>
+        <p>
           You can delete your number at any time with &quot;Stop alerts and delete my number&quot; on the Alerts page,
-          even after you no longer hold a CTOad.
+          even after you no longer hold a CTOad, or by replying STOP to any alert.
         </p>
       </section>
     </article>
