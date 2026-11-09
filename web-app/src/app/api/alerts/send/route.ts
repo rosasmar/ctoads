@@ -1,4 +1,5 @@
-// Sending an alert: a CTOad holder texts every other signed-up holder, from the msgbubbles number.
+// Sending an alert: a CTOad holder reaches every other signed-up holder, by text from the msgbubbles
+// number and/or by email through Resend, as each one chose.
 //   GET  ?account=…        how many alerts that account can still send today
 //   POST { proof, text, image? }   send one; the proof signs the exact text and the image's SHA-256
 //                                  (lib/alerts.ts `sendAction`). The image was uploaded via ../upload.
@@ -6,10 +7,21 @@
 // never the sender.
 
 import { NextRequest } from "next/server";
-import { alertText, DAILY_ALERT_LIMIT, IMAGE_TYPES, MAX_ALERT_LENGTH, REMOVE_PATH, sendAction, sha256Hex } from "@/lib/alerts";
+import {
+  alertEmailHtml,
+  alertEmailText,
+  alertText,
+  DAILY_ALERT_LIMIT,
+  IMAGE_TYPES,
+  MAX_ALERT_LENGTH,
+  REMOVE_PATH,
+  sendAction,
+  sha256Hex,
+} from "@/lib/alerts";
 import { ctoadHolders } from "@/lib/cto";
 import { moderate } from "@/lib/moderation";
 import { sendText, stageAttachment } from "@/lib/msgbubbles";
+import { EMAIL_SPACING_MS, sendEmail } from "@/lib/resend";
 import { imageKey, readImage } from "@/lib/s3";
 import { supabase } from "@/lib/supabase";
 import { errorResponse, serverError } from "@/lib/api";
@@ -69,10 +81,12 @@ export async function POST(request: NextRequest) {
 
     const [holders, subscribers] = await Promise.all([
       ctoadHolders(),
-      supabase().from("alert_subscribers").select("account_id, phone"),
+      supabase().from("alert_subscribers").select("account_id, phone, email, channels"),
     ]);
     if (subscribers.error) return serverError(subscribers.error);
     const recipients = subscribers.data.filter((s) => s.account_id !== sender && holders.has(s.account_id));
+    const texts = recipients.filter((r) => r.phone && r.channels !== "email");
+    const emails = recipients.filter((r) => r.email && r.channels !== "text");
 
     const { data: logged, error: logError } = await supabase()
       .from("alert_messages")
@@ -81,26 +95,46 @@ export async function POST(request: NextRequest) {
       .single();
     if (logError) return serverError(logError);
 
-    const message = alertText(text, sender, `${request.nextUrl.origin}${REMOVE_PATH}`);
     let failed = 0;
-    for (let i = 0; i < recipients.length; i += PARALLEL) {
+    const note = (r: PromiseSettledResult<void>) => {
+      if (r.status === "rejected") {
+        failed++;
+        console.error(r.reason);
+      }
+    };
+
+    const message = alertText(text, sender, `${request.nextUrl.origin}${REMOVE_PATH}`);
+    for (let i = 0; i < texts.length; i += PARALLEL) {
       const results = await Promise.allSettled(
-        recipients
-          .slice(i, i + PARALLEL)
-          .map(async (r) => {
-            // msgbubbles attachments are single-use, so each recipient gets their own copy.
-            const attachments = image && key ? [await stageAttachment(image.bytes, image.type, key.split("/")[1])] : undefined;
-            await sendText(r.phone, message, `alert-${logged.id}-${r.account_id}`, attachments);
-          }),
+        texts.slice(i, i + PARALLEL).map(async (r) => {
+          // msgbubbles attachments are single-use, so each recipient gets their own copy.
+          const attachments = image && key ? [await stageAttachment(image.bytes, image.type, key.split("/")[1])] : undefined;
+          await sendText(r.phone!, message, `alert-${logged.id}-${r.account_id}`, attachments);
+        }),
       );
-      results.forEach((r) => {
-        if (r.status === "rejected") {
-          failed++;
-          console.error(r.reason);
-        }
-      });
+      results.forEach(note);
     }
-    return Response.json({ sent: recipients.length - failed, failed, remaining: remaining - 1 });
+
+    const emailBody = alertEmailText(text, sender, `${request.nextUrl.origin}/alerts`);
+    const emailHtml = alertEmailHtml(text, sender, `${request.nextUrl.origin}/alerts`);
+    for (const r of emails) {
+      const [result] = await Promise.allSettled([
+        sendEmail(
+          {
+            to: r.email!,
+            subject: `CTOads alert from ${sender}`,
+            text: emailBody,
+            html: emailHtml,
+            attachment: image && key ? { filename: key.split("/")[1], bytes: image.bytes } : undefined,
+          },
+          `alert-email-${logged.id}-${r.account_id}`,
+        ),
+      ]);
+      note(result);
+      await new Promise((done) => setTimeout(done, EMAIL_SPACING_MS));
+    }
+
+    return Response.json({ sent: texts.length + emails.length - failed, failed, remaining: remaining - 1 });
   } catch (e) {
     return e instanceof ProofError ? errorResponse(e.message, 403) : serverError(e);
   }

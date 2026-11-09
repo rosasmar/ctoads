@@ -16,6 +16,22 @@ export function alertsMessage(action: string, signedAt: number): string {
 /** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
 export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
 export const UNSUBSCRIBE_ACTION = "Stop alerts";
+export const emailAction = (email: string) => `Send alerts by email to ${email}`;
+export const STOP_EMAIL_ACTION = "Stop email alerts";
+export const channelsAction = (channels: Channels) => `Get alerts by ${channels}`;
+
+/** Where a subscriber's alerts go. */
+export const CHANNELS = ["text", "email", "both"] as const;
+export type Channels = (typeof CHANNELS)[number];
+
+/** What /api/alerts says about an account. Never the number or address themselves. */
+export type AlertsStatus = { subscribed: boolean; hasPhone: boolean; hasEmail: boolean; channels: Channels | null };
+
+/** A lowercased email address, or null if it doesn't look like one. */
+export function normalizeEmail(input: string): string | null {
+  const email = input.trim().toLowerCase();
+  return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
+}
 /** With an image, the signed text names its SHA-256, so the server can check it's the same file. */
 export const sendAction = (text: string, imageSha256?: string) =>
   `Send this alert to every signed-up holder:\n${text}${imageSha256 ? `\nImage SHA-256: ${imageSha256}` : ""}`;
@@ -43,6 +59,21 @@ export const alertText = (text: string, from: string, removeUrl: string) =>
 
 /** The page where anyone can remove their number, wallet or not. */
 export const REMOVE_PATH = "/alerts/remove";
+
+/** The same for email: emails stop on the Alerts page, where the address can be deleted. */
+export const alertEmailText = (text: string, from: string, alertsUrl: string) =>
+  `${text}\n\n- ${from}, a CTOad holder\n\nDon't want these anymore? You can turn off email alerts anytime on the Alerts page: ${alertsUrl}`;
+
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+
+/** The HTML version: a small label, then the alert large and bold. Everything a holder wrote is escaped. */
+export const alertEmailHtml = (text: string, from: string, alertsUrl: string) => `<div style="font-family:system-ui,sans-serif;max-width:560px">
+<p style="font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#16a34a;margin:0 0 8px">CTOad alert</p>
+<p style="font-size:22px;font-weight:700;line-height:1.35;margin:0 0 12px;white-space:pre-wrap">${escapeHtml(text)}</p>
+<p style="font-size:14px;color:#6b7280;margin:0 0 32px">${escapeHtml(from)}, a CTOad holder</p>
+<p style="font-size:13px;color:#9ca3af;margin:0">Don't want these anymore? You can turn off email alerts anytime on the <a href="${escapeHtml(alertsUrl)}" style="color:#16a34a">Alerts page</a>.</p>
+</div>`;
 
 /**
  * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,
