@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
+import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
 import {
@@ -34,10 +35,10 @@ export function SendAlertsPage() {
 
   if (!signedAccountId) {
     return (
-      <div className="py-20 text-center">
-        <h1 className="text-3xl font-bold">Send an alert</h1>
-        <p className="mt-2 text-white/60">Connect the wallet that holds your CTOad to text your fellow holders.</p>
-        <button onClick={() => signIn()} className="mt-6 rounded-xl bg-frog px-5 py-3 font-semibold text-black">
+      <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
+        <AlertsPitch title="Send an alert" />
+        <p className="text-white/60">Connect the wallet that holds your CTOad to text your fellow holders.</p>
+        <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
           Connect wallet
         </button>
       </div>
@@ -89,14 +90,9 @@ export function SendAlertsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-md space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Send an alert</h1>
-        <p className="mt-1 text-white/60">
-          Text every holder signed up on <Link href="/alerts" className="text-white/80 hover:text-frog">Alerts</Link>.
-          It comes from the CTOads number, so they see your account name, never your phone number.
-        </p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-8">
+      <AlertsPitch title="Send an alert" />
+      <div className="mx-auto max-w-md space-y-6">
 
       {tokens && !holder ? (
         <p className="rounded-xl bg-white/5 p-4 text-sm text-white/60">Only CTOad holders can send alerts. This wallet holds none.</p>
@@ -158,6 +154,7 @@ export function SendAlertsPage() {
       )}
 
       {message && <p className="text-sm text-white/70">{message}</p>}
+      </div>
     </div>
   );
 }
