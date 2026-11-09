@@ -33,7 +33,7 @@ export default function Privacy() {
           signature and doesn&apos;t keep it.
         </p>
         <p>
-          Alerts are texted through msgbubbles, which receives your number and each alert&apos;s text to deliver it.
+          Alerts are texted through msgbubbles, which receives your number and each alert&apos;s text to deliver it. Before an alert is sent, its text goes to OpenAI&apos;s moderation service to check for harmful content.
         </p>
         <p>
           When you <Link href="/send-alerts" className="text-frog hover:underline">send an alert</Link>, we keep its

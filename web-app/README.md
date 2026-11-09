@@ -35,6 +35,7 @@ npm run dev                  # http://localhost:3000
 | `SUPABASE_SERVICE_ROLE_KEY` | | For alerts: that project's service role key. Server only, keep it secret. |
 | `NEXT_PUBLIC_MSGBUBBLES_NUMBER` | `+12025550123` | For sending alerts: the msgbubbles number they come from, shown on the Alerts page |
 | `MSGBUBBLES_API_KEY` | | For sending alerts: a msgbubbles API key. Server only. |
+| `OPENAI_API_KEY` | | For sending alerts: checks each alert with OpenAI's free moderation endpoint. Server only. |
 
 The `NEXT_PUBLIC_` values are baked in at build time, so restart `npm run dev` or rebuild after changing them.
 
@@ -45,7 +46,7 @@ Alerts are optional. Without the two Supabase variables every other page works, 
 1. Create a project at [supabase.com](https://supabase.com). Keep "Enable Data API" and "Automatically expose new tables" on: the tables turn on row level security themselves, so only the server's secret key can read them.
 2. In its SQL Editor, run each file in [`supabase/migrations`](supabase/migrations), in order.
 3. From the project's API settings, copy the project URL and the service role (secret) key into `.env.local`, then restart `npm run dev`.
-4. To send alerts, set `NEXT_PUBLIC_MSGBUBBLES_NUMBER` and `MSGBUBBLES_API_KEY` from your [msgbubbles](https://docs.msgbubbles.com) account.
+4. To send alerts, set `NEXT_PUBLIC_MSGBUBBLES_NUMBER` and `MSGBUBBLES_API_KEY` from your [msgbubbles](https://docs.msgbubbles.com) account, and `OPENAI_API_KEY` from [OpenAI](https://platform.openai.com) for moderation.
 
 ## How it's built
 
@@ -54,7 +55,7 @@ Alerts are optional. Without the two Supabase variables every other page works, 
 - **The mint moment:** after a sell, the app reads the contract's `sell` and `ctoad_minted` events from the transaction. For wallets that redirect, it looks the transaction up by its hash.
 - **Backpack:** the buy and sell on a CTOad's page are `ctoad_call` transactions on the NFT contract, which pass the call on to the CTOad's account. A buy that needs fees not yet swept into the account sends a `sweep` first, in the same wallet request, so a popup wallet opens only once.
 - **Alerts:** the wallet signs a message naming the action and phone number ([NEP-413](https://github.com/near/NEPs/blob/master/neps/nep-0413.md)), and `src/app/api/alerts/route.ts` checks it on the server (`src/lib/walletProof.ts`): the signature, that the key is a full access key of the account, and for sign-ups that the account holds a CTOad. Signatures expire after 5 minutes. Sign-ups are stored in Supabase (`src/lib/supabase.ts`) with row level security on and no policies, so only the server, with the service role key, can read them.
-- **Sending alerts:** the holder signs the exact text. `src/app/api/alerts/send/route.ts` checks the limit of 3 alerts in 24 hours (from the `alert_messages` log), finds every subscriber who still holds a CTOad, other than the sender, and texts them through msgbubbles (`src/lib/msgbubbles.ts`), 5 at a time, each with an idempotency key so a retry never texts twice. Each text ends with the sender's account and a link to `/alerts/remove`, since the number is outbound only and replies never reach us.
+- **Sending alerts:** the holder signs the exact text. `src/app/api/alerts/send/route.ts` checks the limit of 3 alerts in 24 hours (from the `alert_messages` log), checks the text with OpenAI's moderation endpoint (`src/lib/moderation.ts`) and refuses a flagged one, finds every subscriber who still holds a CTOad, other than the sender, and texts them through msgbubbles (`src/lib/msgbubbles.ts`), 5 at a time, each with an idempotency key so a retry never texts twice. Each text ends with the sender's account and a link to `/alerts/remove`, since the number is outbound only and replies never reach us.
 - **Removing a number:** `/alerts/remove` and `src/app/api/alerts/remove/route.ts` let anyone delete their number without a wallet, for numbers signed up by someone else. The answer is the same whether or not the number was signed up.
 - **Images:** `src/components/CtoadImage.tsx` shows the image the NFT contract returns in each CTOad's `media`, and its traits from `extra`. The app draws no art of its own. A CTOad that isn't minted yet shows a "?".
 
