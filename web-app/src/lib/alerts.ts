@@ -13,6 +13,19 @@ export function alertsMessage(action: string, signedAt: number): string {
   return `CTOads alerts\n${action}\nSigned at ${new Date(signedAt).toISOString()}`;
 }
 
+/** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
+export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
+export const UNSUBSCRIBE_ACTION = "Stop alerts";
+
+/**
+ * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,
+ * dots and brackets removed. Null if it doesn't look like one.
+ */
+export function normalizePhone(input: string): string | null {
+  const phone = input.replace(/[\s\-.()]/g, "");
+  return /^\+[1-9]\d{7,14}$/.test(phone) ? phone : null;
+}
+
 /** A signed message the server checks, sent along with each alerts request. */
 export type WalletProof = {
   accountId: string;

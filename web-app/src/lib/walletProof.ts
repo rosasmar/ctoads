@@ -1,5 +1,5 @@
 // Checks a WalletProof on the server: the signature is valid (NEP-413), the key belongs to the
-// account, and the account holds a CTOad. Every alerts request goes through `verifyHolder`.
+// account, and (for `verifyHolder`) the account holds a CTOad.
 
 import "server-only";
 import { PublicKey } from "@near-js/crypto";
@@ -45,8 +45,8 @@ async function signatureMatches(proof: WalletProof, message: string, callbackUrl
   }
 }
 
-/** Returns the account that signed `action`, or throws a ProofError if it can't be trusted or holds no CTOad. */
-export async function verifyHolder(proof: WalletProof, action: string): Promise<string> {
+/** Returns the account that signed `action`, or throws a ProofError if the signature can't be trusted. */
+export async function verifySigner(proof: WalletProof, action: string): Promise<string> {
   const age = Date.now() - proof.signedAt;
   if (!(age >= -60_000 && age <= MAX_AGE_MS)) throw new ProofError("This signature has expired. Please sign again.");
   if (!(await signatureIsValid(proof, alertsMessage(action, proof.signedAt)))) {
@@ -55,6 +55,12 @@ export async function verifyHolder(proof: WalletProof, action: string): Promise<
   if (!(await isFullAccessKey(proof.accountId, proof.publicKey))) {
     throw new ProofError(`That key doesn't belong to ${proof.accountId}.`);
   }
+  return proof.accountId;
+}
+
+/** Like `verifySigner`, and also throws if the account holds no CTOad. */
+export async function verifyHolder(proof: WalletProof, action: string): Promise<string> {
+  await verifySigner(proof, action);
   if ((await nftTokensForOwner(proof.accountId)).length === 0) {
     throw new ProofError(`${proof.accountId} doesn't hold a CTOad.`);
   }
