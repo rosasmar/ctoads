@@ -1,0 +1,42 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "Privacy · CTOads" };
+
+export default function Privacy() {
+  return (
+    <article className="mx-auto max-w-2xl space-y-6 text-white/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white">
+      <div>
+        <h1 className="text-3xl font-bold text-white">Privacy</h1>
+        <p className="mt-1 text-sm text-white/50">What this app stores about you, and how to delete it.</p>
+      </div>
+
+      <section className="space-y-2">
+        <h2>Trading, CTOads and voting</h2>
+        <p>
+          These happen on the NEAR blockchain. The app reads public chain data and asks your wallet to sign
+          transactions. It doesn&apos;t store anything about them itself, but everything on-chain is public and
+          permanent.
+        </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2>Alerts</h2>
+        <p>
+          If you sign up on <Link href="/alerts" className="text-frog hover:underline">Alerts</Link>, we store your
+          NEAR account name, your phone number, and when you signed up or last changed it. They&apos;re kept in a
+          Supabase database that only this app&apos;s server and its maintainers can read. Your number is never shown to other
+          holders or on the page.
+        </p>
+        <p>
+          To prove the wallet is yours, your wallet signs a message naming your number. The server checks the
+          signature and doesn&apos;t keep it.
+        </p>
+        <p>
+          You can delete your number at any time with &quot;Stop alerts and delete my number&quot; on the Alerts page,
+          even after you no longer hold a CTOad.
+        </p>
+      </section>
+    </article>
+  );
+}

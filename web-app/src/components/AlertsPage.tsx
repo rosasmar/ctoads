@@ -1,6 +1,7 @@
 "use client";
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
+import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
@@ -78,7 +79,10 @@ export function AlertsPage() {
         <h1 className="text-3xl font-bold">Alerts</h1>
         <p className="mt-1 text-white/60">
           CTOad holders can sign up with a phone number to get alerts from fellow holders. Your number is never shown to
-          other holders.
+          other holders.{" "}
+          <Link href="/privacy" className="text-white/80 hover:text-frog">
+            Privacy
+          </Link>
         </p>
       </div>
 
