@@ -7,7 +7,7 @@ import useSWR from "swr";
 
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
-import { alertsApi, alertText, MAX_ALERT_LENGTH, sendAction, signAlertsAction } from "@/lib/alerts";
+import { alertsApi, alertText, MAX_ALERT_LENGTH, REMOVE_PATH, sendAction, signAlertsAction } from "@/lib/alerts";
 
 export function SendAlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
@@ -94,7 +94,7 @@ export function SendAlertsPage() {
           </label>
           {trimmed && (
             <p className="whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
-              {alertText(trimmed, signedAccountId)}
+              {alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)}
             </p>
           )}
           <button

@@ -140,6 +140,10 @@ export function AlertsPage() {
           Send an alert to your fellow holders →
         </Link>
       )}
+
+      <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
+        Getting alerts you didn&apos;t sign up for? Remove your number
+      </Link>
     </div>
   );
 }

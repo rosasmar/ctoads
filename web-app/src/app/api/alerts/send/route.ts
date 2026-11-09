@@ -4,7 +4,7 @@
 // Only subscribers who still hold a CTOad get it, and never the sender.
 
 import { NextRequest } from "next/server";
-import { alertText, DAILY_ALERT_LIMIT, MAX_ALERT_LENGTH, sendAction } from "@/lib/alerts";
+import { alertText, DAILY_ALERT_LIMIT, MAX_ALERT_LENGTH, REMOVE_PATH, sendAction } from "@/lib/alerts";
 import { ctoadHolders } from "@/lib/cto";
 import { sendText } from "@/lib/msgbubbles";
 import { supabase } from "@/lib/supabase";
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
       .single();
     if (logError) return serverError(logError);
 
-    const message = alertText(text, sender);
+    const message = alertText(text, sender, `${request.nextUrl.origin}${REMOVE_PATH}`);
     let failed = 0;
     for (let i = 0; i < recipients.length; i += PARALLEL) {
       const results = await Promise.allSettled(

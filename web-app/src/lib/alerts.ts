@@ -22,9 +22,15 @@ export const sendAction = (text: string) => `Send this alert to every signed-up 
 export const MAX_ALERT_LENGTH = 500;
 export const DAILY_ALERT_LIMIT = 3;
 
-/** What each recipient gets: the alert, who sent it, and how to stop. */
-export const alertText = (text: string, from: string) =>
-  `${text}\n\n- ${from}, a CTOad holder. Reply STOP to stop alerts.`;
+/**
+ * What each recipient gets: the alert, who sent it, and a link to stop. The number is outbound
+ * only, so replies (like STOP) never reach us.
+ */
+export const alertText = (text: string, from: string, removeUrl: string) =>
+  `${text}\n\n- ${from}, a CTOad holder. Stop these alerts: ${removeUrl}`;
+
+/** The page where anyone can remove their number, wallet or not. */
+export const REMOVE_PATH = "/alerts/remove";
 
 /**
  * A phone number in international format (+ country code, 8–15 digits), with spaces, dashes,
