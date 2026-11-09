@@ -6,6 +6,9 @@ import { MSGBUBBLES_NUMBER } from "@/config";
 
 const API = "https://api.msgbubbles.com/v1";
 
+/** Whether alerts can go by text. Without a msgbubbles key, every alert goes by email instead. */
+export const textingEnabled = () => Boolean(process.env.MSGBUBBLES_API_KEY && MSGBUBBLES_NUMBER);
+
 function apiKey(): string {
   const key = process.env.MSGBUBBLES_API_KEY;
   if (!key || !MSGBUBBLES_NUMBER) throw new Error("Sending isn't set up: MSGBUBBLES_API_KEY or NEXT_PUBLIC_MSGBUBBLES_NUMBER is missing");

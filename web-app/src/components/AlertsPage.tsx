@@ -126,13 +126,19 @@ export function AlertsPage() {
             {!status
               ? "Loading…"
               : status.subscribed
-                ? `You're signed up. Alerts go by ${status.channels === "both" ? "text and email" : status.channels}.`
+                ? `You're signed up. Alerts go by ${
+                    !status.textEnabled ? "email" : status.channels === "both" ? "text and email" : status.channels
+                  }.`
                 : "You're not signed up yet."}
-            {MSGBUBBLES_NUMBER && <span className="text-white/50"> Alerts come from {MSGBUBBLES_NUMBER}.</span>}
+            {MSGBUBBLES_NUMBER && status?.textEnabled && (
+              <span className="text-white/50"> Texts come from {MSGBUBBLES_NUMBER}.</span>
+            )}
           </p>
 
           {tokens && !holder ? (
             <p className="text-sm text-white/60">Only CTOad holders can sign up. This wallet holds none.</p>
+          ) : status?.textEnabled === false ? (
+            <p className="text-sm text-white/60">Alerts go by email for now. Add your email below.</p>
           ) : (
             <form
               onSubmit={(e) => {
@@ -220,24 +226,28 @@ export function AlertsPage() {
 
           {status?.subscribed && (
             <div className="space-y-2 border-t border-white/10 pt-4">
-              <p className="text-xs text-white/50">Send my alerts by</p>
-              <div className="grid grid-cols-3 gap-2">
-                {CHANNELS.map((c) => {
-                  const possible = c === "both" ? status.hasPhone && status.hasEmail : c === "text" ? status.hasPhone : status.hasEmail;
-                  return (
-                    <button
-                      key={c}
-                      onClick={() => setChannels(c)}
-                      disabled={busy || !possible || status.channels === c}
-                      className={`rounded-lg px-3 py-1.5 text-sm disabled:cursor-default ${
-                        status.channels === c ? "bg-frog font-semibold text-black" : "bg-white/10 disabled:opacity-40"
-                      }`}
-                    >
-                      {CHANNEL_LABELS[c]}
-                    </button>
-                  );
-                })}
-              </div>
+              {status.textEnabled && (
+                <>
+                  <p className="text-xs text-white/50">Send my alerts by</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {CHANNELS.map((c) => {
+                      const possible = c === "both" ? status.hasPhone && status.hasEmail : c === "text" ? status.hasPhone : status.hasEmail;
+                      return (
+                        <button
+                          key={c}
+                          onClick={() => setChannels(c)}
+                          disabled={busy || !possible || status.channels === c}
+                          className={`rounded-lg px-3 py-1.5 text-sm disabled:cursor-default ${
+                            status.channels === c ? "bg-frog font-semibold text-black" : "bg-white/10 disabled:opacity-40"
+                          }`}
+                        >
+                          {CHANNEL_LABELS[c]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2">
                 {status.hasEmail && (
                   <button onClick={removeEmail} disabled={busy} className="text-sm text-white/50 hover:text-white disabled:opacity-40">

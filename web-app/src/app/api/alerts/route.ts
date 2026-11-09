@@ -17,6 +17,7 @@ import {
   UNSUBSCRIBE_ACTION,
   type WalletProof,
 } from "@/lib/alerts";
+import { textingEnabled } from "@/lib/msgbubbles";
 import { supabase } from "@/lib/supabase";
 import { errorResponse, serverError } from "@/lib/api";
 import { isProof, ProofError, verifyHolder, verifySigner } from "@/lib/walletProof";
@@ -46,6 +47,7 @@ export async function GET(request: NextRequest) {
       hasPhone: !!data?.phone,
       hasEmail: !!data?.email,
       channels: data?.channels ?? null,
+      textEnabled: textingEnabled(),
     };
     return Response.json(status);
   } catch (e) {
