@@ -25,7 +25,13 @@ export default function Terms() {
 
       <section className="space-y-2">
         <h2>Alerts</h2>
-        <p>Only sign up a phone number that&apos;s yours. Anyone can stop alerts to their number by replying STOP.</p>
+        <p>
+          Only sign up a phone number that&apos;s yours. Anyone can remove their number, without a wallet, on the{" "}
+          <Link href="/alerts/remove" className="text-frog hover:underline">
+            remove page
+          </Link>
+          .
+        </p>
         <p>When you send an alert to fellow holders, don&apos;t send:</p>
         <ul className="list-disc space-y-1 pl-6">
           <li>spam, scams, phishing links or requests for keys or seed phrases</li>

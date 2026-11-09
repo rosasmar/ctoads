@@ -42,7 +42,11 @@ export default function Privacy() {
         </p>
         <p>
           You can delete your number at any time with &quot;Stop alerts and delete my number&quot; on the Alerts page,
-          even after you no longer hold a CTOad, or by replying STOP to any alert.
+          even after you no longer hold a CTOad, or without a wallet on the{" "}
+          <Link href="/alerts/remove" className="text-frog hover:underline">
+            remove page
+          </Link>
+          , linked at the end of every alert.
         </p>
       </section>
     </article>
