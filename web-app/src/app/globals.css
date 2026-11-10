@@ -1,18 +1,55 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #0b0f0c;
-  --color-panel: #121a14;
-  --color-frog: #4ade80;
-  --color-rekt: #f43f5e;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: #fff7e2;
+  --color-card: #ffffff;
+  --color-ink: #111111;
+  --color-accent: #ffe14a;
+  --color-frog: #15803d;
+  --color-rekt: #c42419;
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-space-mono);
+  --font-display: var(--font-bowlby-one);
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+}
+
+/* A hard black shadow, the brutalist touch on cards. */
+@utility shadow-hard {
+  box-shadow: 6px 6px 0 var(--color-ink);
+}
+
+/* Buttons sit on a hard shadow and press into it. */
+@utility press {
+  border: 2px solid var(--color-ink);
+  box-shadow: 4px 4px 0 var(--color-ink);
+  transition:
+    transform 80ms,
+    box-shadow 80ms;
+  &:hover:not(:disabled) {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--color-ink);
+  }
+  &:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
 }
 
 body {
   background: var(--color-background);
-  color: #ededed;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  color: var(--color-ink);
+  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+}
+
+h1,
+h2 {
+  font-family: var(--font-bowlby-one), system-ui, sans-serif;
+  font-weight: 400;
 }
 
 input[type="number"]::-webkit-inner-spin-button,

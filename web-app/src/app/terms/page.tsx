@@ -6,10 +6,10 @@ export const metadata: Metadata = { title: "Terms · CTOads" };
 
 export default function Terms() {
   return (
-    <article className="mx-auto max-w-2xl space-y-6 text-white/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white">
+    <article className="mx-auto max-w-2xl space-y-6 text-ink/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink">
       <div>
-        <h1 className="text-3xl font-bold text-white">Terms</h1>
-        <p className="mt-1 text-sm text-white/50">
+        <h1 className="text-3xl font-bold text-ink">Terms</h1>
+        <p className="mt-1 text-sm text-ink/65">
           The rules for using this app. See also <Link href="/privacy" className="text-frog hover:underline">privacy</Link>.
         </p>
       </div>

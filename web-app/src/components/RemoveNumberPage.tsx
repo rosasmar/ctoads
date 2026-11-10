@@ -30,7 +30,7 @@ export function RemoveNumberPage() {
     <div className="mx-auto max-w-md space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Stop alerts to your number</h1>
-        <p className="mt-1 text-white/60">
+        <p className="mt-1 text-ink/65">
           Getting CTOads alerts you didn&apos;t sign up for, or don&apos;t want anymore? Enter your number and
           we&apos;ll delete it. No wallet needed.
         </p>
@@ -40,31 +40,31 @@ export function RemoveNumberPage() {
           e.preventDefault();
           remove();
         }}
-        className="space-y-2 rounded-xl border border-white/10 bg-panel p-4"
+        className="space-y-2 rounded-xl border-2 border-ink bg-card p-4"
       >
         <label className="block">
-          <span className="text-xs text-white/50">Phone number, with country code</span>
+          <span className="text-xs text-ink/65">Phone number, with country code</span>
           <input
             type="tel"
             autoComplete="tel"
             placeholder="+1 202 555 0123"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none"
+            className="mt-1 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 outline-none"
           />
         </label>
         <button
           type="submit"
           disabled={busy || !normalized}
-          className="w-full rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40"
+          className="w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40"
         >
           {busy ? "Removing…" : "Remove my number"}
         </button>
       </form>
-      {message && <p className="text-sm text-white/70">{message}</p>}
-      <p className="text-xs text-white/40">
+      {message && <p className="text-sm text-ink/80">{message}</p>}
+      <p className="text-xs text-ink/65">
         CTOad holders can also manage alerts with their wallet on{" "}
-        <Link href="/alerts" className="hover:text-white">
+        <Link href="/alerts" className="hover:text-ink">
           Alerts
         </Link>
         .

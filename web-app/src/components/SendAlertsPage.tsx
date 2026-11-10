@@ -40,10 +40,10 @@ export function SendAlertsPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
         <AlertsPitch title="Send an alert" textEnabled={textEnabled} />
-        <p className="text-white/60">
+        <p className="text-ink/65">
           Connect the wallet that holds your CTOad to {textEnabled ? "text" : "email"} your fellow holders.
         </p>
-        <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
+        <button onClick={() => signIn()} className="rounded-xl press bg-accent px-5 py-3 font-semibold text-ink">
           Connect wallet
         </button>
       </div>
@@ -100,19 +100,19 @@ export function SendAlertsPage() {
       <div className="mx-auto max-w-md space-y-6">
 
       {tokens && !holder ? (
-        <p className="rounded-xl bg-white/5 p-4 text-sm text-white/60">Only CTOad holders can send alerts. This wallet holds none.</p>
+        <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/65">Only CTOad holders can send alerts. This wallet holds none.</p>
       ) : (
         <form
           onSubmit={(e) => {
             e.preventDefault();
             send();
           }}
-          className="space-y-3 rounded-xl border border-white/10 bg-panel p-4"
+          className="space-y-3 rounded-xl border-2 border-ink bg-card p-4"
         >
           <label className="block">
-            <span className="flex justify-between text-xs text-white/50">
+            <span className="flex justify-between text-xs text-ink/65">
               <span>Message</span>
-              <span className={trimmed.length > MAX_ALERT_LENGTH ? "text-red-400" : ""}>
+              <span className={trimmed.length > MAX_ALERT_LENGTH ? "text-rekt" : ""}>
                 {trimmed.length}/{MAX_ALERT_LENGTH}
               </span>
             </span>
@@ -121,22 +121,22 @@ export function SendAlertsPage() {
               value={text}
               onChange={(e) => setText(e.target.value)}
               placeholder="Vote on proposal #3 before it closes tonight"
-              className="mt-1 w-full resize-y rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none"
+              className="mt-1 w-full resize-y rounded-xl border-2 border-ink bg-white px-3 py-2 outline-none"
             />
           </label>
-          <label className="block text-xs text-white/50">
+          <label className="block text-xs text-ink/65">
             Image (optional, up to {MAX_IMAGE_BYTES / 1024 / 1024} MB)
             <input
               key={fileInputKey}
               type="file"
               accept={Object.keys(IMAGE_TYPES).join(",")}
               onChange={(e) => setImage(e.target.files?.[0] ?? null)}
-              className="mt-1 block w-full text-sm text-white/70 file:mr-3 file:rounded-lg file:border-0 file:bg-white/10 file:px-3 file:py-1.5 file:text-white"
+              className="mt-1 block w-full text-sm text-ink/80 file:mr-3 file:rounded-lg file:border-0 file:bg-ink/10 file:px-3 file:py-1.5 file:text-ink"
             />
           </label>
-          {imageError && <p className="text-xs text-red-400">{imageError}</p>}
+          {imageError && <p className="text-xs text-rekt">{imageError}</p>}
           {trimmed && (
-            <p className="whitespace-pre-wrap rounded-lg bg-black/30 p-3 text-xs text-white/60">
+            <p className="whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-ink/65">
               {textEnabled
                 ? alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)
                 : alertEmailText(trimmed, signedAccountId, `${window.location.origin}/alerts`)}
@@ -145,14 +145,14 @@ export function SendAlertsPage() {
           <button
             type="submit"
             disabled={busy || !canSend}
-            className="w-full rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40"
+            className="w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40"
           >
             {busy ? "Confirm in your wallet…" : "Send to all signed-up holders"}
           </button>
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-ink/65">
             {limit ? `You can send ${limit.remaining} more today.` : "Checking today's limit…"} Your wallet signs the exact
             message, which costs nothing. Follow the{" "}
-            <Link href="/terms" className="text-white/60 hover:text-frog">
+            <Link href="/terms" className="text-ink/65 hover:text-frog">
               terms
             </Link>
             .
@@ -160,7 +160,7 @@ export function SendAlertsPage() {
         </form>
       )}
 
-      {message && <p className="text-sm text-white/70">{message}</p>}
+      {message && <p className="text-sm text-ink/80">{message}</p>}
       </div>
     </div>
   );

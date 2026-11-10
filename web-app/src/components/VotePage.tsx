@@ -19,7 +19,7 @@ const STATUS_STYLE: Record<ProposalStatus, string> = {
   Open: "bg-sky-400/15 text-sky-300",
   Passed: "bg-frog/15 text-frog",
   Failed: "bg-rekt/15 text-rekt",
-  Executed: "bg-white/10 text-white/70",
+  Executed: "bg-ink/10 text-ink/80",
 };
 
 export function VotePage() {
@@ -39,36 +39,36 @@ export function VotePage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Treasury votes</h1>
-          <p className="mt-1 max-w-xl text-white/60">
+          <p className="mt-1 max-w-xl text-ink/65">
             After the takeover, 10% of every fee goes to the treasury. CTOad holders vote on where it goes: one vote
             per CTOad.
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm text-white/50">Treasury</p>
+          <p className="text-sm text-ink/65">Treasury</p>
           <p className="text-2xl font-bold text-frog">{market ? formatNear(market.treasury_balance) : "…"} NEAR</p>
-          {market && <p className="text-xs text-white/40">{formatNear(market.treasury_total)} NEAR received in total</p>}
+          {market && <p className="text-xs text-ink/65">{formatNear(market.treasury_total)} NEAR received in total</p>}
         </div>
       </div>
 
-      <p className="rounded-xl bg-white/5 p-4 text-sm text-white/70">
+      <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/80">
         A proposal passes as soon as 51% of all CTOads vote yes, and fails as soon as 51% vote no. Otherwise it&apos;s
         decided when voting ends: it passes with 51% of the votes cast, if at least 10% of CTOads voted.
       </p>
 
       {!signedAccountId ? (
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-ink/65">
           <button onClick={() => wallet.signIn()} className="text-frog hover:underline">
             Connect the wallet
           </button>{" "}
           that holds your CTOads to propose and vote.
         </p>
       ) : market && !soldOut ? (
-        <p className="text-sm text-white/60">
+        <p className="text-sm text-ink/65">
           Proposals open once every CTOad is minted ({market.ctoads_minted} of {market.max_ctoads} so far).
         </p>
       ) : tokens && myIds.length === 0 ? (
-        <p className="text-sm text-white/60">Only CTOad holders can propose and vote. This wallet holds none.</p>
+        <p className="text-sm text-ink/65">Only CTOad holders can propose and vote. This wallet holds none.</p>
       ) : (
         myIds.length > 0 && (
           <ProposeForm
@@ -80,7 +80,7 @@ export function VotePage() {
       )}
 
       {proposals && proposals.length === 0 && (
-        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">
+        <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">
           No proposals yet. Holders can propose once every CTOad is minted.
         </p>
       )}
@@ -136,14 +136,14 @@ function ProposeForm({ wallet, treasury, onDone }: { wallet: Wallet; treasury: b
   };
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-panel p-4">
+    <div className="space-y-3 rounded-xl border-2 border-ink bg-card p-4">
       <p className="font-semibold">New proposal</p>
       <textarea
         value={description}
         onChange={(e) => setDescription(e.target.value)}
         placeholder="What is the payout for?"
         rows={2}
-        className="w-full rounded-lg bg-white/5 p-2 text-sm outline-none focus:ring-1 focus:ring-frog"
+        className="w-full rounded-lg bg-ink/5 p-2 text-sm outline-none focus:ring-1 focus:ring-ink"
       />
       <div className="flex flex-wrap gap-3 text-sm">
         <label className="flex items-center gap-2">
@@ -152,7 +152,7 @@ function ProposeForm({ wallet, treasury, onDone }: { wallet: Wallet; treasury: b
             onChange={(e) => setAmountInput(e.target.value)}
             inputMode="decimal"
             placeholder="0.005"
-            className="w-28 rounded-lg bg-white/5 p-2 outline-none focus:ring-1 focus:ring-frog"
+            className="w-28 rounded-lg bg-ink/5 p-2 outline-none focus:ring-1 focus:ring-ink"
           />
           NEAR to
         </label>
@@ -160,25 +160,25 @@ function ProposeForm({ wallet, treasury, onDone }: { wallet: Wallet; treasury: b
           value={receiver}
           onChange={(e) => setReceiver(e.target.value)}
           placeholder="account.testnet"
-          className="min-w-0 flex-1 rounded-lg bg-white/5 p-2 font-mono outline-none focus:ring-1 focus:ring-frog"
+          className="min-w-0 flex-1 rounded-lg bg-ink/5 p-2 font-mono outline-none focus:ring-1 focus:ring-ink"
         />
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-white/40">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-ink/65">
         <span>
           {bytes}/{MAX_DESCRIPTION_BYTES} · Attaches 0.01 NEAR for storage, the rest is refunded.
           {amount !== null && amount > treasury && (
-            <span className="text-amber-300"> The treasury holds less than this right now.</span>
+            <span className="text-ink"> The treasury holds less than this right now.</span>
           )}
         </span>
         <button
           onClick={propose}
           disabled={!valid || busy}
-          className="rounded-xl bg-frog px-4 py-2 text-sm font-semibold text-black disabled:opacity-40"
+          className="rounded-xl press bg-accent px-4 py-2 text-sm font-semibold text-ink disabled:opacity-40"
         >
           {busy ? "Confirm in your wallet…" : "Propose"}
         </button>
       </div>
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
   );
 }
@@ -243,10 +243,10 @@ function ProposalCard({
     );
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-panel p-4">
+    <div className="space-y-3 rounded-xl border-2 border-ink bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-sm text-white/40">Proposal #{p.id}</p>
+          <p className="text-sm text-ink/65">Proposal #{p.id}</p>
           <p className="break-words font-semibold">{p.description}</p>
         </div>
         <span className={`rounded px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[p.status]}`}>{p.status}</span>
@@ -255,61 +255,61 @@ function ProposalCard({
       <p className="text-sm">
         Send <span className="text-frog">{formatNear(p.amount)} NEAR</span> to{" "}
         <AccountLink id={p.receiver_id} />
-        <span className="text-white/40"> · proposed by </span>
+        <span className="text-ink/65"> · proposed by </span>
         <AccountLink id={p.proposer} />
       </p>
 
       <div className="space-y-1 text-sm">
-        <div className="flex h-2 overflow-hidden rounded bg-white/10">
+        <div className="flex h-2 overflow-hidden rounded bg-ink/10">
           <div className="bg-frog" style={{ width: `${pct(p.yes)}%` }} />
           <div className="bg-rekt" style={{ width: `${pct(p.no)}%` }} />
         </div>
-        <p className="text-white/60">
+        <p className="text-ink/65">
           <span className="text-frog">{p.yes} yes</span> · <span className="text-rekt">{p.no} no</span> · of{" "}
           {maxCtoads || "…"} CTOads
         </p>
       </div>
 
-      <p className="text-xs text-white/40">{timeLine(p, maxCtoads, now)}</p>
+      <p className="text-xs text-ink/65">{timeLine(p, maxCtoads, now)}</p>
 
       {wallet.signedAccountId && open && canVote && canVote.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <button
             onClick={() => vote(true)}
             disabled={busy}
-            className="rounded-xl bg-frog px-4 py-2 font-semibold text-black disabled:opacity-40"
+            className="rounded-xl press bg-accent px-4 py-2 font-semibold text-ink disabled:opacity-40"
           >
             Vote yes
           </button>
           <button
             onClick={() => vote(false)}
             disabled={busy}
-            className="rounded-xl bg-rekt px-4 py-2 font-semibold text-black disabled:opacity-40"
+            className="rounded-xl press bg-rekt px-4 py-2 font-semibold text-white disabled:opacity-40"
           >
             Vote no
           </button>
-          <span className="text-white/50">
+          <span className="text-ink/65">
             with CTOad{canVote.length === 1 ? "" : "s"} #{canVote.join(", #")}. Votes are final.
           </span>
         </div>
       )}
       {wallet.signedAccountId && open && canVote && canVote.length === 0 && (
-        <p className="text-sm text-white/50">All your CTOads have voted on this one.</p>
+        <p className="text-sm text-ink/65">All your CTOads have voted on this one.</p>
       )}
       {wallet.signedAccountId && p.status === "Passed" && (
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <button
             onClick={execute}
             disabled={busy}
-            className="rounded-xl bg-frog px-4 py-2 font-semibold text-black disabled:opacity-40"
+            className="rounded-xl press bg-accent px-4 py-2 font-semibold text-ink disabled:opacity-40"
           >
             Execute
           </button>
-          <span className="text-white/50">Anyone can execute a passed proposal. It pays out from the treasury.</span>
+          <span className="text-ink/65">Anyone can execute a passed proposal. It pays out from the treasury.</span>
         </div>
       )}
-      {busy && <p className="text-sm text-white/70">Confirm in your wallet…</p>}
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {busy && <p className="text-sm text-ink/80">Confirm in your wallet…</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
   );
 }

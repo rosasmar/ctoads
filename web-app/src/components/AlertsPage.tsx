@@ -46,8 +46,8 @@ export function AlertsPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
         <AlertsPitch title="Alerts" textEnabled={textEnabled} />
-        <p className="text-white/60">Connect the wallet that holds your CTOad to sign up for alerts {textEnabled ? "by text or email" : "by email"}.</p>
-        <button onClick={() => signIn()} className="rounded-xl bg-frog px-5 py-3 font-semibold text-black">
+        <p className="text-ink/65">Connect the wallet that holds your CTOad to sign up for alerts {textEnabled ? "by text or email" : "by email"}.</p>
+        <button onClick={() => signIn()} className="rounded-xl press bg-accent px-5 py-3 font-semibold text-ink">
           Connect wallet
         </button>
       </div>
@@ -112,8 +112,8 @@ export function AlertsPage() {
       return alertsApi("DELETE", "", { body: { proof } });
     }, "All alerts stopped, and your details are deleted.");
 
-  const inputClass = "mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none";
-  const buttonClass = "w-full rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40";
+  const inputClass = "mt-1 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 outline-none";
+  const buttonClass = "w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40";
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
@@ -121,9 +121,9 @@ export function AlertsPage() {
       <div className="mx-auto max-w-md space-y-6">
 
       {statusError ? (
-        <p className="rounded-xl bg-white/5 p-4 text-sm text-white/70">Alerts aren&apos;t available right now.</p>
+        <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/80">Alerts aren&apos;t available right now.</p>
       ) : (
-        <div className="space-y-4 rounded-xl border border-white/10 bg-panel p-4">
+        <div className="space-y-4 rounded-xl border-2 border-ink bg-card p-4">
           <p className="text-sm">
             {!status
               ? "Loading…"
@@ -133,14 +133,14 @@ export function AlertsPage() {
                   }.`
                 : "You're not signed up yet."}
             {MSGBUBBLES_NUMBER && status?.textEnabled && (
-              <span className="text-white/50"> Texts come from {MSGBUBBLES_NUMBER}.</span>
+              <span className="text-ink/65"> Texts come from {MSGBUBBLES_NUMBER}.</span>
             )}
           </p>
 
           {tokens && !holder ? (
-            <p className="text-sm text-white/60">Only CTOad holders can sign up. This wallet holds none.</p>
+            <p className="text-sm text-ink/65">Only CTOad holders can sign up. This wallet holds none.</p>
           ) : status?.textEnabled === false ? (
-            <p className="text-sm text-white/60">Alerts go by email for now. Add your email below.</p>
+            <p className="text-sm text-ink/65">Alerts go by email for now. Add your email below.</p>
           ) : (
             <form
               onSubmit={(e) => {
@@ -150,7 +150,7 @@ export function AlertsPage() {
               className="space-y-2"
             >
               <label className="block">
-                <span className="text-xs text-white/50">
+                <span className="text-xs text-ink/65">
                   {status?.hasPhone ? "New phone number" : "Phone number"}, with country code
                 </span>
                 <input
@@ -159,13 +159,13 @@ export function AlertsPage() {
                   placeholder="+1 202 555 0123"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/10 bg-black/30 px-3 py-2 outline-none"
+                  className="mt-1 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 outline-none"
                 />
               </label>
               <button
                 type="submit"
                 disabled={busy || !normalized || !holder}
-                className="w-full rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40"
+                className="w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40"
               >
                 {busy ? "Confirm in your wallet…" : status?.hasPhone ? "Change number" : "Get alerts by text"}
               </button>
@@ -179,11 +179,11 @@ export function AlertsPage() {
                 if (codeSentTo) verifyCode();
                 else sendCode();
               }}
-              className="space-y-2 border-t border-white/10 pt-4"
+              className="space-y-2 border-t border-ink/15 pt-4"
             >
               {codeSentTo ? (
                 <label className="block">
-                  <span className="text-xs text-white/50">The 6-digit code we emailed to {codeSentTo}</span>
+                  <span className="text-xs text-ink/65">The 6-digit code we emailed to {codeSentTo}</span>
                   <input
                     inputMode="numeric"
                     autoComplete="one-time-code"
@@ -195,7 +195,7 @@ export function AlertsPage() {
                 </label>
               ) : (
                 <label className="block">
-                  <span className="text-xs text-white/50">{status?.hasEmail ? "New email" : "Email"}</span>
+                  <span className="text-xs text-ink/65">{status?.hasEmail ? "New email" : "Email"}</span>
                   <input
                     type="email"
                     autoComplete="email"
@@ -214,23 +214,23 @@ export function AlertsPage() {
                 {busy ? "One moment…" : codeSentTo ? "Verify email" : status?.hasEmail ? "Change email" : "Get alerts by email"}
               </button>
               {codeSentTo && (
-                <button type="button" onClick={() => setCodeSentTo(null)} className="text-xs text-white/50 hover:text-white">
+                <button type="button" onClick={() => setCodeSentTo(null)} className="text-xs text-ink/65 hover:text-ink">
                   Use a different email
                 </button>
               )}
             </form>
           )}
 
-          <p className="text-xs text-white/40">
+          <p className="text-xs text-ink/65">
             Your wallet asks you to sign a short message for each change. It proves the wallet is yours and costs
             nothing.
           </p>
 
           {status?.subscribed && (
-            <div className="space-y-2 border-t border-white/10 pt-4">
+            <div className="space-y-2 border-t border-ink/15 pt-4">
               {status.textEnabled && (
                 <>
-                  <p className="text-xs text-white/50">Send my alerts by</p>
+                  <p className="text-xs text-ink/65">Send my alerts by</p>
                   <div className="grid grid-cols-3 gap-2">
                     {CHANNELS.map((c) => {
                       const possible = c === "both" ? status.hasPhone && status.hasEmail : c === "text" ? status.hasPhone : status.hasEmail;
@@ -240,7 +240,7 @@ export function AlertsPage() {
                           onClick={() => setChannels(c)}
                           disabled={busy || !possible || status.channels === c}
                           className={`rounded-lg px-3 py-1.5 text-sm disabled:cursor-default ${
-                            status.channels === c ? "bg-frog font-semibold text-black" : "bg-white/10 disabled:opacity-40"
+                            status.channels === c ? "bg-accent font-semibold text-ink" : "bg-ink/10 disabled:opacity-40"
                           }`}
                         >
                           {CHANNEL_LABELS[c]}
@@ -252,11 +252,11 @@ export function AlertsPage() {
               )}
               <div className="flex flex-wrap gap-x-4 gap-y-1 pt-2">
                 {status.hasEmail && (
-                  <button onClick={removeEmail} disabled={busy} className="text-sm text-white/50 hover:text-white disabled:opacity-40">
+                  <button onClick={removeEmail} disabled={busy} className="text-sm text-ink/65 hover:text-ink disabled:opacity-40">
                     Delete my email
                   </button>
                 )}
-                <button onClick={unsubscribe} disabled={busy} className="text-sm text-white/50 hover:text-white disabled:opacity-40">
+                <button onClick={unsubscribe} disabled={busy} className="text-sm text-ink/65 hover:text-ink disabled:opacity-40">
                   Stop all alerts and delete my details
                 </button>
               </div>
@@ -265,16 +265,16 @@ export function AlertsPage() {
         </div>
       )}
 
-      {message && <p className="text-sm text-white/70">{message}</p>}
+      {message && <p className="text-sm text-ink/80">{message}</p>}
 
       {holder && (
-        <Link href="/send-alerts" className="block text-sm text-white/60 hover:text-frog">
+        <Link href="/send-alerts" className="block text-sm text-ink/65 hover:text-frog">
           Send an alert to your fellow holders →
         </Link>
       )}
 
       {textEnabled && (
-        <Link href="/alerts/remove" className="block text-xs text-white/40 hover:text-white">
+        <Link href="/alerts/remove" className="block text-xs text-ink/65 hover:text-ink">
           Getting alerts you didn&apos;t sign up for? Remove your number
         </Link>
       )}

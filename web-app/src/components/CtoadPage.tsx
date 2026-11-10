@@ -22,7 +22,7 @@ export function CtoadPage({ id }: { id: string }) {
     return (
       <div className="py-20 text-center">
         <h1 className="text-3xl font-bold">No CTOad #{id}</h1>
-        <p className="mt-2 text-white/60">It hasn&apos;t been minted.</p>
+        <p className="mt-2 text-ink/65">It hasn&apos;t been minted.</p>
         <Link href="/ctoads" className="mt-6 inline-block text-frog hover:underline">
           ← All CTOads
         </Link>
@@ -33,7 +33,7 @@ export function CtoadPage({ id }: { id: string }) {
   const extra = token ? ctoadExtra(token) : {};
   return (
     <div className="space-y-6">
-      <Link href="/ctoads" className="text-sm text-white/50 hover:text-white">
+      <Link href="/ctoads" className="text-sm text-ink/65 hover:text-ink">
         ← All CTOads
       </Link>
       <div className="grid gap-8 md:grid-cols-[minmax(0,420px)_1fr]">
@@ -43,7 +43,7 @@ export function CtoadPage({ id }: { id: string }) {
             <h1 className="text-3xl font-bold">CTOad #{id}</h1>
             {extra.loss && <p className="mt-1 text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
             {token && (
-              <p className="mt-1 text-sm text-white/60">
+              <p className="mt-1 text-sm text-ink/65">
                 Held by <AccountLink id={token.owner_id} keep={16} />
               </p>
             )}
@@ -67,14 +67,14 @@ function Backpack({ id, holder }: { id: string; holder: string }) {
   const unswept = funds ? BigInt(funds.account.unswept_fees) : 0n;
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-panel p-5">
+    <section className="rounded-2xl border-2 border-ink shadow-hard bg-card p-5">
       <h2 className="font-semibold">Backpack</h2>
-      <p className="mt-1 text-sm text-white/60">
+      <p className="mt-1 text-sm text-ink/65">
         This CTOad&apos;s own account, <AccountLink id={account} keep={24} />. Whoever holds the CTOad controls it, and
         selling the CTOad hands over everything in it.
       </p>
       {funds?.account.state !== "Ready" && funds && (
-        <p className="mt-4 text-sm text-amber-300">This CTOad has no account yet.</p>
+        <p className="mt-4 text-sm text-ink">This CTOad has no account yet.</p>
       )}
       <dl className="mt-4 space-y-1 text-sm">
         <Row label="NEAR" value={funds ? `${formatNear(funds.inAccount)} NEAR` : "…"} />
@@ -184,8 +184,8 @@ function BackpackActions(props: {
     }, `CTOad #${id} sold its $CTO. The NEAR is in its backpack, ready to claim.`);
 
   return (
-    <div className="mt-5 space-y-4 border-t border-white/10 pt-5">
-      <p className="text-sm text-white/60">You hold this CTOad, so you decide what its account does.</p>
+    <div className="mt-5 space-y-4 border-t border-ink/15 pt-5">
+      <p className="text-sm text-ink/65">You hold this CTOad, so you decide what its account does.</p>
       <AmountInput
         label="Buy $CTO with the backpack's NEAR"
         unit="NEAR"
@@ -204,7 +204,7 @@ function BackpackActions(props: {
       )}
       {tooMuch && <p className="text-sm text-rekt">The backpack doesn&apos;t hold that much NEAR.</p>}
       {needsSweep && !tooMuch && (
-        <p className="text-xs text-white/50">
+        <p className="text-xs text-ink/65">
           This also moves the fees waiting outside into the backpack first, so your wallet asks you to approve two
           transactions at once.
         </p>
@@ -212,7 +212,7 @@ function BackpackActions(props: {
       <button
         disabled={!amount || !buyQuote || tooMuch || busy}
         onClick={buy}
-        className="w-full rounded-xl bg-frog py-3 font-semibold text-black disabled:opacity-40"
+        className="w-full rounded-xl press bg-accent py-3 font-semibold text-ink disabled:opacity-40"
       >
         {busy ? "Confirm in your wallet…" : "Buy $CTO"}
       </button>
@@ -225,7 +225,7 @@ function BackpackActions(props: {
           {sellQuote ? `Sell all ${formatCto(bag)} $CTO for about ${formatNear(sellQuote.near_out)} NEAR` : "Sell all $CTO"}
         </button>
       )}
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
   );
 }

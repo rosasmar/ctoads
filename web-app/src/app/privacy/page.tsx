@@ -5,10 +5,10 @@ export const metadata: Metadata = { title: "Privacy · CTOads" };
 
 export default function Privacy() {
   return (
-    <article className="mx-auto max-w-2xl space-y-6 text-white/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-white">
+    <article className="mx-auto max-w-2xl space-y-6 text-ink/80 [&_h2]:text-lg [&_h2]:font-semibold [&_h2]:text-ink">
       <div>
-        <h1 className="text-3xl font-bold text-white">Privacy</h1>
-        <p className="mt-1 text-sm text-white/50">What this app stores about you, and how to delete it. See also the <Link href="/terms" className="text-frog hover:underline">terms</Link>.</p>
+        <h1 className="text-3xl font-bold text-ink">Privacy</h1>
+        <p className="mt-1 text-sm text-ink/65">What this app stores about you, and how to delete it. See also the <Link href="/terms" className="text-frog hover:underline">terms</Link>.</p>
       </div>
 
       <section className="space-y-2">

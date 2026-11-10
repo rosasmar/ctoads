@@ -9,9 +9,9 @@ export function TestnetHelp() {
   const { signIn } = useWalletSelector();
 
   return (
-    <aside className="space-y-3 rounded-2xl border border-white/10 p-5 text-sm">
+    <aside className="space-y-3 rounded-2xl border-2 border-ink shadow-hard p-5 text-sm">
       <h2 className="font-semibold">New to NEAR testnet?</h2>
-      <ol className="list-decimal space-y-2 pl-5 text-white/70">
+      <ol className="list-decimal space-y-2 pl-5 text-ink/80">
         <li>
           Get{" "}
           <a href="https://wallet.meteorwallet.app" target="_blank" rel="noreferrer" className={linkClass}>
@@ -34,7 +34,7 @@ export function TestnetHelp() {
           .
         </li>
       </ol>
-      <p className="text-xs text-white/40">Testnet NEAR is free and has no value.</p>
+      <p className="text-xs text-ink/65">Testnet NEAR is free and has no value.</p>
     </aside>
   );
 }

@@ -29,8 +29,8 @@ export function ClaimPage() {
     return (
       <div className="py-20 text-center">
         <h1 className="text-3xl font-bold">Your CTOads</h1>
-        <p className="mt-2 text-white/60">Connect the wallet that holds your CTOads to see and claim their fees.</p>
-        <button onClick={() => signIn()} className="mt-6 rounded-xl bg-frog px-5 py-3 font-semibold text-black">
+        <p className="mt-2 text-ink/65">Connect the wallet that holds your CTOads to see and claim their fees.</p>
+        <button onClick={() => signIn()} className="mt-6 rounded-xl press bg-accent px-5 py-3 font-semibold text-ink">
           Connect wallet
         </button>
       </div>
@@ -74,19 +74,19 @@ export function ClaimPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Your CTOads</h1>
-          <p className="mt-1 text-white/60">
+          <p className="mt-1 text-ink/65">
             {tokens ? `You hold ${tokens.length}.` : "Loading…"} Each CTOad&apos;s fees collect in its own account, and
             whoever holds it can claim them.
           </p>
         </div>
         {ids.length > 0 && (
           <div className="text-right">
-            <p className="text-sm text-white/50">Claimable now</p>
+            <p className="text-sm text-ink/65">Claimable now</p>
             <p className="text-2xl font-bold text-frog">{formatNear(total)} NEAR</p>
             <button
               onClick={claimAll}
               disabled={busy || total === 0n}
-              className="mt-2 rounded-xl bg-frog px-5 py-2 font-semibold text-black disabled:opacity-40"
+              className="mt-2 rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40"
             >
               {busy ? "Confirm in your wallet…" : "Claim all"}
             </button>
@@ -95,14 +95,14 @@ export function ClaimPage() {
       </div>
 
       {market && !market.takeover && (
-        <p className="rounded-xl bg-white/5 p-4 text-sm text-white/70">
+        <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/80">
           CTOads start earning at the takeover, when all {market.max_ctoads} are minted ({market.ctoads_minted} so far).
           Until then, every fee goes to the deployer.
         </p>
       )}
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
       {tokens && tokens.length === 0 && (
-        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">
+        <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">
           No CTOads in this wallet. Lose at least {config ? formatNear(config.loss_threshold) : "1"} NEAR on a single
           sell to earn one, or buy one from a holder.
         </p>
@@ -112,7 +112,7 @@ export function ClaimPage() {
         {ids.map((id) => {
           const c = claimable?.find((x) => x.id === id);
           return (
-            <div key={id} className="flex gap-4 rounded-xl border border-white/10 bg-panel p-3">
+            <div key={id} className="flex gap-4 rounded-xl border-2 border-ink bg-card p-3">
               <Link href={`/ctoads/${id}`} className="shrink-0">
                 <CtoadImage token={tokens?.find((t) => t.token_id === id)} className="h-20 w-20 rounded-lg" />
               </Link>
@@ -124,27 +124,27 @@ export function ClaimPage() {
                   <>
                     <p>
                       <span className="text-frog">{formatNear(c.total)} NEAR</span>{" "}
-                      <span className="text-white/40">claimable</span>
+                      <span className="text-ink/65">claimable</span>
                     </p>
                     {c.account.state === "Ready" ? (
                       <a
                         href={`${EXPLORER_URL}/address/${c.account.account_id}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="block truncate font-mono text-xs text-white/50 hover:text-white"
+                        className="block truncate font-mono text-xs text-ink/65 hover:text-ink"
                       >
                         {c.account.account_id} ↗
                       </a>
                     ) : c.account.state === "Creating" ? (
-                      <p className="text-xs text-white/50">Account being created…</p>
+                      <p className="text-xs text-ink/65">Account being created…</p>
                     ) : (
-                      <button onClick={() => createAccount(id)} className="text-xs text-amber-300 hover:underline">
+                      <button onClick={() => createAccount(id)} className="text-xs text-ink hover:underline">
                         No account yet. Create it (claims still pay you directly)
                       </button>
                     )}
                   </>
                 ) : (
-                  <p className="text-white/40">Loading…</p>
+                  <p className="text-ink/65">Loading…</p>
                 )}
               </div>
             </div>
