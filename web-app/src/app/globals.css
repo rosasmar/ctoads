@@ -78,3 +78,65 @@ input[type="number"]::-webkit-outer-spin-button {
     animation: none;
   }
 }
+
+/* The mint moment: the receipt prints line by line, REKT stamps it, the CTOad pops in. */
+.mint-line,
+.mint-stamp,
+.mint-pop,
+.mint-after {
+  opacity: 0;
+  animation: mint-print 0.25s ease-out forwards;
+}
+.mint-stamp {
+  animation: mint-slam 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) 1.1s forwards;
+}
+.mint-pop {
+  animation: mint-pop 0.6s cubic-bezier(0.2, 1.8, 0.4, 1) 1.6s forwards;
+}
+.mint-after {
+  animation-duration: 0.4s;
+  animation-delay: 2.3s;
+}
+@keyframes mint-print {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mint-slam {
+  from {
+    opacity: 0;
+    transform: scale(3) rotate(-12deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-12deg);
+  }
+}
+@keyframes mint-pop {
+  from {
+    opacity: 0;
+    transform: translateY(60px) scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(3deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mint-line,
+  .mint-pop,
+  .mint-after {
+    animation: none;
+    opacity: 1;
+  }
+  .mint-stamp {
+    animation: none;
+    opacity: 1;
+    transform: rotate(-12deg);
+  }
+}

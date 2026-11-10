@@ -30,6 +30,7 @@ export function TradePage() {
         accountId,
         tokenId: (minted?.token_id as string | undefined) ?? null,
         loss: String(sell.loss ?? "0"),
+        nearOut: String(sell.near_out ?? "0"),
         sinceMs,
       });
     },
