@@ -55,7 +55,7 @@ export function TradePage() {
   );
 }
 
-/** Redirect wallets (e.g. MyNearWallet) come back with ?transactionHashes=. Look those up. */
+/** Wallets that redirect come back with ?transactionHashes=. Look those up. */
 function useWalletRedirect(
   accountId: string | null,
   onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void,

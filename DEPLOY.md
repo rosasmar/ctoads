@@ -259,7 +259,7 @@ npm install
 npm run dev   # http://localhost:3000
 ```
 
-Connect a testnet wallet, such as Meteor or MyNearWallet. Then:
+Connect a testnet wallet, such as Meteor. Then:
 
 1. Buy on the Trade page.
 2. Switch to Sell. It shows whether the sell earns a CTOad.
