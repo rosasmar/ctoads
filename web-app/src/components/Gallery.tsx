@@ -31,17 +31,17 @@ export function Gallery() {
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold">CTOads</h1>
-        <p className="mt-1 text-white/60">
+        <p className="mt-1 text-ink/65">
           {total ?? "…"} of {max} minted. Each one was earned by losing NEAR on a single $CTO sell.
         </p>
       </div>
       {signedAccountId && (
-        <div className="flex w-fit gap-1 rounded-xl bg-white/5 p-1 text-sm">
+        <div className="flex w-fit gap-1 rounded-xl bg-ink/5 p-1 text-sm">
           {(["all", "mine"] as const).map((v) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`rounded-lg px-4 py-1.5 ${view === v ? "bg-white/10 font-medium" : "text-white/50"}`}
+              className={`rounded-lg px-4 py-1.5 ${view === v ? "bg-ink/10 font-medium" : "text-ink/65"}`}
             >
               {v === "all" ? "All" : "Mine"}
             </button>
@@ -50,10 +50,10 @@ export function Gallery() {
       )}
       {error && <p className="text-rekt">Couldn&apos;t load CTOads: {String(error.message ?? error)}</p>}
       {mine && owned?.length === 0 && (
-        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">No CTOads in this wallet yet.</p>
+        <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">No CTOads in this wallet yet.</p>
       )}
       {!mine && total === 0 && (
-        <p className="rounded-xl bg-white/5 p-6 text-center text-white/60">No CTOads yet. Somebody has to get rekt first.</p>
+        <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">No CTOads yet. Somebody has to get rekt first.</p>
       )}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
         {mine
@@ -62,7 +62,7 @@ export function Gallery() {
       </div>
       {!mine && total !== undefined && shown < total && (
         <div className="text-center">
-          <button onClick={() => setShown(shown + PAGE)} className="rounded-xl border border-white/20 px-5 py-2 text-sm">
+          <button onClick={() => setShown(shown + PAGE)} className="rounded-xl press bg-card px-5 py-2 text-sm">
             Show more
           </button>
         </div>
@@ -80,7 +80,7 @@ function GalleryCard({ id }: { id: string }) {
 function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
   const extra = t ? ctoadExtra(t) : {};
   return (
-    <div className="overflow-hidden rounded-xl border border-white/10 bg-panel">
+    <div className="overflow-hidden rounded-xl border-2 border-ink bg-card">
       <Link href={`/ctoads/${id}`}>
         <CtoadImage token={t} className="aspect-square w-full" />
       </Link>
@@ -91,7 +91,7 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
         {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
         {t && <CtoadTraits token={t} className="py-1" />}
         {t && (
-          <p className="text-white/50">
+          <p className="text-ink/65">
             Held by <span className="font-mono">{shortAccount(t.owner_id, 8)}</span>
           </p>
         )}

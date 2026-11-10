@@ -84,7 +84,7 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
         <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
           The bagholders <span className="text-frog">take over.</span>
         </h1>
-        <p className="mt-4 max-w-xl text-white/70">
+        <p className="mt-4 max-w-xl text-ink/80">
           Lose {config ? formatNear(config.loss_threshold) : "1"} NEAR or more on a single $CTO sell and you mint one of{" "}
           {max} CTOads. When the last one is minted, the community takes over: CTOad holders split 100% of trading fees,
           forever.
@@ -93,18 +93,18 @@ function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
           <div className="flex justify-between text-sm">
             <span>
               <span className="text-2xl font-bold">{minted}</span>
-              <span className="text-white/50"> / {max} CTOads minted</span>
+              <span className="text-ink/65"> / {max} CTOads minted</span>
             </span>
-            {market && <span className="text-white/50">1 $CTO = {formatNear(market.price_per_token)} NEAR</span>}
+            {market && <span className="text-ink/65">1 $CTO = {formatNear(market.price_per_token)} NEAR</span>}
           </div>
-          <div className="mt-2 h-3 overflow-hidden rounded-full bg-white/10">
-            <div className="h-full rounded-full bg-frog transition-all" style={{ width: `${pct}%` }} />
+          <div className="mt-2 h-3 overflow-hidden rounded-full bg-ink/10">
+            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
           </div>
           <p className="mt-2 text-sm">
             {market?.takeover ? (
               <span className="text-frog">Community takeover is live. Every fee goes to CTOad holders.</span>
             ) : (
-              <span className="text-white/50">
+              <span className="text-ink/65">
                 Until all {max} are minted, fees go to the deployer. Nothing is split before the takeover.
               </span>
             )}
@@ -130,14 +130,14 @@ function HeroCtoad({ id, minted }: { id: number; minted: number }) {
 function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {
   const [tab, setTab] = useState<"buy" | "sell">("buy");
   return (
-    <section className="rounded-2xl border border-white/10 bg-panel p-5">
+    <section className="rounded-2xl border-2 border-ink shadow-hard bg-card p-5">
       <div className="mb-5 flex gap-2">
         {(["buy", "sell"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             className={`flex-1 rounded-lg py-2 text-sm font-medium capitalize ${
-              tab === t ? (t === "buy" ? "bg-frog text-black" : "bg-rekt text-white") : "bg-white/5 text-white/60"
+              tab === t ? (t === "buy" ? "bg-accent text-ink" : "bg-rekt text-white") : "bg-ink/5 text-ink/65"
             }`}
           >
             {t}
@@ -196,16 +196,16 @@ function BuyForm() {
         <button
           disabled={!quote || !amount || busy}
           onClick={buy}
-          className="w-full rounded-xl bg-frog py-3 font-semibold text-black disabled:opacity-40"
+          className="w-full rounded-xl press bg-accent py-3 font-semibold text-ink disabled:opacity-40"
         >
           {busy ? "Confirm in your wallet…" : "Buy $CTO"}
         </button>
       ) : (
-        <button onClick={() => signIn()} className="w-full rounded-xl bg-frog py-3 font-semibold text-black">
+        <button onClick={() => signIn()} className="w-full rounded-xl press bg-accent py-3 font-semibold text-ink">
           Connect wallet to buy
         </button>
       )}
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
   );
 }
@@ -224,7 +224,7 @@ function SellForm({ onSellOutcome }: { onSellOutcome: (outcome: unknown, account
 
   if (!signedAccountId) {
     return (
-      <button onClick={() => signIn()} className="w-full rounded-xl bg-rekt py-3 font-semibold">
+      <button onClick={() => signIn()} className="w-full rounded-xl press bg-rekt py-3 font-semibold text-white">
         Connect wallet to sell
       </button>
     );
@@ -286,22 +286,22 @@ function SellForm({ onSellOutcome }: { onSellOutcome: (outcome: unknown, account
               <UnmintedCtoad className="h-12 w-12 shrink-0 rounded-lg text-xl" />
               <p className="text-sm">
                 <span className="font-semibold text-frog">This sell earns CTOad #{nextId}.</span>{" "}
-                <span className="text-white/70">Getting rekt has never paid this well.</span>
+                <span className="text-ink/80">Getting rekt has never paid this well.</span>
               </p>
             </div>
           ) : (
-            reason && <p className="rounded-xl bg-white/5 p-3 text-sm text-white/60">{reason}</p>
+            reason && <p className="rounded-xl bg-ink/5 p-3 text-sm text-ink/65">{reason}</p>
           )}
         </>
       )}
       <button
         disabled={!quote || !amount || tooMuch || busy}
         onClick={sell}
-        className="w-full rounded-xl bg-rekt py-3 font-semibold disabled:opacity-40"
+        className="w-full rounded-xl press bg-rekt py-3 font-semibold text-white disabled:opacity-40"
       >
         {busy ? "Confirm in your wallet…" : quote?.earns_ctoad ? "Sell and mint my CTOad" : "Sell $CTO"}
       </button>
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
   );
 }
@@ -315,7 +315,7 @@ function Position() {
   if (!signedAccountId && NETWORK === "testnet") return <TestnetHelp />;
   if (!signedAccountId || !holder) {
     return (
-      <aside className="rounded-2xl border border-white/10 p-5 text-sm text-white/50">
+      <aside className="rounded-2xl border-2 border-ink shadow-hard p-5 text-sm text-ink/65">
         Connect a wallet to see your position.
       </aside>
     );
@@ -326,7 +326,7 @@ function Position() {
   const pnl = value !== null ? value - cost : null;
 
   return (
-    <aside className="space-y-3 rounded-2xl border border-white/10 p-5 text-sm">
+    <aside className="space-y-3 rounded-2xl border-2 border-ink shadow-hard p-5 text-sm">
       <h2 className="font-semibold">Your bag</h2>
       <dl className="space-y-1">
         <Row label="Balance" value={`${formatCto(balance)} $CTO`} />
@@ -351,7 +351,7 @@ function Position() {
               gas: TX.sell.gas,
             })
           }
-          className="w-full rounded-lg border border-amber-400/50 py-2 text-amber-200"
+          className="w-full rounded-lg border border-ink py-2 text-ink"
         >
           Your CTOad mint failed. Retry it
         </button>
@@ -373,10 +373,10 @@ function HowItWorks({ config }: { config?: TokenConfig }) {
   return (
     <section className="grid gap-4 md:grid-cols-4">
       {steps.map(([title, body], i) => (
-        <div key={title} className="rounded-xl bg-white/[0.03] p-4">
+        <div key={title} className="rounded-xl bg-ink/5 p-4">
           <p className="text-xs text-frog">Step {i + 1}</p>
           <h3 className="mt-1 font-semibold">{title}</h3>
-          <p className="mt-1 text-sm text-white/60">{body}</p>
+          <p className="mt-1 text-sm text-ink/65">{body}</p>
         </div>
       ))}
     </section>

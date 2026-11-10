@@ -41,9 +41,9 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
   }, [tokenId, moment.accountId, moment.sinceMs]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-2xl border border-rekt/40 bg-panel p-6 text-center shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-rekt/40 bg-card p-6 text-center shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="text-sm uppercase tracking-widest text-rekt">You got rekt</p>
@@ -52,27 +52,27 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
           {tokenId ? (
             <CtoadImage token={token ?? undefined} className="h-full w-full" />
           ) : (
-            <div className="flex h-full w-full animate-pulse items-center justify-center bg-white/5 text-sm text-white/50">
+            <div className="flex h-full w-full animate-pulse items-center justify-center bg-ink/5 text-sm text-ink/65">
               Minting…
             </div>
           )}
         </div>
         {token && <CtoadTraits token={token} className="mx-auto mb-4 w-fit text-left text-sm" />}
-        <p className="text-sm text-white/70">
+        <p className="text-sm text-ink/80">
           You lost <span className="font-semibold text-rekt">{formatNear(moment.loss)} NEAR</span> on that sell.
           {tokenId && (
             <>
               {" "}
               Once all CTOads are minted, this one&apos;s share of every fee collects in{" "}
-              <span className="font-mono text-white">{ctoadAccountId(tokenId)}</span>.
+              <span className="font-mono text-ink">{ctoadAccountId(tokenId)}</span>.
             </>
           )}
         </p>
         <div className="mt-6 flex justify-center gap-3 text-sm">
-          <Link href="/claim" className="rounded-lg bg-frog px-4 py-2 font-medium text-black" onClick={onClose}>
+          <Link href="/claim" className="rounded-lg press bg-accent px-4 py-2 font-medium text-ink" onClick={onClose}>
             My CTOads
           </Link>
-          <button onClick={onClose} className="rounded-lg border border-white/20 px-4 py-2">
+          <button onClick={onClose} className="rounded-lg border border-ink/25 px-4 py-2">
             Close
           </button>
         </div>

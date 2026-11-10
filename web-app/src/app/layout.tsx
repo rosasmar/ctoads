@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Bowlby_One, Space_Grotesk, Space_Mono } from "next/font/google";
 import Link from "next/link";
 
 import { Nav } from "@/components/Nav";
@@ -8,8 +8,9 @@ import { textingEnabled } from "@/lib/msgbubbles";
 
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const display = Bowlby_One({ variable: "--font-bowlby-one", weight: "400", subsets: ["latin"] });
+const sans = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"] });
+const mono = Space_Mono({ variable: "--font-space-mono", weight: ["400", "700"], subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "$CTO · CTOads",
@@ -18,27 +19,27 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <Providers>
           <Nav />
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-          <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-white/40">
+          <footer className="border-t-2 border-ink px-4 py-6 text-center text-xs text-ink/65">
             Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.{" "}
             {textingEnabled() && (
               <>
                 Alert texts powered by{" "}
-                <a href="https://msgbubbles.com" target="_blank" rel="noreferrer" className="hover:text-white">
+                <a href="https://msgbubbles.com" target="_blank" rel="noreferrer" className="hover:text-ink">
                   msgbubbles
                 </a>{" "}
                 ·{" "}
               </>
             )}
-            <Link href="/privacy" className="hover:text-white">
+            <Link href="/privacy" className="hover:text-ink">
               Privacy
             </Link>{" "}
             ·{" "}
-            <Link href="/terms" className="hover:text-white">
+            <Link href="/terms" className="hover:text-ink">
               Terms
             </Link>
           </footer>

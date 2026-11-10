@@ -24,29 +24,29 @@ export function AlertsPitch({ title, textEnabled }: { title: string; textEnabled
         <h1 className="mt-2 text-3xl font-bold sm:text-4xl">
           {w.verb} your fellow holders, keep your {w.contact} private
         </h1>
-        <p className="mx-auto mt-3 max-w-xl text-white/60">
+        <p className="mx-auto mt-3 max-w-xl text-ink/65">
           Alerts let CTOad holders ping the whole community {w.by}, about trades, votes, or anything worth knowing,
           without sharing their own {w.private}.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-3">
         {points.map((p) => (
-          <div key={p.title} className="rounded-xl border border-white/10 bg-panel p-4">
+          <div key={p.title} className="rounded-xl border-2 border-ink bg-card p-4">
             <h2 className="font-semibold text-frog">{p.title}</h2>
-            <p className="mt-1 text-sm text-white/60">{p.body}</p>
+            <p className="mt-1 text-sm text-ink/65">{p.body}</p>
           </div>
         ))}
       </div>
-      <p className="text-center text-xs text-white/40">
+      <p className="text-center text-xs text-ink/65">
         Only CTOad holders can sign up and send, {DAILY_ALERT_LIMIT} alerts a day each, checked for harmful content.
         {textEnabled
           ? "Every alert links to a page where anyone can remove their number."
           : "Every alert email links to the Alerts page to turn them off."}{" "}
-        <Link href="/terms" className="hover:text-white">
+        <Link href="/terms" className="hover:text-ink">
           Terms
         </Link>{" "}
         ·{" "}
-        <Link href="/privacy" className="hover:text-white">
+        <Link href="/privacy" className="hover:text-ink">
           Privacy
         </Link>
       </p>

@@ -8,7 +8,7 @@ import { ctoadExtra, type NftToken } from "@/lib/cto";
  */
 export function CtoadImage({ token, className }: { token?: NftToken; className?: string }) {
   const media = token?.metadata?.media;
-  if (!media) return <div className={`animate-pulse bg-white/5 ${className ?? ""}`} />;
+  if (!media) return <div className={`animate-pulse bg-ink/5 ${className ?? ""}`} />;
   // A data: URI has nothing for next/image to optimize, so a plain <img> is enough.
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={media} alt={`CTOad #${token.token_id}`} className={className} />;
@@ -17,7 +17,7 @@ export function CtoadImage({ token, className }: { token?: NftToken; className?:
 /** A CTOad that isn't minted yet. Its traits are only picked at mint, so nobody can know its look. */
 export function UnmintedCtoad({ className }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center bg-white/5 font-bold text-white/30 ${className ?? ""}`}>?</div>
+    <div className={`flex items-center justify-center bg-ink/5 font-bold text-ink/65 ${className ?? ""}`}>?</div>
   );
 }
 
@@ -29,7 +29,7 @@ export function CtoadTraits({ token, className }: { token: NftToken; className?:
     <dl className={`grid grid-cols-[auto_1fr] gap-x-2 ${className ?? ""}`}>
       {traits.map((t) => (
         <div key={t.category} className="contents">
-          <dt className="text-white/40">{t.category}</dt>
+          <dt className="text-ink/65">{t.category}</dt>
           <dd className="truncate">{t.name}</dd>
         </div>
       ))}
