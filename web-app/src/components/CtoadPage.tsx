@@ -37,11 +37,11 @@ export function CtoadPage({ id }: { id: string }) {
         ← All CTOads
       </Link>
       <div className="grid gap-8 md:grid-cols-[minmax(0,420px)_1fr]">
-        <CtoadImage token={token ?? undefined} className="aspect-square w-full rounded-2xl" />
+        <CtoadImage token={token ?? undefined} className="aspect-square w-full rounded-2xl border-4 border-ink shadow-hard" />
         <div className="space-y-6">
           <div>
             <h1 className="text-3xl font-bold">CTOad #{id}</h1>
-            {extra.loss && <p className="mt-1 text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
+            {extra.loss && <p className="mt-1 font-mono font-bold text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
             {token && (
               <p className="mt-1 text-sm text-ink/65">
                 Held by <AccountLink id={token.owner_id} keep={16} />
