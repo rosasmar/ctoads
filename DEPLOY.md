@@ -39,7 +39,7 @@ If you already have a testnet account, import it with `near account import-accou
 | Demo (`DEMO=1`, 3 CTOads) | ~9.5 to deploy, ~16 to also run [Try it](#4-try-it) |
 | Full (500 CTOads) | ~15 |
 
-That covers code storage (~2.9 NEAR for the token contract, ~3.3 NEAR for the NFT contract), storage for 500 mints (~4.3 NEAR), the art layers (about 0.01 NEAR per KB, ~0.1 NEAR for the ones in `art/`), the global contract deploy (~2.4 NEAR), and gas. Deploying again from the same deployer costs ~2.4 NEAR less, as long as the CTOad account code hasn't changed since, because it's already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/tools/faucet).
+That covers code storage (~2.9 NEAR for the token contract, ~3.3 NEAR for the NFT contract), storage for 500 mints (~4.3 NEAR), the art layers (about 0.01 NEAR per KB, ~0.1 NEAR for the ones in `art/`), the global contract deploy (~2.4 NEAR), and gas. Deploying again from the same deployer costs ~2.4 NEAR less, as long as the CTOad account code hasn't changed since, because it's already on-chain. Each round of Try it needs 6 NEAR free for the buy, and gets all but ~0.12 NEAR back on the sell. If you run short, get more from the [testnet faucet](https://docs.near.org/getting-started/faucet).
 
 ## 3. Deploy
 
