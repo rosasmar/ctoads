@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { Nav } from "@/components/Nav";
 import { Providers } from "@/components/Providers";
+import { textingEnabled } from "@/lib/msgbubbles";
 
 import "./globals.css";
 
@@ -24,6 +25,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
           <footer className="border-t border-white/10 px-4 py-6 text-center text-xs text-white/40">
             Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.{" "}
+            {textingEnabled() && (
+              <>
+                Alert texts powered by{" "}
+                <a href="https://msgbubbles.com" target="_blank" rel="noreferrer" className="hover:text-white">
+                  msgbubbles
+                </a>{" "}
+                ·{" "}
+              </>
+            )}
             <Link href="/privacy" className="hover:text-white">
               Privacy
             </Link>{" "}
