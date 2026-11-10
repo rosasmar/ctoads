@@ -3,9 +3,10 @@
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useCallback, useEffect, useState } from "react";
 
-import { TOKEN_CONTRACT } from "@/config";
+import { NETWORK, TOKEN_CONTRACT } from "@/config";
 import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
 import { MintModal, type MintMoment } from "@/components/MintModal";
+import { TestnetHelp } from "@/components/TestnetHelp";
 import { AmountInput, errorText, Row } from "@/components/TradeFields";
 import { useBuyQuote, useCtoad, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
 import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
@@ -311,6 +312,7 @@ function Position() {
   const balance = holder ? BigInt(holder.balance) : 0n;
   const { data: exit } = useSellQuote(signedAccountId, balance > 0n ? balance : null);
 
+  if (!signedAccountId && NETWORK === "testnet") return <TestnetHelp />;
   if (!signedAccountId || !holder) {
     return (
       <aside className="rounded-2xl border border-white/10 p-5 text-sm text-white/50">
