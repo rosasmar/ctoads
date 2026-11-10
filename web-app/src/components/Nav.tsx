@@ -21,11 +21,12 @@ export function Nav() {
 
   return (
     <header className="border-b border-white/10">
-      <nav className="mx-auto flex max-w-5xl items-center gap-6 px-4 py-4">
+      {/* On phones the links get their own row under the logo and wallet button. */}
+      <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
         <Link href="/" className="text-lg font-bold tracking-tight">
           <span className="text-frog">$CTO</span>
         </Link>
-        <div className="flex gap-4 text-sm">
+        <div className="order-last flex w-full gap-4 text-sm sm:order-none sm:w-auto">
           {/* The current page is only known per request on pages like /ctoads/1, so the
               highlight streams in. Until then, no link is highlighted. */}
           <Suspense fallback={<NavLinks pathname={null} />}>
@@ -44,7 +45,7 @@ export function Nav() {
               </button>
             </>
           ) : (
-            <button onClick={() => signIn()} className="rounded-lg bg-frog px-3 py-1.5 font-medium text-black hover:brightness-110">
+            <button onClick={() => signIn()} className="whitespace-nowrap rounded-lg bg-frog px-3 py-1.5 font-medium text-black hover:brightness-110">
               Connect wallet
             </button>
           )}
