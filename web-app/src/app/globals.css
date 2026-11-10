@@ -57,3 +57,24 @@ input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* The home page ticker scrolls one copy of its text, then starts over. */
+.ticker {
+  animation: ticker 40s linear infinite;
+}
+@keyframes ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* The progress bar's fill: black and yellow stripes. */
+.stripes {
+  background: repeating-linear-gradient(90deg, var(--color-ink) 0 12px, var(--color-accent) 12px 24px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticker {
+    animation: none;
+  }
+}
