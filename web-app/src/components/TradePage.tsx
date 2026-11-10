@@ -4,12 +4,13 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useCallback, useEffect, useState } from "react";
 
 import { NETWORK, TOKEN_CONTRACT } from "@/config";
-import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
+import { UnmintedCtoad } from "@/components/CtoadImage";
+import { Bagholders, Hero, HowItWorks, Progress, Ticker } from "@/components/Home";
 import { MintModal, type MintMoment } from "@/components/MintModal";
 import { TestnetHelp } from "@/components/TestnetHelp";
 import { AmountInput, errorText, Row } from "@/components/TradeFields";
-import { useBuyQuote, useCtoad, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
-import { TX, whyNoCtoad, withSlippage, type Market, type TokenConfig } from "@/lib/cto";
+import { useBuyQuote, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
+import { TX, whyNoCtoad, withSlippage } from "@/lib/cto";
 import { eventsFrom, formatCto, formatNear, parseCto, parseNear, txStatus } from "@/lib/near";
 
 export function TradePage() {
@@ -38,18 +39,21 @@ export function TradePage() {
   useWalletRedirect(signedAccountId, onSellOutcome);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
       {marketError && (
         <p className="rounded-xl bg-rekt/10 p-3 text-sm text-rekt">
           Couldn&apos;t reach the $CTO contract: {String(marketError.message ?? marketError)}
         </p>
       )}
+      <Ticker market={market} config={config} />
       <Hero market={market} config={config} />
-      <div className="grid gap-6 md:grid-cols-[1fr_320px]">
+      <Progress market={market} />
+      <div id="trade" className="grid scroll-mt-6 gap-6 md:grid-cols-[1fr_320px]">
         <TradeCard onSellOutcome={onSellOutcome} />
         <Position />
       </div>
       <HowItWorks config={config} />
+      <Bagholders minted={market?.ctoads_minted ?? 0} />
       {moment && <MintModal moment={moment} onClose={() => setMoment(null)} />}
     </div>
   );
@@ -72,59 +76,6 @@ function useWalletRedirect(
         .catch(() => {});
     }
   }, [accountId, onSellOutcome]);
-}
-
-function Hero({ market, config }: { market?: Market; config?: TokenConfig }) {
-  const minted = market?.ctoads_minted ?? 0;
-  const max = market?.max_ctoads ?? 500;
-  const pct = Math.min(100, (minted / max) * 100);
-  return (
-    <section className="grid items-center gap-8 md:grid-cols-[1fr_auto]">
-      <div>
-        <h1 className="text-4xl font-bold tracking-tight md:text-5xl">
-          The bagholders <span className="text-frog">take over.</span>
-        </h1>
-        <p className="mt-4 max-w-xl text-ink/80">
-          Lose {config ? formatNear(config.loss_threshold) : "1"} NEAR or more on a single $CTO sell and you mint one of{" "}
-          {max} CTOads. When the last one is minted, the community takes over: CTOad holders split 100% of trading fees,
-          forever.
-        </p>
-        <div className="mt-6 max-w-xl">
-          <div className="flex justify-between text-sm">
-            <span>
-              <span className="text-2xl font-bold">{minted}</span>
-              <span className="text-ink/65"> / {max} CTOads minted</span>
-            </span>
-            {market && <span className="text-ink/65">1 $CTO = {formatNear(market.price_per_token)} NEAR</span>}
-          </div>
-          <div className="mt-2 h-3 overflow-hidden rounded-full bg-ink/10">
-            <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${pct}%` }} />
-          </div>
-          <p className="mt-2 text-sm">
-            {market?.takeover ? (
-              <span className="text-frog">Community takeover is live. Every fee goes to CTOad holders.</span>
-            ) : (
-              <span className="text-ink/65">
-                Until all {max} are minted, fees go to the deployer. Nothing is split before the takeover.
-              </span>
-            )}
-          </p>
-        </div>
-      </div>
-      <div className="hidden grid-cols-2 gap-2 md:grid">
-        {[1, 2, 3, 4].map((id) => (
-          <HeroCtoad key={id} id={id} minted={minted} />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-/** One of the first four CTOads, or a "?" until it's minted. */
-function HeroCtoad({ id, minted }: { id: number; minted: number }) {
-  const { data: token } = useCtoad(id <= minted ? String(id) : null);
-  if (id > minted) return <UnmintedCtoad className="h-24 w-24 rounded-xl text-2xl" />;
-  return <CtoadImage token={token ?? undefined} className="h-24 w-24 rounded-xl" />;
 }
 
 function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {
@@ -357,28 +308,5 @@ function Position() {
         </button>
       )}
     </aside>
-  );
-}
-
-function HowItWorks({ config }: { config?: TokenConfig }) {
-  const loss = config ? formatNear(config.loss_threshold) : "1";
-  const max = config?.max_ctoads ?? 500;
-  const fee = config ? config.fee_bps / 100 : 1;
-  const steps = [
-    ["Buy $CTO", `Every buy and sell on the curve pays a ${fee}% fee. The contract records what you spent.`],
-    ["Sell at a loss", `If one sell loses ${loss} NEAR or more against what you paid, you mint the next CTOad.`],
-    ["The takeover", `When CTOad #${max} mints, the deployer's cut ends. From then on, every fee is split ${max} ways.`],
-    ["Claim", "Each CTOad has its own account where its fees collect. Whoever holds the CTOad claims them."],
-  ];
-  return (
-    <section className="grid gap-4 md:grid-cols-4">
-      {steps.map(([title, body], i) => (
-        <div key={title} className="rounded-xl bg-ink/5 p-4">
-          <p className="text-xs text-frog">Step {i + 1}</p>
-          <h3 className="mt-1 font-semibold">{title}</h3>
-          <p className="mt-1 text-sm text-ink/65">{body}</p>
-        </div>
-      ))}
-    </section>
   );
 }
