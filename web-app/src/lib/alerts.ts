@@ -101,7 +101,7 @@ export type WalletProof = {
   nonce: string;
   /** milliseconds since 1970, as in the message */
   signedAt: number;
-  /** The page's address. Some wallets, like MyNearWallet, sign it too (NEP-413's `callbackUrl`). */
+  /** The page's address. Some wallets sign it too (NEP-413's `callbackUrl`). */
   callbackUrl: string;
 };
 
@@ -115,7 +115,7 @@ export async function signAlertsAction(
   const callbackUrl = window.location.href;
   const message = alertsMessage(action, signedAt);
   const signed = await signMessage({ message, recipient: ALERTS_RECIPIENT, nonce, callbackUrl });
-  if (!signed) throw new Error("This wallet didn't return a signature. Try Meteor, Intear, HERE or MyNearWallet.");
+  if (!signed) throw new Error("This wallet didn't return a signature. Try Meteor, Intear or HERE.");
   return { ...signed, nonce: nonce.toString("base64"), signedAt, callbackUrl };
 }
 

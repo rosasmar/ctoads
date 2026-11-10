@@ -34,7 +34,7 @@ export function isProof(value: unknown): value is WalletProof {
 /** An error whose message is safe to show the user. */
 export class ProofError extends Error {}
 
-/** Most wallets sign without the page's address, MyNearWallet signs with it, so either is accepted. */
+/** Most wallets sign without the page's address, some sign with it, so either is accepted. */
 async function signatureIsValid(proof: WalletProof, message: string): Promise<boolean> {
   return (
     (await signatureMatches(proof, message, null)) ||
