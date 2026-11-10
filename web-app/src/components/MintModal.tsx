@@ -3,15 +3,16 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { ctoadAccountId, nftTokensForOwner } from "@/lib/cto";
+import { nftTokensForOwner } from "@/lib/cto";
 import { useCtoad } from "@/hooks/useCto";
 import { formatNear } from "@/lib/near";
-import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
+import { CtoadImage } from "@/components/CtoadImage";
 
 /** `sinceMs`: only CTOads issued after this time count, so an older CTOad isn't mistaken for the new one. */
-export type MintMoment = { accountId: string; tokenId: string | null; loss: string; sinceMs: number };
+/** `loss` and `nearOut` come from the sell event, in yoctoNEAR. */
+export type MintMoment = { accountId: string; tokenId: string | null; loss: string; nearOut: string; sinceMs: number };
 
-/** "You got rekt, here's your CTOad." Shown after a sell that earned one. */
+/** "You got rekt, here's your CTOad": a receipt of the loss, stamped REKT. Shown after a sell that earned one. */
 export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: () => void }) {
   const [tokenId, setTokenId] = useState(moment.tokenId);
   const { data: token } = useCtoad(tokenId);
@@ -40,41 +41,71 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
     };
   }, [tokenId, moment.accountId, moment.sinceMs]);
 
+  const paid = BigInt(moment.nearOut) + BigInt(moment.loss);
+
+  // The receipt prints, REKT stamps it, then the CTOad pops in. The timing is in globals.css (.mint-*).
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-sm rounded-2xl border border-rekt/40 bg-card p-6 text-center shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="You minted a CTOad"
+        className="w-full max-w-2xl space-y-6 rounded-2xl border-4 border-ink bg-accent p-6 shadow-[12px_12px_0_#111]"
         onClick={(e) => e.stopPropagation()}
       >
-        <p className="text-sm uppercase tracking-widest text-rekt">You got rekt</p>
-        <h2 className="mt-1 text-2xl font-bold">Here&apos;s your CTOad{tokenId ? ` #${tokenId}` : ""}</h2>
-        <div className="mx-auto my-5 aspect-square w-48 overflow-hidden rounded-xl">
-          {tokenId ? (
-            <CtoadImage token={token ?? undefined} className="h-full w-full" />
-          ) : (
-            <div className="flex h-full w-full animate-pulse items-center justify-center bg-ink/5 text-sm text-ink/65">
-              Minting…
-            </div>
-          )}
+        <div className="flex flex-col items-center gap-8 sm:flex-row">
+          <div className="relative w-full flex-1 space-y-2 border-2 border-ink bg-card p-4 pb-16 font-mono text-sm shadow-hard">
+            <p className="mint-line flex justify-between border-b-2 border-dashed border-ink pb-2 font-bold" style={{ animationDelay: ".1s" }}>
+              <span>SELL RECEIPT</span>
+              <span>$CTO</span>
+            </p>
+            <p className="mint-line flex justify-between" style={{ animationDelay: ".35s" }}>
+              <span>paid</span>
+              <span>{formatNear(paid)} NEAR</span>
+            </p>
+            <p className="mint-line flex justify-between" style={{ animationDelay: ".6s" }}>
+              <span>got back</span>
+              <span>{formatNear(moment.nearOut)} NEAR</span>
+            </p>
+            <p className="mint-line flex justify-between border-t-2 border-ink pt-2 font-bold text-rekt" style={{ animationDelay: ".85s" }}>
+              <span>LOSS</span>
+              <span>−{formatNear(moment.loss)} NEAR</span>
+            </p>
+            <span className="mint-stamp font-display absolute right-6 bottom-3 border-4 border-rekt bg-white/85 px-3 text-4xl text-rekt">
+              REKT
+            </span>
+          </div>
+          <div className="mint-pop aspect-square w-56 shrink-0 overflow-hidden rounded-2xl border-4 border-ink bg-card shadow-hard">
+            {tokenId ? (
+              <CtoadImage token={token ?? undefined} className="h-full w-full" />
+            ) : (
+              <div className="flex h-full w-full animate-pulse items-center justify-center bg-ink/5 font-mono text-sm">
+                Minting…
+              </div>
+            )}
+          </div>
         </div>
-        {token && <CtoadTraits token={token} className="mx-auto mb-4 w-fit text-left text-sm" />}
-        <p className="text-sm text-ink/80">
-          You lost <span className="font-semibold text-rekt">{formatNear(moment.loss)} NEAR</span> on that sell.
-          {tokenId && (
-            <>
-              {" "}
-              Once all CTOads are minted, this one&apos;s share of every fee collects in{" "}
-              <span className="font-mono text-ink">{ctoadAccountId(tokenId)}</span>.
-            </>
-          )}
-        </p>
-        <div className="mt-6 flex justify-center gap-3 text-sm">
-          <Link href="/claim" className="rounded-lg press bg-accent px-4 py-2 font-medium text-ink" onClick={onClose}>
-            My CTOads
-          </Link>
-          <button onClick={onClose} className="rounded-lg border border-ink/25 px-4 py-2">
-            Close
-          </button>
+        <div className="mint-after flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <h2 className="text-3xl leading-none uppercase">
+              {tokenId ? `CTOad #${tokenId} is yours.` : "Your CTOad is minting."}
+            </h2>
+            <p className="mt-2 text-ink/80">Welcome to the club. Membership cost you a loss.</p>
+          </div>
+          <div className="flex gap-3">
+            {tokenId && (
+              <Link
+                href={`/ctoads/${tokenId}`}
+                className="press rounded-xl bg-ink px-4 py-2 font-bold text-white"
+                onClick={onClose}
+              >
+                See your CTOad
+              </Link>
+            )}
+            <button onClick={onClose} className="press rounded-xl bg-card px-4 py-2 font-bold">
+              Close
+            </button>
+          </div>
         </div>
       </div>
     </div>
