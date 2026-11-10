@@ -55,7 +55,7 @@ export function Gallery() {
       {!mine && total === 0 && (
         <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">No CTOads yet. Somebody has to get rekt first.</p>
       )}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
         {mine
           ? owned?.map((t) => <CtoadCard key={t.token_id} id={t.token_id} token={t} />)
           : ids.map((id) => <GalleryCard key={id} id={id} />)}
@@ -80,15 +80,15 @@ function GalleryCard({ id }: { id: string }) {
 function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
   const extra = t ? ctoadExtra(t) : {};
   return (
-    <div className="overflow-hidden rounded-xl border-2 border-ink bg-card">
+    <div className="overflow-hidden rounded-2xl border-2 border-ink bg-card shadow-hard">
       <Link href={`/ctoads/${id}`}>
-        <CtoadImage token={t} className="aspect-square w-full" />
+        <CtoadImage token={t} className="aspect-square w-full border-b-2 border-ink" />
       </Link>
       <div className="space-y-0.5 p-3 text-xs">
-        <Link href={`/ctoads/${id}`} className="block text-sm font-semibold hover:text-frog">
+        <Link href={`/ctoads/${id}`} className="block font-mono text-sm font-bold hover:text-frog">
           CTOad #{id}
         </Link>
-        {extra.loss && <p className="text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
+        {extra.loss && <p className="font-mono font-bold text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
         {t && <CtoadTraits token={t} className="py-1" />}
         {t && (
           <p className="text-ink/65">
@@ -99,7 +99,7 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
           href={`${EXPLORER_URL}/address/${ctoadAccountId(id)}`}
           target="_blank"
           rel="noreferrer"
-          className="text-frog/80 hover:text-frog"
+          className="text-frog hover:underline"
         >
           Its account ↗
         </a>

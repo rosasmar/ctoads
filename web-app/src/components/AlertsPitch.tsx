@@ -32,7 +32,7 @@ export function AlertsPitch({ title, textEnabled }: { title: string; textEnabled
       <div className="grid gap-3 sm:grid-cols-3">
         {points.map((p) => (
           <div key={p.title} className="rounded-xl border-2 border-ink bg-card p-4">
-            <h2 className="font-semibold text-frog">{p.title}</h2>
+            <h2 className="font-sans font-bold text-frog">{p.title}</h2>
             <p className="mt-1 text-sm text-ink/65">{p.body}</p>
           </div>
         ))}
