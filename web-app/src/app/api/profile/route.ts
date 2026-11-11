@@ -1,7 +1,7 @@
 // Holders' public profiles (lib/profile.ts). Changes need a signed WalletProof (lib/walletProof.ts).
 //   GET    ?handle=… or ?account=…   the profile, or 404; profiles are public
-//   POST   { proof, profile }        create or change your profile; only CTOad holders. OpenAI's
-//                                     moderation checks the bio and link names first.
+//   POST   { proof, profile }        create or change your profile; only CTOad holders. Private
+//                                     AI moderation checks the bio and link names first.
 //   DELETE { proof }                 delete your profile, even after selling
 
 import { NextRequest } from "next/server";

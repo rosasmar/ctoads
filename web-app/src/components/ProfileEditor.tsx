@@ -210,7 +210,7 @@ function ProfileForm({
           </button>
           <p className="text-xs text-ink/65">
             Your wallet signs a short message to prove it&apos;s yours. It costs nothing. The bio and link names are checked
-            for harmful content first.
+            by private AI first.
           </p>
         </form>
       )}

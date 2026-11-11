@@ -3,7 +3,7 @@
 //   GET  ?account=…        how many alerts that account can still send today
 //   POST { proof, text, image? }   send one; the proof signs the exact text and the image's SHA-256
 //                                  (lib/alerts.ts `sendAction`). The image was uploaded via ../upload.
-// OpenAI's moderation checks the text first. Only subscribers who still hold a CTOad get it, and
+// Private AI moderation (lib/moderation.ts) checks the text and image first. Only subscribers who still hold a CTOad get it, and
 // never the sender.
 
 import { NextRequest } from "next/server";

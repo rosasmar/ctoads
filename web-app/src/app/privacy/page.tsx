@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { MODEL_PROOF_URL } from "@/lib/privateAi";
 
 export const metadata: Metadata = { title: "Privacy · CTOads" };
 
@@ -36,7 +37,12 @@ export default function Privacy() {
         <p>
           Alerts are texted through msgbubbles and emailed through Resend, which receive your number or address and
           each alert to deliver it. To verify an email, Resend sends it a code. We keep only a hash of the code, for 10
-          minutes. Before an alert is sent, its text and image go to OpenAI&apos;s moderation service to check for harmful content.
+          minutes. Before an alert is sent, its text and image are checked for harmful content by an AI model on NEAR AI Cloud
+          that runs in a{" "}
+          <a href={MODEL_PROOF_URL} target="_blank" rel="noreferrer" className="text-frog hover:underline">
+            verified secure enclave
+          </a>
+          , so neither NEAR AI, nor its cloud provider, nor we can see them during the check.
         </p>
         <p>
           When you <Link href="/send-alerts" className="text-frog hover:underline">send an alert</Link>, we keep its
@@ -62,7 +68,7 @@ export default function Privacy() {
           name and the CTOads it holds.
         </p>
         <p>
-          Before a profile is saved, its handle, bio and link names go to OpenAI&apos;s moderation service. Your wallet
+          Before a profile is saved, its handle, bio and link names are checked the same way. Your wallet
           signs each change; the signature isn&apos;t kept. You can delete your profile at any time on the Profile page,
           even after you no longer hold a CTOad.
         </p>
@@ -75,7 +81,7 @@ export default function Privacy() {
           store your NEAR account name and the linked number. The linking code is kept only as a hash, for 15 minutes.
           When you text the app&apos;s number, msgbubbles passes us your number and the text; we keep your number, the
           first 200 characters of the text and the time, to answer once and limit replies. We reply only to texts you
-          send us. Profile changes made by text go to OpenAI&apos;s moderation service, as on the website.
+          send us. Profile changes made by text are checked the same way as on the website.
         </p>
         <p>
           You can unlink your number on that page, or by texting UNLINK. Texting STOP removes your number from alerts.
