@@ -17,7 +17,7 @@ export default function Privacy() {
         <p>
           These happen on the NEAR blockchain. The app reads public chain data and asks your wallet to sign
           transactions. It doesn&apos;t store anything about them itself, but everything on-chain is public and
-          permanent.
+          permanent: anyone can see which account bought, sold, minted or voted, and how much.
         </p>
       </section>
 

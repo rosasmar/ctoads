@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NETWORK } from "@/config";
 import { DAILY_ALERT_LIMIT } from "@/lib/alerts";
 
 export const metadata: Metadata = { title: "Terms · CTOads" };
@@ -21,7 +22,33 @@ export default function Terms() {
           and votes are transactions you sign on the NEAR blockchain and can&apos;t be undone. Nothing here is
           financial advice.
         </p>
+        {NETWORK === "testnet" && (
+          <p>This site runs on NEAR testnet. Testnet NEAR is free and has no value.</p>
+        )}
       </section>
+
+      {NETWORK === "mainnet" && (
+        <section className="space-y-2">
+          <h2>Real money</h2>
+          <p>This site runs on NEAR mainnet. Trades use real NEAR. Before you buy, know that:</p>
+          <ul className="list-disc space-y-1 pl-6">
+            <li>
+              $CTO is a meme coin. Its price can fall to almost nothing. Only put in what you&apos;re fine losing.
+              Selling at a loss is the whole game.
+            </li>
+            <li>Every buy and sell on the curve pays a fee. Until the last CTOad is minted, fees go to the deployer.</li>
+            <li>
+              A CTOad is a collectible, not an investment. After the last one is minted, CTOads share the trading fees,
+              but nobody promises how much, or that there will be any.
+            </li>
+            <li>
+              The contracts haven&apos;t been audited. Their settings can&apos;t be changed after launch, and nobody,
+              including us, can reverse a transaction or refund you.
+            </li>
+            <li>You&apos;re responsible for following the laws where you live, including on taxes.</li>
+          </ul>
+        </section>
+      )}
 
       <section className="space-y-2">
         <h2>Alerts</h2>
