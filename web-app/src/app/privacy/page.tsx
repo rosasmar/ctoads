@@ -81,6 +81,15 @@ export default function Privacy() {
           You can unlink your number on that page, or by texting UNLINK. Texting STOP removes your number from alerts.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Top up from any chain</h2>
+        <p>
+          When you top up from another chain, the coin, amount, your NEAR account name and the refund address you
+          enter are sent through our server to NEAR Intents&apos; 1Click service, which gives you a deposit address and
+          does the swap. We don&apos;t store any of it. The deposit and the swap happen on public blockchains.
+        </p>
+      </section>
     </article>
   );
 }

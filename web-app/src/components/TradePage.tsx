@@ -9,6 +9,7 @@ import { UnmintedCtoad } from "@/components/CtoadImage";
 import { Bagholders, Hero, HowItWorks, Progress, Ticker } from "@/components/Home";
 import { MintModal, type MintMoment } from "@/components/MintModal";
 import { TestnetHelp } from "@/components/TestnetHelp";
+import { TopUpCard } from "@/components/TopUpCard";
 import { AmountInput, errorText, Row } from "@/components/TradeFields";
 import { useBuyQuote, useHolder, useMarket, useNow, useSellQuote, useTokenConfig } from "@/hooks/useCto";
 import { TX, whyNoCtoad, withSlippage } from "@/lib/cto";
@@ -58,6 +59,7 @@ export function TradePage() {
         </Suspense>
         <Position />
       </div>
+      <TopUpCard />
       <HowItWorks config={config} />
       <Bagholders minted={market?.ctoads_minted ?? 0} />
       {moment && <MintModal moment={moment} onClose={() => setMoment(null)} />}
@@ -185,6 +187,9 @@ function BuyForm({ initial }: { initial: string }) {
         </button>
       )}
       {status && <p className="text-sm text-ink/80">{status}</p>}
+      <a href="#topup" className="block text-center text-sm text-ink/65 underline underline-offset-4 hover:text-ink">
+        Pay from another chain? Top up here
+      </a>
     </div>
   );
 }
