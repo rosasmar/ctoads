@@ -188,7 +188,7 @@ function BuyForm({ initial }: { initial: string }) {
       )}
       {status && <p className="text-sm text-ink/80">{status}</p>}
       <a href="#topup" className="block text-center text-sm text-ink/65 underline underline-offset-4 hover:text-ink">
-        No NEAR? Top up from any chain
+        Pay from another chain? Top up here
       </a>
     </div>
   );

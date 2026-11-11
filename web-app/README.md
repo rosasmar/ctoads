@@ -4,7 +4,7 @@ The Next.js frontend for $CTO and CTOads. See the [main README](../README.md) fo
 
 | Page | What it does |
 |---|---|
-| `/` Trade | Buy and sell $CTO with live quotes, and see how many CTOads are minted. No NEAR? "Top up from any chain" swaps USDC, ETH, SOL or BTC to NEAR with NEAR Intents (mainnet only; testnet shows prices). Before you sell, it shows whether the sell earns a CTOad, or why it won't. After a sell that earns one, it shows the "you got rekt, here's your CTOad" moment, with its image and traits. |
+| `/` Trade | Buy and sell $CTO with live quotes, and see how many CTOads are minted. "Top up from any chain" swaps USDC, ETH, SOL or BTC to NEAR with NEAR Intents (mainnet only; testnet shows prices). Before you sell, it shows whether the sell earns a CTOad, or why it won't. After a sell that earns one, it shows the "you got rekt, here's your CTOad" moment, with its image and traits. |
 | `/ctoads` | Gallery of every minted CTOad, newest first, 20 at a time: its image and traits, the loss that earned it, who holds it, and a link to its account. With a wallet connected, "Mine" shows only yours. |
 | `/ctoads/[id]` | One CTOad: its image, traits, holder, and its backpack, the NEAR and $CTO its own account holds. Its holder can make the account buy $CTO with that NEAR, or sell its whole bag. |
 | `/claim` | Your CTOads, what each one can claim, and a button to claim it all |

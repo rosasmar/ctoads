@@ -26,7 +26,7 @@ const LIVE = NETWORK === "mainnet";
 const PREVIEW_RECIPIENT = "guest.near";
 const DONE: TopUpStatus[] = ["SUCCESS", "REFUNDED", "FAILED"];
 
-/** "No NEAR? Top up from any chain": pay with USDC, ETH, SOL or BTC, get NEAR, buy $CTO. */
+/** "Top up from any chain": pay with USDC, ETH, SOL or BTC, get NEAR, buy $CTO. */
 export function TopUpCard() {
   const { signedAccountId, signIn, callFunction } = useWalletSelector();
   const [assetId, setAssetId] = useState(TOPUP_ASSETS[0].id);
@@ -83,10 +83,10 @@ export function TopUpCard() {
   return (
     <section id="topup" className="scroll-mt-6 space-y-4 rounded-2xl border-2 border-ink bg-card p-5 shadow-hard">
       <div>
-        <h2 className="text-2xl">No NEAR? Top up from any chain</h2>
+        <h2 className="text-2xl">Top up from any chain</h2>
         <p className="mt-1 text-sm text-ink/65">
           Send USDC, ETH, SOL or BTC from another chain. NEAR Intents swaps it to NEAR in your wallet, usually in under
-          a minute, then you buy $CTO with it.
+          a minute, then you buy $CTO with it. Your NEAR wallet needs a few cents of NEAR for network fees.
           {!LIVE && " NEAR Intents only runs on mainnet, so on testnet this only shows prices."}
         </p>
       </div>
