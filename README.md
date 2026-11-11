@@ -153,6 +153,9 @@ wallet signature proves they hold a CTOad, and anyone can remove their number
 from a page linked in every alert.
 Holders can also make a public profile at `ctoads.xyz/@handle`, with
 their CTOads, a short bio and links, like a link-in-bio page.
+They can link their phone and text the app's number to change it
+(`SET X name`), or get a link that opens a buy or sell in their wallet
+(`BUY 1`).
 Sign-ups and profiles are stored in Supabase. See
 [web-app/README.md](web-app/README.md).
 

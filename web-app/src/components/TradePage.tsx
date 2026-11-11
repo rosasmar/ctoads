@@ -1,7 +1,8 @@
 "use client";
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { NETWORK, TOKEN_CONTRACT } from "@/config";
 import { UnmintedCtoad } from "@/components/CtoadImage";
@@ -50,7 +51,11 @@ export function TradePage() {
       <Hero market={market} config={config} />
       <Progress market={market} />
       <div id="trade" className="grid scroll-mt-6 gap-6 md:grid-cols-[1fr_320px]">
-        <TradeCard onSellOutcome={onSellOutcome} />
+        {/* A text command's link (?buy=1 or ?sell=1000) opens the card filled in. The query is only
+            known in the browser, so the plain card shows until it's read. */}
+        <Suspense fallback={<TradeCard onSellOutcome={onSellOutcome} />}>
+          <TradeCardFromLink onSellOutcome={onSellOutcome} />
+        </Suspense>
         <Position />
       </div>
       <HowItWorks config={config} />
@@ -79,8 +84,26 @@ function useWalletRedirect(
   }, [accountId, onSellOutcome]);
 }
 
-function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {
-  const [tab, setTab] = useState<"buy" | "sell">("buy");
+type OnSellOutcome = (outcome: unknown, accountId: string, sinceMs: number) => void;
+
+/** The trade card, filled in from ?buy=<NEAR> or ?sell=<$CTO> if the link has one. */
+function TradeCardFromLink({ onSellOutcome }: { onSellOutcome: OnSellOutcome }) {
+  const params = useSearchParams();
+  const buy = params.get("buy");
+  const sell = params.get("sell");
+  const prefill = sell ? { tab: "sell" as const, amount: sell } : buy ? { tab: "buy" as const, amount: buy } : undefined;
+  return <TradeCard key={`${buy}-${sell}`} onSellOutcome={onSellOutcome} prefill={prefill} />;
+}
+
+function TradeCard({
+  onSellOutcome,
+  prefill,
+}: {
+  onSellOutcome: OnSellOutcome;
+  prefill?: { tab: "buy" | "sell"; amount: string };
+}) {
+  const [tab, setTab] = useState<"buy" | "sell">(prefill?.tab ?? "buy");
+  const amount = prefill && /^\d+(\.\d+)?$/.test(prefill.amount) ? prefill.amount : "";
   return (
     <section className="rounded-2xl border-2 border-ink shadow-hard bg-card p-5">
       <div className="mb-5 flex gap-2">
@@ -96,15 +119,19 @@ function TradeCard({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accoun
           </button>
         ))}
       </div>
-      {tab === "buy" ? <BuyForm /> : <SellForm onSellOutcome={onSellOutcome} />}
+      {tab === "buy" ? (
+        <BuyForm initial={prefill?.tab === "buy" ? amount : ""} />
+      ) : (
+        <SellForm onSellOutcome={onSellOutcome} initial={prefill?.tab === "sell" ? amount : ""} />
+      )}
     </section>
   );
 }
 
-function BuyForm() {
+function BuyForm({ initial }: { initial: string }) {
   const { signedAccountId, signIn, callFunction } = useWalletSelector();
   const { mutate: refreshHolder } = useHolder(signedAccountId);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initial);
   const amount = parseNear(input);
   const { data: quote } = useBuyQuote(signedAccountId, amount);
   const [status, setStatus] = useState<string | null>(null);
@@ -162,12 +189,12 @@ function BuyForm() {
   );
 }
 
-function SellForm({ onSellOutcome }: { onSellOutcome: (outcome: unknown, accountId: string, sinceMs: number) => void }) {
+function SellForm({ onSellOutcome, initial }: { onSellOutcome: OnSellOutcome; initial: string }) {
   const { signedAccountId, signIn, callFunction } = useWalletSelector();
   const { data: holder, mutate: refreshHolder } = useHolder(signedAccountId);
   const { data: market } = useMarket();
   const { data: config } = useTokenConfig();
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initial);
   const amount = parseCto(input);
   const { data: quote } = useSellQuote(signedAccountId, amount);
   const now = useNow();
