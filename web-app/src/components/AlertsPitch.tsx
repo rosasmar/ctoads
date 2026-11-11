@@ -13,8 +13,8 @@ export function AlertsPitch({ title, textEnabled }: { title: string; textEnabled
     { title: "Ping about trades", body: "A big buy, a dip, a backpack move: tell every holder at once." },
     { title: "Rally the vote", body: "Remind holders to vote before a treasury proposal closes." },
     {
-      title: "Only your account name shows",
-      body: `Alerts come from ${w.from}. Holders see your account name, never your ${w.private}.`,
+      title: "Only your name shows",
+      body: `Alerts come from ${w.from}. Holders see your @handle, or your account name if you have no profile, never your ${w.private}.`,
     },
   ];
   return (

@@ -79,11 +79,15 @@ export async function POST(request: NextRequest) {
       return errorResponse(`This alert wasn't sent: it was flagged for ${moderation.categories.join(", ")}. See the terms.`, 422);
     }
 
-    const [holders, subscribers] = await Promise.all([
+    const [holders, subscribers, profile] = await Promise.all([
       ctoadHolders(),
       supabase().from("alert_subscribers").select("account_id, phone, email, channels"),
+      supabase().from("profiles").select("handle").eq("account_id", sender).maybeSingle(),
     ]);
     if (subscribers.error) return serverError(subscribers.error);
+    if (profile.error) return serverError(profile.error);
+    // Alerts are signed with the sender's handle if they made a profile, otherwise their account name.
+    const from = profile.data ? `@${profile.data.handle}` : sender;
     const recipients = subscribers.data.filter((s) => s.account_id !== sender && holders.has(s.account_id));
     // Without a msgbubbles key, everyone with a verified email gets it by email, whatever they chose.
     const texting = textingEnabled();
@@ -105,7 +109,7 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    const message = alertText(text, sender, `${request.nextUrl.origin}${REMOVE_PATH}`);
+    const message = alertText(text, from, `${request.nextUrl.origin}${REMOVE_PATH}`);
     for (let i = 0; i < texts.length; i += PARALLEL) {
       const results = await Promise.allSettled(
         texts.slice(i, i + PARALLEL).map(async (r) => {
@@ -117,14 +121,14 @@ export async function POST(request: NextRequest) {
       results.forEach(note);
     }
 
-    const emailBody = alertEmailText(text, sender, `${request.nextUrl.origin}/alerts`);
-    const emailHtml = alertEmailHtml(text, sender, `${request.nextUrl.origin}/alerts`);
+    const emailBody = alertEmailText(text, from, `${request.nextUrl.origin}/alerts`);
+    const emailHtml = alertEmailHtml(text, from, `${request.nextUrl.origin}/alerts`);
     for (const r of emails) {
       const [result] = await Promise.allSettled([
         sendEmail(
           {
             to: r.email!,
-            subject: `CTOads alert from ${sender}`,
+            subject: `CTOads alert from ${from}`,
             text: emailBody,
             html: emailHtml,
             attachment: image && key ? { filename: key.split("/")[1], bytes: image.bytes } : undefined,

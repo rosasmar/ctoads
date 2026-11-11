@@ -3,9 +3,10 @@
 import Link from "next/link";
 
 import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
+import { HolderName } from "@/components/HolderName";
 import { useCtoad } from "@/hooks/useCto";
 import { ctoadExtra, type Market, type TokenConfig } from "@/lib/cto";
-import { formatNear, shortAccount } from "@/lib/near";
+import { formatNear } from "@/lib/near";
 
 // The home page's sections around the trade card: the ticker, the first screen, the progress to the
 // takeover, how it works and the newest CTOads. Every number comes from the contracts.
@@ -89,7 +90,7 @@ function NewestCtoad({ minted }: { minted: number }) {
           {token && (
             <p className="flex justify-between">
               <span>held by</span>
-              <span>{shortAccount(token.owner_id, 6)}</span>
+              <HolderName accountId={token.owner_id} keep={6} className="font-bold underline" />
             </p>
           )}
           <p className="flex justify-between font-bold text-rekt">
@@ -178,12 +179,17 @@ function BagholderTile({ id }: { id: string }) {
   const { data: token } = useCtoad(id);
   const loss = token ? ctoadExtra(token).loss : undefined;
   return (
-    <Link href={`/ctoads/${id}`} className="overflow-hidden rounded-2xl border-2 border-ink bg-card shadow-hard">
-      <CtoadImage token={token ?? undefined} className="aspect-square w-full border-b-2 border-ink" />
-      <p className="flex justify-between gap-2 px-3 py-2 font-mono text-xs font-bold">
-        <span>#{id}</span>
-        {loss && <span className="text-rekt">−{formatNear(loss, 2)} NEAR</span>}
-      </p>
-    </Link>
+    <div className="overflow-hidden rounded-2xl border-2 border-ink bg-card shadow-hard">
+      <Link href={`/ctoads/${id}`}>
+        <CtoadImage token={token ?? undefined} className="aspect-square w-full border-b-2 border-ink" />
+      </Link>
+      <div className="space-y-0.5 px-3 py-2 font-mono text-xs font-bold">
+        <p className="flex justify-between gap-2">
+          <Link href={`/ctoads/${id}`}>#{id}</Link>
+          {loss && <span className="text-rekt">−{formatNear(loss, 2)} NEAR</span>}
+        </p>
+        {token && <HolderName accountId={token.owner_id} keep={6} className="block truncate underline" />}
+      </div>
+    </div>
   );
 }

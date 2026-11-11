@@ -8,6 +8,7 @@ import useSWR from "swr";
 import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
+import { useProfileOf } from "@/hooks/useProfile";
 import { useTextEnabled } from "@/hooks/useTextEnabled";
 import {
   alertEmailText,
@@ -26,6 +27,8 @@ export function SendAlertsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
   const textEnabled = useTextEnabled();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
+  // The preview signs the alert the way the server will: with the handle, if they made a profile.
+  const { data: profile } = useProfileOf(signedAccountId);
   const { data: limit, mutate } = useSWR(signedAccountId ? ["alerts-remaining", signedAccountId] : null, () =>
     alertsApi<{ remaining: number }>("GET", "/send", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
   );
@@ -138,8 +141,8 @@ export function SendAlertsPage() {
           {trimmed && (
             <p className="whitespace-pre-wrap rounded-lg bg-white p-3 text-xs text-ink/65">
               {textEnabled
-                ? alertText(trimmed, signedAccountId, `${window.location.origin}${REMOVE_PATH}`)
-                : alertEmailText(trimmed, signedAccountId, `${window.location.origin}/alerts`)}
+                ? alertText(trimmed, profile ? `@${profile.handle}` : signedAccountId, `${window.location.origin}${REMOVE_PATH}`)
+                : alertEmailText(trimmed, profile ? `@${profile.handle}` : signedAccountId, `${window.location.origin}/alerts`)}
             </p>
           )}
           <button

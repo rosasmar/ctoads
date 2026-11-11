@@ -41,7 +41,7 @@ export default function Privacy() {
         <p>
           When you <Link href="/send-alerts" className="text-frog hover:underline">send an alert</Link>, we keep its
           text, any image (in an Amazon S3 bucket), your account name, the time and how many holders it went to, to enforce the daily limit and look into
-          abuse. Recipients see the text and your account name, never your phone number.
+          abuse. Recipients see the text and your profile handle (or your account name if you haven&apos;t made a profile), never your phone number.
         </p>
         <p>
           You can delete your number at any time with &quot;Stop alerts and delete my number&quot; on the Alerts page,
