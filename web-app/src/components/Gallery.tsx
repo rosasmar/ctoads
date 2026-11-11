@@ -7,9 +7,10 @@ import useSWR from "swr";
 
 import { CONFIGURED, EXPLORER_URL } from "@/config";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
+import { HolderName } from "@/components/HolderName";
 import { useCtoad, useMarket, useOwnedCtoads } from "@/hooks/useCto";
 import { ctoadAccountId, ctoadExtra, nftTotalSupply, type NftToken } from "@/lib/cto";
-import { formatNear, shortAccount } from "@/lib/near";
+import { formatNear } from "@/lib/near";
 
 /** CTOads shown at first, and added by each "Show more". Every CTOad carries its whole image. */
 const PAGE = 20;
@@ -92,7 +93,7 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
         {t && <CtoadTraits token={t} className="py-1" />}
         {t && (
           <p className="text-ink/65">
-            Held by <span className="font-mono">{shortAccount(t.owner_id, 8)}</span>
+            Held by <HolderName accountId={t.owner_id} keep={8} />
           </p>
         )}
         <a
