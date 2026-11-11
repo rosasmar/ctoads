@@ -4,7 +4,7 @@ import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import { useState } from "react";
 import useSWR from "swr";
 
-import { CONFIGURED, NFT_CONTRACT } from "@/config";
+import { CONFIGURED, NETWORK, NFT_CONTRACT } from "@/config";
 import { AccountLink } from "@/components/AccountLink";
 import { useMarket, useNow, useProposals } from "@/hooks/useCto";
 import { hasVoted, nftTokensForOwner, TX, type Proposal, type ProposalStatus } from "@/lib/cto";
@@ -159,7 +159,7 @@ function ProposeForm({ wallet, treasury, onDone }: { wallet: Wallet; treasury: b
         <input
           value={receiver}
           onChange={(e) => setReceiver(e.target.value)}
-          placeholder="account.testnet"
+          placeholder={NETWORK === "mainnet" ? "account.near" : "account.testnet"}
           className="min-w-0 flex-1 rounded-lg bg-ink/5 p-2 font-mono outline-none focus:ring-1 focus:ring-ink"
         />
       </div>

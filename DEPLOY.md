@@ -287,10 +287,34 @@ The CTOad accounts never have keys, and the wallet contract is a global contract
 
 Use the same script with `NETWORK=mainnet DEPLOYER=<you>.near`, and the defaults: 500 CTOads, 1 NEAR, one per wallet. Before launch:
 
-- Set `MIN_HOLD_SECS`, so a wallet can't buy and sell in the same minute just to earn a CTOad.
+- Set `MIN_HOLD_SECS`, e.g. `600` (10 minutes), so a wallet can't buy and sell in the same minute just to earn a CTOad.
 - Run the testnet demo end to end with the same commit.
 - Freeze the art with `freeze_art` once it's final.
-- Lock both contracts (step 6).
+- Lock both contracts (step 6), with `network-config mainnet`.
+
+### Mainnet and testnet sites
+
+Each site builds for one network, so run two from the same repo: the main domain on mainnet, and a
+`testnet.` subdomain where anyone can try everything with free testnet NEAR.
+
+Give each its own Supabase project. Profiles, alert sign-ups and linked phone numbers then stay apart:
+nobody can claim a mainnet `@handle` from a testnet wallet, and an alert on testnet never texts mainnet
+holders.
+
+1. **Mainnet Supabase.** Create a second Supabase project and run every file in
+   [`web-app/supabase/migrations`](web-app/supabase/migrations) in order, as in
+   [Alerts setup](web-app/README.md#alerts-setup).
+2. **Mainnet site.** In the hosting project of the main domain, set `NEXT_PUBLIC_NETWORK=mainnet`, the
+   mainnet `NEXT_PUBLIC_TOKEN_CONTRACT` and `NEXT_PUBLIC_NFT_CONTRACT`, and the new project's
+   `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Keep the other variables. Redeploy, since
+   `NEXT_PUBLIC_` values are baked in at build time.
+3. **Testnet site.** Create a second hosting project from the same repository, with `web-app` as its
+   root directory, the testnet contracts and the testnet Supabase project. Leave out
+   `NEXT_PUBLIC_MSGBUBBLES_NUMBER`, `MSGBUBBLES_API_KEY` and `MSGBUBBLES_WEBHOOK_SECRET`, so texting
+   only runs on mainnet: a msgbubbles number sends received texts to one webhook, the mainnet site's.
+   Alerts on testnet then go by email only.
+4. **Domain.** Add `testnet.<your domain>` to the testnet project, with the DNS record the host asks
+   for.
 
 ## If something goes wrong
 
