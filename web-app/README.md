@@ -4,7 +4,7 @@ The Next.js frontend for $CTO and CTOads. See the [main README](../README.md) fo
 
 | Page | What it does |
 |---|---|
-| `/` Trade | Buy and sell $CTO with live quotes, and see how many CTOads are minted. Before you sell, it shows whether the sell earns a CTOad, or why it won't. After a sell that earns one, it shows the "you got rekt, here's your CTOad" moment, with its image and traits. |
+| `/` Trade | Buy and sell $CTO with live quotes, and see how many CTOads are minted. No NEAR? "Top up from any chain" swaps USDC, ETH, SOL or BTC to NEAR with NEAR Intents (mainnet only; testnet shows prices). Before you sell, it shows whether the sell earns a CTOad, or why it won't. After a sell that earns one, it shows the "you got rekt, here's your CTOad" moment, with its image and traits. |
 | `/ctoads` | Gallery of every minted CTOad, newest first, 20 at a time: its image and traits, the loss that earned it, who holds it, and a link to its account. With a wallet connected, "Mine" shows only yours. |
 | `/ctoads/[id]` | One CTOad: its image, traits, holder, and its backpack, the NEAR and $CTO its own account holds. Its holder can make the account buy $CTO with that NEAR, or sell its whole bag. |
 | `/claim` | Your CTOads, what each one can claim, and a button to claim it all |
@@ -14,7 +14,7 @@ The Next.js frontend for $CTO and CTOads. See the [main README](../README.md) fo
 | `/alerts/remove` | Anyone removes their phone number from alerts, without a wallet |
 | `/texts` | A CTOad holder links their phone by texting a code to the app's number, then texts commands: change their profile (`SET X name`, `SET BIO …`), get a link that opens a buy or sell in their wallet (`BUY 1`), the price, or `STOP` alerts |
 | `/profile`, `/@handle` | A CTOad holder makes a public profile: a handle, a short bio and up to 6 links, shown with their CTOads at `/@handle`, like a link-in-bio page. Each change is signed by the wallet. Wherever a holder shows (a CTOad's page, the gallery, the home page, alerts) their `@handle` links to their profile. |
-| `/privacy`, `/terms` | What the app stores and how to delete it, and the rules for alerts and profiles |
+| `/privacy`, `/terms` | What the app stores and how to delete it, and the rules for alerts, profiles, text commands and top-ups |
 
 ## Run it
 
@@ -41,6 +41,7 @@ npm run dev                  # http://localhost:3000
 | `OPENAI_API_KEY` | | For sending alerts and saving profiles: checks them with OpenAI's free moderation endpoint. Server only. |
 | `ALERTS_S3_BUCKET`, `AWS_REGION` | | For images in alerts: the S3 bucket they're uploaded to, and its region. Server only. |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | | For images in alerts: credentials that can put and get objects in that bucket. Server only. |
+| `ONECLICK_API_KEY` | optional | For top-ups: a NEAR Intents 1Click API key. Server only. Without it top-ups still work, and 1Click keeps 0.2% of each swap. |
 | `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | | For email alerts and codes: a Resend API key, and the address they come from, on a domain verified in Resend. Server only. |
 
 The `NEXT_PUBLIC_` values are baked in at build time, so restart `npm run dev` or rebuild after changing them.
@@ -69,6 +70,7 @@ Alerts and profiles are optional. Without the two Supabase variables every other
 - **Images:** the holder signs the text and the image's SHA-256 together, once. `src/app/api/alerts/upload/route.ts` checks that signature and returns a 5-minute S3 upload URL for exactly that file (`src/lib/s3.ts`), named by its hash. The send route reads the file back, checks its hash, moderates text and image together, and stages a msgbubbles attachment for each recipient, since attachment ids work for one message only. JPEG, PNG, GIF or WebP, up to 5 MB.
 - **Profiles:** `src/lib/profile.ts` cleans up a profile the same way in the browser and on the server (a lowercase handle of 3 to 20 letters, numbers or underscores, a bio up to 160 characters, up to 6 https links) and builds the text the wallet signs, which names every field. `src/app/api/profile/route.ts` checks that the signer holds a CTOad, checks the handle, bio and link names with OpenAI's moderation, and saves it in the `profiles` table, where each handle is unique. `/@handle` is a rewrite to `/profiles/[handle]` in `next.config.ts`, since a folder starting with `@` would be a parallel route.
 - **Text commands:** `/texts` asks the wallet to sign, then shows an 8-character code (only its hash is kept, for 15 minutes). Texting `LINK <code>` from a phone links that number to the account, which proves both. msgbubbles delivers each received text to `src/app/api/texts/webhook/route.ts`, which checks its HMAC signature (`X-msgbubbles-Signature`), logs it once by message id, allows 20 replies per number an hour, and answers with `src/lib/textCommands.ts`. Profile changes go through the same rules and moderation as the website, and only while the account holds a CTOad. `BUY 1` and `SELL 1000` only reply with a link (`/?buy=1`) that opens the trade card filled in; the trade is signed in the wallet as usual. `STOP` removes the number from alerts, like `/alerts/remove`.
+- **Top up from any chain:** NEAR Intents' 1Click API (`src/lib/intents.ts`, proxied by `src/app/api/intents/route.ts` so an optional API key stays on the server) quotes a swap from USDC on Base, Ethereum, Arbitrum or Solana, ETH, SOL or BTC to wNEAR, delivered to the signed-in account. A real quote comes with a one-time deposit address, and the card polls its status. 1Click delivers wrapped NEAR, so the card first registers the account with `wrap.near` if needed (0.00125 NEAR, once), and once wNEAR arrives it unwraps it (`near_withdraw`) and buys $CTO with it, two transactions in one wallet request. 1Click runs only on mainnet; on testnet the card only shows prices.
 - **Removing a number:** `/alerts/remove` and `src/app/api/alerts/remove/route.ts` let anyone delete their number without a wallet, for numbers signed up by someone else. The answer is the same whether or not the number was signed up.
 - **Images:** `src/components/CtoadImage.tsx` shows the image the NFT contract returns in each CTOad's `media`, and its traits from `extra`. The app draws no art of its own. A CTOad that isn't minted yet shows a "?".
 

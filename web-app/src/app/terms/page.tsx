@@ -61,6 +61,16 @@ export default function Terms() {
           or keys by text. Each number gets at most 20 replies an hour.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Top up from any chain</h2>
+        <p>
+          Top-ups are swaps run by NEAR Intents (1Click), not by CTOads. A quote is an estimate: you get at least the
+          minimum it shows, or your deposit is refunded to the refund address you entered. Send exactly the amount
+          shown, of the coin shown, on the chain shown, to that deposit address only. A deposit sent anywhere else
+          can&apos;t be recovered. NEAR Intents keeps a small fee from each swap.
+        </p>
+      </section>
     </article>
   );
 }
