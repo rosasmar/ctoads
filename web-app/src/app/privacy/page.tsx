@@ -52,6 +52,21 @@ export default function Privacy() {
           , linked at the end of every text. You can delete just your email on the Alerts page too.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Profiles</h2>
+        <p>
+          If you make a <Link href="/profile" className="text-frog hover:underline">profile</Link>, we store your NEAR
+          account name, the handle, bio and links you enter, and when you made or last changed it, in the same Supabase
+          database. Your profile is public: anyone can see it at ctoads.xyz/@yourhandle, together with your account
+          name and the CTOads it holds.
+        </p>
+        <p>
+          Before a profile is saved, its handle, bio and link names go to OpenAI&apos;s moderation service. Your wallet
+          signs each change; the signature isn&apos;t kept. You can delete your profile at any time on the Profile page,
+          even after you no longer hold a CTOad.
+        </p>
+      </section>
     </article>
   );
 }
