@@ -151,7 +151,9 @@ Alerts can carry an image, stored in S3, and OpenAI's moderation checks
 each alert first. A
 wallet signature proves they hold a CTOad, and anyone can remove their number
 from a page linked in every alert.
-Sign-ups are stored in Supabase. See
+Holders can also make a public profile at `ctoads.xyz/@handle`, with
+their CTOads, a short bio and links, like a link-in-bio page.
+Sign-ups and profiles are stored in Supabase. See
 [web-app/README.md](web-app/README.md).
 
 ## Team

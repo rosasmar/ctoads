@@ -4,6 +4,7 @@ import { actionCreators } from "@near-js/transactions";
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
 import { useState } from "react";
+import useSWR from "swr";
 
 import { NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
 import { AccountLink } from "@/components/AccountLink";
@@ -12,6 +13,7 @@ import { AmountInput, errorText, Row } from "@/components/TradeFields";
 import { useBuyQuote, useCtoad, useCtoadFunds, useHolder, useSellQuote } from "@/hooks/useCto";
 import { ctoadAccountId, ctoadCallArgs, ctoadExtra, TX, withSlippage, type SellQuote } from "@/lib/cto";
 import { formatCto, formatNear, parseNear } from "@/lib/near";
+import { type Profile, profileApi, profilePath } from "@/lib/profile";
 
 /** One CTOad: its image, traits, holder, and its backpack, the account it owns. */
 export function CtoadPage({ id }: { id: string }) {
@@ -45,6 +47,7 @@ export function CtoadPage({ id }: { id: string }) {
             {token && (
               <p className="mt-1 text-sm text-ink/65">
                 Held by <AccountLink id={token.owner_id} keep={16} />
+                <HolderProfile accountId={token.owner_id} />
               </p>
             )}
           </div>
@@ -227,5 +230,21 @@ function BackpackActions(props: {
       )}
       {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
+  );
+}
+
+/** " · @handle" linking to the holder's profile, if they made one. */
+function HolderProfile({ accountId }: { accountId: string }) {
+  const { data: profile } = useSWR(["profileOf", accountId], () =>
+    profileApi<Profile>("GET", { query: `?account=${encodeURIComponent(accountId)}` }).catch(() => null),
+  );
+  if (!profile) return null;
+  return (
+    <>
+      {" · "}
+      <Link href={profilePath(profile.handle)} className="font-bold text-ink underline underline-offset-4">
+        @{profile.handle}
+      </Link>
+    </>
   );
 }

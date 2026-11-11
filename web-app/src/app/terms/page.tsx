@@ -42,6 +42,16 @@ export default function Terms() {
           Each holder can send {DAILY_ALERT_LIMIT} alerts a day, and every alert is logged with the sender&apos;s account.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Profiles</h2>
+        <p>
+          CTOad holders can make a public profile with a handle, a bio and links. The same rules as for alerts apply:
+          no spam, scams or phishing links, no harassment or hateful content, nothing illegal, and no one else&apos;s
+          personal information. Don&apos;t pretend to be someone else with your handle. Profiles that break these rules
+          can be removed.
+        </p>
+      </section>
     </article>
   );
 }

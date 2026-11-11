@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/claim", label: "Claim" },
   { href: "/vote", label: "Vote" },
   { href: "/alerts", label: "Alerts" },
+  { href: "/profile", label: "Profile" },
 ];
 
 export function Nav() {
