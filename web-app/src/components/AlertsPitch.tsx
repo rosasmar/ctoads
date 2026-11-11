@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DAILY_ALERT_LIMIT } from "@/lib/alerts";
+import { MODEL_PROOF_URL } from "@/lib/privateAi";
 
 /** The words that change when alerts can only go by email. */
 const BY_TEXT = { verb: "Text", by: "by text", contact: "number", from: "one CTOads number", private: "phone number" };
@@ -38,7 +39,11 @@ export function AlertsPitch({ title, textEnabled }: { title: string; textEnabled
         ))}
       </div>
       <p className="text-center text-xs text-ink/65">
-        Only CTOad holders can sign up and send, {DAILY_ALERT_LIMIT} alerts a day each, checked for harmful content.
+        Only CTOad holders can sign up and send, {DAILY_ALERT_LIMIT} alerts a day each, checked by{" "}
+        <a href={MODEL_PROOF_URL} target="_blank" rel="noreferrer" className="underline hover:text-ink">
+          private AI
+        </a>
+        .{" "}
         {textEnabled
           ? "Every alert links to a page where anyone can remove their number."
           : "Every alert email links to the Alerts page to turn them off."}{" "}

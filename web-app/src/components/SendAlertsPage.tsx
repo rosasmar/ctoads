@@ -154,7 +154,7 @@ export function SendAlertsPage() {
           </button>
           <p className="text-xs text-ink/65">
             {limit ? `You can send ${limit.remaining} more today.` : "Checking today's limit…"} Your wallet signs the exact
-            message, which costs nothing. Follow the{" "}
+            message, which costs nothing. Private AI checks it before it&apos;s sent. Follow the{" "}
             <Link href="/terms" className="text-ink/65 hover:text-frog">
               terms
             </Link>

@@ -147,8 +147,9 @@ its backpack, claiming, and voting on the treasury. CTOad holders can also
 sign up a phone number or a verified email for alerts and reach every other
 signed-up holder by text from the app's number, through msgbubbles, or by
 email, through Resend, without sharing their own contact details.
-Alerts can carry an image, stored in S3, and OpenAI's moderation checks
-each alert first. A
+Alerts can carry an image, stored in S3, and each one is first checked by
+private AI: a model on NEAR AI Cloud running in a verified secure enclave
+(TEE), so nobody sees the message during the check. A
 wallet signature proves they hold a CTOad, and anyone can remove their number
 from a page linked in every alert.
 Holders can also make a public profile at `ctoads.xyz/@handle`, with
