@@ -222,6 +222,9 @@ function ProfileForm({
           <Link href={profilePath(saved.handle)} className="font-bold underline underline-offset-4">
             View ctoads.xyz{profilePath(saved.handle)} →
           </Link>
+          <Link href="/texts" className="font-bold underline underline-offset-4">
+            Edit it by text →
+          </Link>
           <button onClick={remove} disabled={busy} className="text-ink/65 hover:text-ink disabled:opacity-40">
             Delete my profile
           </button>

@@ -67,6 +67,20 @@ export default function Privacy() {
           even after you no longer hold a CTOad.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Text commands</h2>
+        <p>
+          If you link your phone on <Link href="/texts" className="text-frog hover:underline">Text your toad</Link>, we
+          store your NEAR account name and the linked number. The linking code is kept only as a hash, for 15 minutes.
+          When you text the app&apos;s number, msgbubbles passes us your number and the text; we keep your number, the
+          first 200 characters of the text and the time, to answer once and limit replies. We reply only to texts you
+          send us. Profile changes made by text go to OpenAI&apos;s moderation service, as on the website.
+        </p>
+        <p>
+          You can unlink your number on that page, or by texting UNLINK. Texting STOP removes your number from alerts.
+        </p>
+      </section>
     </article>
   );
 }

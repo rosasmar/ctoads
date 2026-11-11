@@ -52,6 +52,15 @@ export default function Terms() {
           can be removed.
         </p>
       </section>
+
+      <section className="space-y-2">
+        <h2>Text commands</h2>
+        <p>
+          Only link a phone number that&apos;s yours. Text commands never buy or sell anything: BUY and SELL reply with a
+          link, and the trade only happens if you confirm it in your own wallet. We&apos;ll never ask for your seed phrase
+          or keys by text. Each number gets at most 20 replies an hour.
+        </p>
+      </section>
     </article>
   );
 }
