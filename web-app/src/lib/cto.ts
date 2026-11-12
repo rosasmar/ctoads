@@ -96,6 +96,20 @@ export const quoteSell = (accountId: string, amount: bigint) =>
 export const getCtoadAccount = (tokenId: string) =>
   view<CtoadAccount>(TOKEN_CONTRACT, "get_ctoad_account", { token_id: tokenId });
 
+/** Every art layer's name and weight by category. Matches `ArtView` in contracts/ctoad-nft/src/art.rs. */
+export type ArtView = {
+  frozen: boolean;
+  categories: { category: string; layers: { name: string; weight: number }[] }[];
+};
+export type Layer = { name: string; svg: string };
+
+/** The order the contract stacks layers in, bottom first: `DRAW_ORDER` in contracts/ctoad-nft/src/art.rs. */
+export const DRAW_ORDER = ["Background", "Body", "Mouth", "Eyes", "Outfit", "Headwear", "Item"];
+
+export const getArt = () => view<ArtView>(NFT_CONTRACT, "get_art");
+export const getLayer = (category: string, index: number) =>
+  view<Layer>(NFT_CONTRACT, "get_layer", { category, index });
+
 export const nftTotalSupply = async () => Number(await view<string>(NFT_CONTRACT, "nft_total_supply"));
 export const nftToken = (tokenId: string) => view<NftToken | null>(NFT_CONTRACT, "nft_token", { token_id: tokenId });
 export const nftTokensForOwner = (accountId: string) =>

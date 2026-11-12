@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 
-import { CtoadImage, UnmintedCtoad } from "@/components/CtoadImage";
+import { CtoadImage, ToadPreview } from "@/components/CtoadImage";
 import { HolderName } from "@/components/HolderName";
 import { useCtoad } from "@/hooks/useCto";
 import { ctoadExtra, type Market, type TokenConfig } from "@/lib/cto";
@@ -65,7 +65,10 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   );
 }
 
-/** The newest CTOad, tilted, with a REKT sticker and the receipt of the loss that minted it. */
+/**
+ * The newest CTOad, tilted, with a REKT sticker and the receipt of the loss that minted it. Before
+ * the first mint, random looks from the art instead.
+ */
 function NewestCtoad({ minted }: { minted: number }) {
   const { data: token } = useCtoad(minted > 0 ? String(minted) : null);
   const loss = token ? ctoadExtra(token).loss : undefined;
@@ -75,12 +78,17 @@ function NewestCtoad({ minted }: { minted: number }) {
         {minted > 0 ? (
           <CtoadImage token={token ?? undefined} className="aspect-square w-full" />
         ) : (
-          <UnmintedCtoad className="aspect-square w-full text-6xl" />
+          <ToadPreview className="aspect-square w-full text-6xl" />
         )}
       </div>
       <span className="font-display absolute -top-5 -right-4 rotate-12 border-4 border-ink bg-rekt px-4 py-1 text-2xl text-white">
         REKT
       </span>
+      {minted === 0 && (
+        <p className="absolute -bottom-8 -left-6 w-56 -rotate-3 border-2 border-ink bg-card p-3 font-mono text-xs font-bold shadow-hard">
+          PREVIEW: RANDOM LOOKS FROM THE ART ON-CHAIN. NONE MINTED YET.
+        </p>
+      )}
       {minted > 0 && (
         <div className="absolute -bottom-10 -left-6 w-56 -rotate-3 space-y-1 border-2 border-ink bg-card p-3 font-mono text-xs shadow-hard">
           <p className="flex justify-between border-b-2 border-dashed border-ink pb-1 font-bold">
