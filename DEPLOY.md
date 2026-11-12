@@ -59,7 +59,7 @@ Use `DEMO=1` to try the whole lifecycle with a few testnet NEAR. The demo only c
 3. **Deploys the wallet contract as a global contract by hash**, signed by `<you>`. Because it's referenced by hash, it can never change.
 4. **Creates `cto.<you>` and `ctoads.<you>`**, funded by `<you>`. Their keys go into your keychain.
 5. **Deploys the NFT contract and calls `new`** with `cto_token_id = cto.<you>` and `max_supply = MAX_CTOADS`.
-6. **Uploads the art** in `art/` with `scripts/upload-art.sh`, one `add_layer` call per layer, signed by `<you>`. See [art/README.md](art/README.md).
+6. **Uploads the art** in `art/` with `scripts/upload-art.sh`, one `add_layer` call per layer, signed by `<you>`. See [art/README.md](art/README.md). A slow RPC can make an upload fail ("Transaction has expired") even though it landed, so before retrying, the script checks the contract and skips layers that are already there. If it still stops, run the same deploy command again with `RESUME=art` in front: it skips steps 3–5 and finishes the upload and step 7.
 7. **Deploys the token contract and calls `new`** with the settings below and the code hash. It comes after the art, so no CTOad can be minted without it.
 8. **Prints `get_market` and `ctoad_status`** so you can check that both contracts are live.
 
