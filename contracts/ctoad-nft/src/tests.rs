@@ -694,6 +694,30 @@ fn decode_media(token: &Token) -> String {
 }
 
 #[test]
+fn the_image_stacks_the_layers_in_draw_order() {
+    let mut c = setup(3);
+    for (category, id) in [
+        (Category::Item, "item"),
+        (Category::Headwear, "headwear"),
+        (Category::Mouth, "mouth"),
+        (Category::Eyes, "eyes"),
+        (Category::Outfit, "outfit"),
+        (Category::Body, "body"),
+        (Category::Background, "bg"),
+    ] {
+        add_layer(&mut c, category, id, &format!("<g id=\"{id}\"/>"));
+    }
+    mint(&mut c, &acct("alice"));
+    assert_eq!(
+        c.ctoad_svg("1".into()),
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><g id="bg"/><g id="body"/><g id="mouth"/><g id="eyes"/><g id="outfit"/><g id="headwear"/><g id="item"/></svg>"#
+    );
+    // Traits are still listed in category order.
+    let listed: Vec<String> = c.ctoad_traits("1".into()).into_iter().map(|t| t.name).collect();
+    assert_eq!(listed, ["bg", "body", "outfit", "eyes", "mouth", "headwear", "item"]);
+}
+
+#[test]
 fn the_image_stacks_the_layers_background_first() {
     let mut c = setup(3);
     add_layer(&mut c, Category::Item, "bag", "<g id=\"item\"/>");

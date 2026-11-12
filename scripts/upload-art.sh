@@ -15,7 +15,8 @@ NFT=${NFT:?Set NFT to the CTOad contract, e.g. NFT=ctoads.you.testnet}
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 ART=${ART:-$ROOT/art}
 
-# Folder name and the contract's category name, in stacking order.
+# Folder name and the contract's category name. Upload order doesn't matter: the contract stacks
+# the layers in its own draw order (see art/README.md).
 CATEGORIES="background:Background body:Body outfit:Outfit eyes:Eyes mouth:Mouth headwear:Headwear item:Item"
 
 for pair in $CATEGORIES; do
