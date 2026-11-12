@@ -13,9 +13,9 @@ One folder per category, stacked in this order (each one is drawn over the ones 
 |---|---|
 | `background/` | Background |
 | `body/` | Body: the toad itself |
-| `outfit/` | Outfit |
-| `eyes/` | Eyes |
 | `mouth/` | Mouth |
+| `eyes/` | Eyes |
+| `outfit/` | Outfit: drawn over the face, so a collar or hood can cover it |
 | `headwear/` | Headwear |
 | `item/` | Held item |
 

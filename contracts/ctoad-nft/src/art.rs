@@ -29,7 +29,8 @@ const MAX_LAYER_BYTES: usize = 8 * 1024;
 /// Longest layer name, in bytes.
 const MAX_NAME_LEN: usize = 32;
 
-/// Layer categories, in the order they're stacked: background first, held item on top.
+/// Layer categories. This order sets how layers and traits are stored and listed. The order
+/// they're drawn in is `DRAW_ORDER`.
 #[near(serializers = [borsh, json])]
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Category {
@@ -48,6 +49,18 @@ pub const CATEGORIES: [Category; 7] = [
     Category::Outfit,
     Category::Eyes,
     Category::Mouth,
+    Category::Headwear,
+    Category::Item,
+];
+
+/// The order layers are stacked in a CTOad's image: background first, held item on top. The
+/// mouth and eyes sit under the outfit, so a collar or hood can cover the face.
+pub const DRAW_ORDER: [Category; 7] = [
+    Category::Background,
+    Category::Body,
+    Category::Mouth,
+    Category::Eyes,
+    Category::Outfit,
     Category::Headwear,
     Category::Item,
 ];
@@ -181,14 +194,16 @@ impl Contract {
             .collect()
     }
 
-    /// CTOad `token_id`'s image: its layers stacked into one 1000×1000 SVG. Without any
-    /// layers, a plain card with its number.
+    /// CTOad `token_id`'s image: its layers stacked into one 1000×1000 SVG, in `DRAW_ORDER`.
+    /// Without any layers, a plain card with its number.
     pub fn ctoad_svg(&self, token_id: TokenId) -> String {
+        let traits = self.traits_of(&token_id);
         let mut svg = String::from(SVG_OPEN);
         let mut drawn = false;
-        for (&category, pick) in CATEGORIES.iter().zip(self.traits_of(&token_id)) {
+        for category in DRAW_ORDER {
+            let pick = CATEGORIES.iter().position(|&c| c == category).and_then(|i| traits[i]);
             if let Some(index) = pick {
-                svg.push_str(&self.layer(category, *index).svg);
+                svg.push_str(&self.layer(category, index).svg);
                 drawn = true;
             }
         }
