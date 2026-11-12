@@ -4,6 +4,7 @@
 #
 #   DEPLOYER=you.testnet ./scripts/deploy.sh             # production settings (500 CTOads, 1 NEAR loss)
 #   DEPLOYER=you.testnet DEMO=1 ./scripts/deploy.sh      # small demo: 3 CTOads, 0.1 NEAR loss, 5 min votes
+#   RESUME=art DEPLOYER=you.testnet ./scripts/deploy.sh  # finish a deploy whose art upload stopped
 #
 # Every setting below can be overridden with an environment variable.
 set -euo pipefail
@@ -49,18 +50,21 @@ done
 CODE_HASH=$(python3 -I "$ROOT/scripts/code-hash.py" "$WASM/ctoad_account/ctoad_account.wasm")
 say "CTOad account code hash: $CODE_HASH"
 
-say "Deploying the CTOad account wallet as a global contract (signed by $DEPLOYER)"
-near contract deploy-as-global use-file "$WASM/ctoad_account/ctoad_account.wasm" \
-  as-global-hash "$DEPLOYER" \
-  network-config "$NETWORK" sign-with-keychain send
+# RESUME=art skips the steps before the art upload, to finish a deploy whose upload stopped.
+if [[ "${RESUME:-}" != art ]]; then
+  say "Deploying the CTOad account wallet as a global contract (signed by $DEPLOYER)"
+  near contract deploy-as-global use-file "$WASM/ctoad_account/ctoad_account.wasm" \
+    as-global-hash "$DEPLOYER" \
+    network-config "$NETWORK" sign-with-keychain send
 
-say "Creating $TOKEN and $NFT"
-near account create-account fund-myself "$TOKEN" "$TOKEN_FUNDING NEAR" \
-  autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
-  network-config "$NETWORK" sign-with-keychain send
-near account create-account fund-myself "$NFT" "$NFT_FUNDING NEAR" \
-  autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
-  network-config "$NETWORK" sign-with-keychain send
+  say "Creating $TOKEN and $NFT"
+  near account create-account fund-myself "$TOKEN" "$TOKEN_FUNDING NEAR" \
+    autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
+    network-config "$NETWORK" sign-with-keychain send
+  near account create-account fund-myself "$NFT" "$NFT_FUNDING NEAR" \
+    autogenerate-new-keypair --signature-scheme ed25519 save-to-keychain sign-as "$DEPLOYER" \
+    network-config "$NETWORK" sign-with-keychain send
+fi
 
 TOKEN_ARGS=$(cat <<EOF
 {
@@ -101,14 +105,19 @@ EOF
 
 # The CTOad contract goes first so the art is uploaded before the token contract exists. No
 # CTOad can be minted without its art.
-say "Deploying and initializing the CTOad contract on $NFT"
-near contract deploy "$NFT" use-file "$WASM/ctoad_nft/ctoad_nft.wasm" \
-  with-init-call new json-args "$NFT_ARGS" \
-  prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' \
-  network-config "$NETWORK" sign-with-keychain send
+if [[ "${RESUME:-}" != art ]]; then
+  say "Deploying and initializing the CTOad contract on $NFT"
+  near contract deploy "$NFT" use-file "$WASM/ctoad_nft/ctoad_nft.wasm" \
+    with-init-call new json-args "$NFT_ARGS" \
+    prepaid-gas '100.0 Tgas' attached-deposit '0 NEAR' \
+    network-config "$NETWORK" sign-with-keychain send
+fi
 
 say "Uploading the art layers (signed by $DEPLOYER)"
-OWNER="$DEPLOYER" NFT="$NFT" NETWORK="$NETWORK" "$ROOT/scripts/upload-art.sh"
+if ! OWNER="$DEPLOYER" NFT="$NFT" NETWORK="$NETWORK" "$ROOT/scripts/upload-art.sh"; then
+  echo "The art upload stopped. Run the same command again with RESUME=art in front to finish." >&2
+  exit 1
+fi
 
 say "Deploying and initializing the \$CTO token contract on $TOKEN"
 near contract deploy "$TOKEN" use-file "$WASM/cto_token/cto_token.wasm" \
