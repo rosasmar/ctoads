@@ -126,7 +126,25 @@ async function link(phone: string, code: string): Promise<string> {
     .update({ phone, code_hash: null, code_expires_at: null, linked_at: new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq("account_id", row.account_id);
   if (linkError) throw linkError;
+  await moveTextAlerts(row.account_id, phone);
   return `Linked to ${row.account_id}. Text HELP for what you can do.`;
+}
+
+/**
+ * Text alerts go to the linked number, so they follow it. If the account gets alerts by text,
+ * they move to its new number, and any other account stops getting alerts at that number.
+ */
+async function moveTextAlerts(account: string, phone: string): Promise<void> {
+  const db = supabase();
+  const { data: sub, error } = await db.from("alert_subscribers").select("phone").eq("account_id", account).maybeSingle();
+  if (error) throw error;
+  if (!sub?.phone || sub.phone === phone) return;
+  await removeNumberFromAlerts(phone);
+  const { error: saveError } = await db
+    .from("alert_subscribers")
+    .update({ phone, updated_at: new Date().toISOString() })
+    .eq("account_id", account);
+  if (saveError) throw saveError;
 }
 
 async function profileOf(account: string): Promise<Profile | null> {

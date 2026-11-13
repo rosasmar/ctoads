@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
-import { AlertsPitch } from "@/components/AlertsPitch";
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
 import { useTextEnabled } from "@/hooks/useTextEnabled";
@@ -18,43 +17,34 @@ import {
   channelsAction,
   emailAction,
   normalizeEmail,
-  normalizePhone,
   signAlertsAction,
   STOP_EMAIL_ACTION,
-  subscribeAction,
+  SUBSCRIBE_TEXT_ACTION,
   UNSUBSCRIBE_ACTION,
 } from "@/lib/alerts";
 
 const CHANNEL_LABELS: Record<Channels, string> = { text: "Text", email: "Email", both: "Both" };
 
-export function AlertsPage() {
-  const { signedAccountId, signIn, signMessage } = useWalletSelector();
+/**
+ * Signing up for alerts, on the phone page under linking your phone. Text alerts go to that linked
+ * number, so there's no number to type here; email has its own code. Needs a connected wallet.
+ */
+export function AlertsSection({ linked }: { linked: boolean }) {
+  const { signedAccountId, signMessage } = useWalletSelector();
   const textEnabled = useTextEnabled();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
   const { data: status, error: statusError, mutate } = useSWR(
     signedAccountId ? ["alerts", signedAccountId] : null,
     () => alertsApi<AlertsStatus>("GET", "", { query: `?account=${encodeURIComponent(signedAccountId!)}` }),
   );
-  const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
   const [code, setCode] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (!signedAccountId) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-8 py-8 text-center">
-        <AlertsPitch title="Alerts" textEnabled={textEnabled} />
-        <p className="text-ink/65">Connect the wallet that holds your CTOad to sign up for alerts {textEnabled ? "by text or email" : "by email"}.</p>
-        <button onClick={() => signIn()} className="rounded-xl press bg-accent px-5 py-3 font-semibold text-ink">
-          Connect wallet
-        </button>
-      </div>
-    );
-  }
+  if (!signedAccountId) return null;
 
-  const normalized = normalizePhone(phone);
   const normalizedEmail = normalizeEmail(email);
   const holder = (tokens?.length ?? 0) > 0;
 
@@ -65,7 +55,6 @@ export function AlertsPage() {
       await work();
       await mutate();
       setMessage(done);
-      setPhone("");
     } catch (e) {
       setMessage(errorText(e));
     } finally {
@@ -75,9 +64,9 @@ export function AlertsPage() {
 
   const subscribe = () =>
     run(async () => {
-      const proof = await signAlertsAction(signMessage, subscribeAction(normalized!));
-      return alertsApi("POST", "", { body: { proof, phone: normalized } });
-    }, `Saved. Texts go to ${normalized}.`);
+      const proof = await signAlertsAction(signMessage, SUBSCRIBE_TEXT_ACTION);
+      return alertsApi("POST", "", { body: { proof } });
+    }, "Saved. Alerts go to your linked number.");
 
   const sendCode = () =>
     run(async () => {
@@ -116,9 +105,7 @@ export function AlertsPage() {
   const buttonClass = "w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
-      <AlertsPitch title="Alerts" textEnabled={textEnabled} />
-      <div className="mx-auto max-w-md space-y-6">
+    <div className="space-y-4">
 
       {statusError ? (
         <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/80">Alerts aren&apos;t available right now.</p>
@@ -141,35 +128,14 @@ export function AlertsPage() {
             <p className="text-sm text-ink/65">Only CTOad holders can sign up. This wallet holds none.</p>
           ) : status?.textEnabled === false ? (
             <p className="text-sm text-ink/65">Alerts go by email for now. Add your email below.</p>
+          ) : status?.hasPhone ? (
+            <p className="text-sm text-ink/65">Text alerts are on. They go to your linked number.</p>
+          ) : !linked ? (
+            <p className="text-sm text-ink/65">Link your phone above to get alerts by text.</p>
           ) : (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                subscribe();
-              }}
-              className="space-y-2"
-            >
-              <label className="block">
-                <span className="text-xs text-ink/65">
-                  {status?.hasPhone ? "New phone number" : "Phone number"}, with country code
-                </span>
-                <input
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+1 202 555 0123"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border-2 border-ink bg-white px-3 py-2 outline-none"
-                />
-              </label>
-              <button
-                type="submit"
-                disabled={busy || !normalized || !holder}
-                className="w-full rounded-xl press bg-accent px-5 py-2 font-semibold text-ink disabled:opacity-40"
-              >
-                {busy ? "Confirm in your wallet…" : status?.hasPhone ? "Change number" : "Get alerts by text"}
-              </button>
-            </form>
+            <button onClick={subscribe} disabled={busy || !holder} className={buttonClass}>
+              {busy ? "Confirm in your wallet…" : "Get alerts by text"}
+            </button>
           )}
 
           {holder && (
@@ -278,7 +244,6 @@ export function AlertsPage() {
           Getting alerts you didn&apos;t sign up for? Remove your number
         </Link>
       )}
-      </div>
     </div>
   );
 }

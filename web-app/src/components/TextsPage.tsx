@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import useSWR from "swr";
 
+import { AlertsSection } from "@/components/AlertsSection";
 import { errorText } from "@/components/TradeFields";
 import { MSGBUBBLES_NUMBER } from "@/config";
 import { useOwnedCtoads } from "@/hooks/useCto";
@@ -22,7 +23,10 @@ async function textsApi<T>(method: string, init?: { query?: string; body?: objec
   return json;
 }
 
-/** Link your phone by texting a code to the app's number, then run your CTOad by text. */
+/**
+ * Everything phone: link your phone by texting a code to the app's number, then run your account
+ * by text and get alerts from fellow holders at that same number.
+ */
 export function TextsPage() {
   const { signedAccountId, signIn, signMessage } = useWalletSelector();
   const { data: tokens } = useOwnedCtoads(signedAccountId);
@@ -69,13 +73,18 @@ export function TextsPage() {
   return (
     <div className="mx-auto max-w-md space-y-6">
       <div>
-        <h1 className="text-4xl">Text your toad</h1>
+        <h1 className="text-4xl">Your phone</h1>
         <p className="mt-2 text-ink/80">
-          Link your phone once, then text {MSGBUBBLES_NUMBER || "our number"} to get the price, a link that opens a
-          trade in your wallet, or a top-up from another chain. CTOad holders also run their profile and votes by text.
-          Nothing is ever bought, sold or voted by text alone.
+          Link your phone once. Then text your toad, and get alerts from fellow holders at the same number.
         </p>
       </div>
+
+      <h2 className="text-xl">1 · Text your toad</h2>
+      <p className="text-ink/80">
+        Text {MSGBUBBLES_NUMBER || "our number"} to get the price, a link that opens a trade in your wallet, or a
+        top-up from another chain. CTOad holders also run their profile and votes by text. Nothing is ever bought, sold
+        or voted by text alone.
+      </p>
 
       {!signedAccountId ? (
         <button onClick={() => signIn()} className="press rounded-xl bg-accent px-5 py-3 font-bold">
@@ -121,7 +130,7 @@ export function TextsPage() {
       {message && <p className="text-sm text-ink/80">{message}</p>}
 
       <section className="space-y-2">
-        <h2 className="text-xl">Commands</h2>
+        <h3 className="font-bold">Commands</h3>
         <pre className="overflow-x-auto rounded-xl border-2 border-ink bg-card p-4 font-mono text-sm whitespace-pre-wrap">{HELP_TEXT}</pre>
         <p className="text-sm text-ink/65">
           Profile changes and votes need you to hold a CTOad, like on the{" "}
@@ -130,6 +139,19 @@ export function TextsPage() {
           </Link>{" "}
           page. Each number gets at most 20 replies an hour.
         </p>
+      </section>
+
+      <section id="alerts" className="scroll-mt-6 space-y-4 border-t border-line pt-8">
+        <h2 className="text-xl">2 · Alerts</h2>
+        <p className="text-ink/80">
+          CTOad holders can ping the whole club about trades, votes or anything worth knowing, without sharing their own
+          number. Each alert is checked by private AI and shows only the sender&apos;s @handle.
+        </p>
+        {signedAccountId ? (
+          <AlertsSection linked={!!status?.linked} />
+        ) : (
+          <p className="text-sm text-ink/65">Connect your wallet above to sign up.</p>
+        )}
       </section>
     </div>
   );

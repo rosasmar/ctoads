@@ -13,8 +13,11 @@ export function alertsMessage(action: string, signedAt: number): string {
   return `CTOads alerts\n${action}\nSigned at ${new Date(signedAt).toISOString()}`;
 }
 
-/** The actions a wallet signs. Including the number means a signature can't be reused for another one. */
-export const subscribeAction = (phone: string) => `Send alerts to ${phone}`;
+/**
+ * The actions a wallet signs. Text alerts go to the number linked for text commands, which proved
+ * it's yours by texting a code, so the alerts sign-up doesn't ask for a number again.
+ */
+export const SUBSCRIBE_TEXT_ACTION = "Send alerts by text to my linked phone";
 export const UNSUBSCRIBE_ACTION = "Stop alerts";
 export const emailAction = (email: string) => `Send alerts by email to ${email}`;
 export const STOP_EMAIL_ACTION = "Stop email alerts";
