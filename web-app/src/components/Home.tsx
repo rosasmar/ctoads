@@ -25,7 +25,7 @@ export function Ticker({ market, config }: { market?: Market; config?: TokenConf
   ];
   const line = items.join(" ··· ") + " ··· ";
   return (
-    <div className="overflow-hidden whitespace-nowrap border-y border-ink bg-card py-1.5 font-mono text-xs">
+    <div className="overflow-hidden whitespace-nowrap rounded-lg border border-ink bg-card py-1.5 font-mono text-xs">
       {/* Two copies side by side, so the scroll loops without a gap. Screen readers get one. */}
       <span className="ticker inline-block">
         {line}
@@ -39,7 +39,7 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   const max = market?.max_ctoads ?? 500;
   const loss = config ? formatNear(config.loss_threshold) : "1";
   return (
-    <section className="grid border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
+    <section className="grid overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
       <div className="relative space-y-7 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
         <span className="absolute top-6 right-6 hidden -rotate-12 tracking-tight rounded-[50%] border-[3px] border-rekt bg-card px-7 py-2.5 text-4xl font-extrabold text-rekt md:block">
           REKT
@@ -82,7 +82,7 @@ export function ToadWindow({
   className?: string;
 }) {
   return (
-    <div className={`border border-line-strong bg-card ${className ?? ""}`}>
+    <div className={`overflow-hidden rounded-xl border border-line-strong bg-card ${className ?? ""}`}>
       <div className="flex justify-between border-b border-line-strong px-3 py-1.5 font-mono text-xs text-ink/65">
         <span className="truncate">{title}</span>
         <span aria-hidden="true">×</span>
@@ -103,7 +103,7 @@ function NewestCtoad({ minted }: { minted: number }) {
   return (
     <ToadWindow
       className="shadow-window w-full max-w-sm"
-      title={minted > 0 ? `ctoad_svg ${minted}` : "ctoad_svg --preview"}
+      title={minted > 0 ? `CTOad #${minted}` : "CTOad preview"}
       caption={
         minted > 0 ? (
           <span className="flex flex-wrap justify-between gap-x-3">
@@ -114,8 +114,8 @@ function NewestCtoad({ minted }: { minted: number }) {
           </span>
         ) : (
           <span className="flex justify-between gap-3">
-            <span>NONE MINTED YET</span>
-            <span>art drawn on-chain</span>
+            <span>None minted yet</span>
+            <span>drawn on-chain</span>
           </span>
         )
       }
@@ -149,7 +149,7 @@ export function Progress({ market, config }: { market?: Market; config?: TokenCo
     ["Takeover", market?.takeover ? "Live" : "Not yet"],
   ];
   return (
-    <section className="grid grid-cols-2 border border-ink bg-card md:grid-cols-4">
+    <section className="grid grid-cols-2 overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-4">
       {cells.map(([label, value], i) => (
         <div
           key={label}
@@ -177,7 +177,7 @@ export function TextYourToad() {
     "HELP",
   ];
   return (
-    <section id="text-your-toad" className="grid scroll-mt-6 border border-ink bg-card md:grid-cols-[1fr_1.1fr]">
+    <section id="text-your-toad" className="grid scroll-mt-6 overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1fr_1.1fr]">
       <div className="space-y-5 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
         <p className="font-mono text-xs uppercase text-ink/65">Text your toad</p>
         <h2 className="text-4xl leading-none md:text-5xl">No app. Just iMessage.</h2>
@@ -188,7 +188,7 @@ export function TextYourToad() {
         {MSGBUBBLES_NUMBER && <p className="font-mono text-sm">Text {MSGBUBBLES_NUMBER}</p>}
         <div className="flex flex-wrap gap-2 font-mono text-xs">
           {commands.map((c) => (
-            <span key={c} className="border border-ink px-2 py-1">
+            <span key={c} className="rounded-md border border-ink px-2 py-1">
               {c}
             </span>
           ))}
@@ -214,7 +214,7 @@ export function TextYourToad() {
 
 function Bubble({ me, children }: { me?: boolean; children: React.ReactNode }) {
   return (
-    <p className={`w-fit max-w-[85%] border border-ink px-3 py-2 text-sm ${me ? "ml-auto bg-accent" : "bg-card"}`}>
+    <p className={`w-fit max-w-[85%] rounded-2xl border border-ink px-3 py-2 text-sm ${me ? "ml-auto bg-accent" : "bg-card"}`}>
       {children}
     </p>
   );
@@ -231,7 +231,7 @@ export function HowItWorks({ config }: { config?: TokenConfig }) {
     ["Claim and vote", "Each toad is its own NEAR account. Claim its fees, vote on the treasury.", "bg-card"],
   ];
   return (
-    <section id="how" className="scroll-mt-6 border border-ink">
+    <section id="how" className="scroll-mt-6 overflow-hidden rounded-xl border border-ink">
       <div className="grid sm:grid-cols-2 lg:grid-cols-4">
         {steps.map(([title, body, color], i) => (
           <div
@@ -289,7 +289,7 @@ function BagholderTile({ id }: { id: string }) {
   const loss = token ? ctoadExtra(token).loss : undefined;
   return (
     <ToadWindow
-      title={<Link href={`/ctoads/${id}`}>ctoad #{id}</Link>}
+      title={<Link href={`/ctoads/${id}`}>CTOad #{id}</Link>}
       caption={
         <span className="block space-y-0.5">
           {loss && <span className="block text-rekt">−{formatNear(loss, 2)} NEAR</span>}

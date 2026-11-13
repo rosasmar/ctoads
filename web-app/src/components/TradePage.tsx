@@ -51,7 +51,7 @@ export function TradePage() {
       <Ticker market={market} config={config} />
       <Hero market={market} config={config} />
       <Progress market={market} config={config} />
-      <div id="trade" className="grid scroll-mt-6 border border-ink bg-card md:grid-cols-[1fr_340px]">
+      <div id="trade" className="grid scroll-mt-6 overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1fr_340px]">
         {/* A text command's link (?buy=1 or ?sell=1000) opens the card filled in. The query is only
             known in the browser, so the plain card shows until it's read. */}
         <Suspense fallback={<TradeCard onSellOutcome={onSellOutcome} />}>
@@ -99,10 +99,10 @@ function TopUpWindow() {
         role="dialog"
         aria-modal="true"
         aria-label="Top up from any chain"
-        className="shadow-window mx-auto my-10 max-w-3xl border border-ink bg-card"
+        className="shadow-window mx-auto my-10 max-w-3xl overflow-hidden rounded-xl border border-ink bg-card"
       >
         <div className="flex items-center justify-between border-b border-ink px-3 py-1.5 font-mono text-xs">
-          <span>topup --any-chain</span>
+          <span>Top up from any chain</span>
           <button onClick={close} aria-label="Close" className="px-1 text-base leading-none hover:text-rekt">
             ×
           </button>
