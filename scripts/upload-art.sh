@@ -5,8 +5,9 @@
 #   OWNER=you.testnet NFT=ctoads.you.testnet ./scripts/upload-art.sh
 #
 # Each folder in art/ is a category, and each .svg file in it is one layer, uploaded in
-# alphabetical order. The file name becomes the layer's name. Layers already on the contract are
-# skipped, and a failed upload is retried, so it's safe to run again.
+# alphabetical order. The file name becomes the layer's name, and art/weights.txt sets how often
+# it's picked. Layers already on the contract are skipped, and a failed upload is retried, so it's
+# safe to run again.
 set -euo pipefail
 
 NETWORK=${NETWORK:-testnet}
@@ -19,6 +20,14 @@ ART=${ART:-$ROOT/art}
 # Folder name and the contract's category name. Upload order doesn't matter: the contract stacks
 # the layers in its own draw order (see art/README.md).
 CATEGORIES="background:Background body:Body outfit:Outfit eyes:Eyes mouth:Mouth headwear:Headwear item:Item"
+
+# How often each layer is picked, from art/weights.txt: its "folder/name weight" line, else the
+# "* weight" default, else 1.
+WEIGHTS=${WEIGHTS:-$ART/weights.txt}
+weight_of() {
+  [[ -f "$WEIGHTS" ]] || { echo 1; return; }
+  awk -v key="$1" '$1 == key { w = $2 } $1 == "*" { d = $2 } END { print w ? w : (d ? d : 1) }' "$WEIGHTS"
+}
 
 # Layers already on the contract, one "Category/name" per line.
 uploaded() {
@@ -42,11 +51,12 @@ for pair in $CATEGORIES; do
       echo "Already uploaded: $folder/$name"
       continue
     fi
+    weight=$(weight_of "$folder/$name")
     for attempt in 1 2 3; do
-      echo "Uploading $folder/$name"
+      echo "Uploading $folder/$name (weight $weight)"
       # 0.1 NEAR covers the largest layer (8 KB). The contract refunds what it doesn't use.
       if near contract call-function as-transaction "$NFT" add_layer \
-        json-args "$(python3 -I "$ROOT/scripts/layer-args.py" "$category" "$file")" \
+        json-args "$(python3 -I "$ROOT/scripts/layer-args.py" "$category" "$file" "$weight")" \
         prepaid-gas '30.0 Tgas' attached-deposit '0.1 NEAR' \
         sign-as "$OWNER" network-config "$NETWORK" sign-with-keychain send; then
         break
