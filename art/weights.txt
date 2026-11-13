@@ -1,20 +1,24 @@
 # How often each layer is picked at mint, against the other layers of its category: a layer with
 # weight 1 next to one with weight 3 is picked 1 time in 4. scripts/upload-art.sh reads this file.
 # One "folder/name weight" per line. Every layer not listed here gets the default below.
+# Every body keeps the default, so holders can recolor to any of them (see recolor).
 * 3
 
-background/night 2
-background/gold 1
+# The drawn backgrounds are a bit rarer than the plain colors.
+background/down 2
+background/graveyard 2
+background/police-line 2
+background/rainbow 2
+background/this-is-fine 2
+background/trader 2
+background/up 2
 
-body/gold 1
-body/diamond 1
+outfit/suit 1
+outfit/cape 1
+outfit/diamond-hands 1
 
-eyes/laser 1
-eyes/coins 1
-eyes/shades 2
-
-outfit/suit 2
-outfit/gold-chain 1
+eyes/dazed 1
+eyes/dazed-yellow 1
 
 headwear/crown 1
-headwear/halo 1
+headwear/space-helmet 1
