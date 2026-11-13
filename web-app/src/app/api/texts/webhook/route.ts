@@ -9,6 +9,9 @@ import { replyTo, webhookSignatureIsValid } from "@/lib/textCommands";
 
 const MAX_PER_HOUR = 20;
 
+/** Long enough for a TOPUP to keep checking on the swap after replying (TOPUP_WATCH_SECS). */
+export const maxDuration = 300;
+
 type Received = { type: string; message_id: string; from: string; text?: string; is_group?: boolean };
 
 export async function POST(request: NextRequest) {

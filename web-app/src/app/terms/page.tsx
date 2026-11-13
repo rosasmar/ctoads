@@ -97,6 +97,10 @@ export default function Terms() {
           shown, of the coin shown, on the chain shown, to that deposit address only. A deposit sent anywhere else
           can&apos;t be recovered. NEAR Intents keeps a small fee from each swap.
         </p>
+        <p>
+          A top-up started by text (TOPUP) has no refund address: a refund goes to your NEAR account&apos;s balance on
+          NEAR Intents, where you can withdraw it at near-intents.org.
+        </p>
       </section>
     </article>
   );

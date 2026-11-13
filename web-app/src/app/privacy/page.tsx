@@ -95,6 +95,10 @@ export default function Privacy() {
           enter are sent through our server to NEAR Intents&apos; 1Click service, which gives you a deposit address and
           does the swap. We don&apos;t store any of it. The deposit and the swap happen on public blockchains.
         </p>
+        <p>
+          When you start a top-up by text (TOPUP), we store your number, your NEAR account name, the coin and amount,
+          and the deposit address, to text you when your NEAR arrives and to answer STATUS.
+        </p>
       </section>
     </article>
   );

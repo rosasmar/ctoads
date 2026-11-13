@@ -158,7 +158,9 @@ They can link their phone and text the app's number to change it
 (`SET X name`), or get a link that opens a buy or sell in their wallet
 (`BUY 1`).
 The trade page also tops up from USDC, ETH, SOL or BTC on
-other chains with NEAR Intents, then buys $CTO with it (mainnet only).
+other chains with NEAR Intents, then buys $CTO with it (mainnet only). A
+linked phone can start one by text too (`TOPUP 10 USDC`) and gets a text
+when the NEAR arrives.
 Sign-ups and profiles are stored in Supabase. See
 [web-app/README.md](web-app/README.md).
 

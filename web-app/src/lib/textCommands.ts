@@ -5,14 +5,19 @@
 
 import "server-only";
 import { createHmac, timingSafeEqual } from "node:crypto";
+import { after } from "next/server";
+import { NETWORK } from "@/config";
 import { sha256Hex } from "@/lib/alerts";
 import { getMarket, nftTokensForOwner } from "@/lib/cto";
+import { STATUS_TEXT, TOPUP_ASSETS, type TopUpStatus, WNEAR_CONTRACT } from "@/lib/intents";
 import { moderate } from "@/lib/moderation";
-import { formatNear } from "@/lib/near";
+import { sendText } from "@/lib/msgbubbles";
+import { formatNear, parseUnits, view } from "@/lib/near";
+import { OneClickError, requestQuote, topUpStatus } from "@/lib/oneClick";
 import { normalizeProfile, type Profile, profilePath } from "@/lib/profile";
 import { removeNumberFromAlerts } from "@/lib/removeNumber";
 import { supabase } from "@/lib/supabase";
-import { type Command, HELP_TEXT, parseCommand, TEXTS_PATH } from "@/lib/texts";
+import { type Command, HELP_TEXT, parseCommand, TEXTS_PATH, TOPUP_HELP_TEXT } from "@/lib/texts";
 
 /** How old a webhook delivery may be, as msgbubbles recommends. */
 const REPLAY_WINDOW_SECS = 300;
@@ -71,6 +76,12 @@ export async function replyTo(phone: string, text: string, origin: string): Prom
       return `Tap to buy $CTO for ${command.near} NEAR. You'll confirm it in your wallet: ${origin}/?buy=${command.near}#trade`;
     case "sell":
       return `Tap to sell ${command.cto} $CTO. You'll confirm it in your wallet: ${origin}/?sell=${command.cto}#trade`;
+    case "topUpHelp":
+      return TOPUP_HELP_TEXT;
+    case "topUp":
+      return topUp(phone, account, command.assetId, command.amount, origin);
+    case "topUpStatus":
+      return topUpStatusReply(phone, origin);
     case "profile": {
       const profile = await profileOf(account);
       return profile
@@ -140,4 +151,108 @@ async function editProfile(account: string, command: Command, origin: string): P
   if (error?.code === "23505") return `@${next.handle} is taken. Pick another one.`;
   if (error) throw error;
   return `Saved: ${origin}${profilePath(next.handle)}`;
+}
+
+/** How long after a TOPUP we keep checking on it, to text when the NEAR arrives. STATUS works after that too. */
+export const TOPUP_WATCH_SECS = 270;
+const TOPUP_POLL_SECS = 10;
+const TOPUP_DONE: TopUpStatus[] = ["SUCCESS", "REFUNDED", "FAILED"];
+
+/**
+ * Starts a top-up from another chain: a real 1Click quote whose wNEAR goes to the linked account.
+ * A refund goes to that account's balance on NEAR Intents, so no refund address is needed by text.
+ * Replies with the deposit address, then keeps checking for a few minutes to text the outcome.
+ */
+async function topUp(phone: string, account: string, assetId: string, input: string, origin: string): Promise<string> {
+  if (NETWORK !== "mainnet") return "Top-ups only work on the mainnet site.";
+  const asset = TOPUP_ASSETS.find((a) => a.id === assetId)!;
+  const amount = parseUnits(input, asset.decimals);
+  if (!amount) return `Enter an amount, e.g. TOPUP 10 ${asset.symbol}.`;
+  // wrap.near can't hold the wNEAR for an account that hasn't paid its one-time storage fee.
+  if (!(await view<unknown>(WNEAR_CONTRACT, "storage_balance_of", { account_id: account }))) {
+    return `${account} needs a one-time setup first (0.00125 NEAR) so it can receive NEAR. Tap "Get ready" here, then text TOPUP again: ${origin}/#topup`;
+  }
+
+  const label = `${input} ${asset.symbol} on ${asset.chain}`;
+  let quote;
+  try {
+    quote = await requestQuote({ asset, amount: amount.toString(), recipient: account, refundTo: account, refundType: "INTENTS", dry: false });
+  } catch (e) {
+    if (!(e instanceof OneClickError)) throw e;
+    if (e.status < 500) return `NEAR Intents said: ${e.message}`;
+    console.error(e);
+    return "NEAR Intents is busy right now. Try again in a minute.";
+  }
+  const depositAddress = quote.depositAddress!;
+  const { error } = await supabase()
+    .from("text_topups")
+    .insert({ deposit_address: depositAddress, phone, account_id: account, label });
+  if (error) throw error;
+  after(() => watchTopUp(depositAddress, origin));
+
+  return [
+    `Send exactly ${label} to:`,
+    depositAddress,
+    `You'll get about ${formatNear(quote.amountOut)} NEAR in ${account} (at least ${formatNear(quote.minAmountOut)}), ~${quote.timeEstimate} s after it lands.`,
+    `Only send ${asset.symbol} on ${asset.chain}, and only once. I'll text you when it arrives. Text STATUS anytime.`,
+  ].join("\n");
+}
+
+/** Checks on a top-up every few seconds, for a few minutes, and texts the outcome once it has one. */
+async function watchTopUp(depositAddress: string, origin: string): Promise<void> {
+  const until = Date.now() + TOPUP_WATCH_SECS * 1000;
+  while (Date.now() < until) {
+    await new Promise((r) => setTimeout(r, TOPUP_POLL_SECS * 1000));
+    try {
+      const status = await topUpStatus(depositAddress);
+      if (!TOPUP_DONE.includes(status)) continue;
+      const row = await claimTopUp(depositAddress);
+      if (row) await sendText(row.phone, outcomeText(status, row, origin), `topup-${depositAddress}`);
+      return;
+    } catch (e) {
+      console.error(e);
+    }
+  }
+}
+
+type TopUpRow = { deposit_address: string; phone: string; account_id: string; label: string };
+
+/** Marks a top-up's outcome as texted. Returns the row only the first time, so it's texted once. */
+async function claimTopUp(depositAddress: string): Promise<TopUpRow | null> {
+  const { data, error } = await supabase()
+    .from("text_topups")
+    .update({ done_at: new Date().toISOString() })
+    .eq("deposit_address", depositAddress)
+    .is("done_at", null)
+    .select("deposit_address, phone, account_id, label")
+    .maybeSingle();
+  if (error) throw error;
+  return data as TopUpRow | null;
+}
+
+function outcomeText(status: TopUpStatus, row: TopUpRow, origin: string): string {
+  if (status === "SUCCESS") return `Your ${row.label} arrived as NEAR in ${row.account_id}. Tap to buy $CTO with it: ${origin}/#topup`;
+  if (status === "REFUNDED") {
+    return `The swap for your ${row.label} didn't go through. It was refunded to ${row.account_id} on NEAR Intents: near-intents.org`;
+  }
+  return `${STATUS_TEXT.FAILED} Deposit address: ${row.deposit_address}`;
+}
+
+/** The reply to STATUS: how this number's latest top-up is going. */
+async function topUpStatusReply(phone: string, origin: string): Promise<string> {
+  const { data, error } = await supabase()
+    .from("text_topups")
+    .select("deposit_address, phone, account_id, label")
+    .eq("phone", phone)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return "No top-up yet. Text e.g. TOPUP 10 USDC to start one.";
+  const row = data as TopUpRow;
+  const status = await topUpStatus(row.deposit_address);
+  if (!TOPUP_DONE.includes(status)) return `${row.label}: ${STATUS_TEXT[status]}\nDeposit address: ${row.deposit_address}`;
+  // Answering STATUS counts as texting the outcome, so the watcher doesn't text it again.
+  await claimTopUp(row.deposit_address);
+  return outcomeText(status, row, origin);
 }
