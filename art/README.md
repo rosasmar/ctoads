@@ -35,7 +35,38 @@ category. For an option like "no hat", add a layer with an empty drawing, such a
 Files exported from design tools work as they are. The upload drops the XML declaration,
 comments and the outer `<svg>` tag.
 
-## Uploading
+## Previewing
+
+```sh
+node scripts/preview-art.mjs
+open art/preview.html
+```
+
+This builds `art/preview.html`, which needs no chain or server, only Node. It stacks the layers
+the same way the contract does, so a preview looks the same as a minted CTOad. The page has:
+
+- **Checks**: layer counts, and any file that breaks the format above.
+- **Compositor**: pick a layer per category, or randomize. Lock a category to keep it while
+  randomizing the rest. The URL keeps the pick, so it can be bookmarked or shared. Download
+  saves the stacked SVG.
+- **Random combinations**: a grid of 12 random CTOads. Each category is dealt like a shuffled
+  deck, so every layer shows up once before any repeats. Click one to open it in the
+  compositor.
+- **Layer browser**: every layer on its own. Click one to put it in the compositor.
+- **Try hats under the eyes**: a toggle that draws headwear below the eyes, to test art for an
+  order the contract doesn't use. The page marks it clearly while it's on.
+
+Run the script again after changing any layer, or add `--watch` to rebuild on every change.
+`preview.html` is generated, so git ignores it. Randomizing picks every layer equally often;
+it doesn't apply weights.
+
+To preview art before it's final, point the script at another folder laid out like `art/`. It
+can hold SVGs or 1000×1000 PNGs with transparency, and the page is written into that folder:
+
+```sh
+node scripts/preview-art.mjs drafts --watch
+open drafts/preview.html
+```## Uploading
 
 `scripts/deploy.sh` uploads every layer before the token contract exists, so no CTOad is minted
 without art. To upload to a contract that's already deployed, as its owner:
