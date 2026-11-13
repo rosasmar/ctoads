@@ -4,6 +4,7 @@ import { actionCreators } from "@near-js/transactions";
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
 import { useState } from "react";
+import useSWR from "swr";
 
 import { NFT_CONTRACT, TOKEN_CONTRACT } from "@/config";
 import { AccountLink } from "@/components/AccountLink";
@@ -11,7 +12,7 @@ import { HolderName } from "@/components/HolderName";
 import { CtoadImage, CtoadTraits } from "@/components/CtoadImage";
 import { AmountInput, errorText, Row } from "@/components/TradeFields";
 import { useBuyQuote, useCtoad, useCtoadFunds, useHolder, useSellQuote } from "@/hooks/useCto";
-import { ctoadAccountId, ctoadCallArgs, ctoadExtra, TX, withSlippage, type SellQuote } from "@/lib/cto";
+import { ctoadAccountId, ctoadCallArgs, ctoadExtra, getArt, TX, withSlippage, type SellQuote } from "@/lib/cto";
 import { formatCto, formatNear, parseNear } from "@/lib/near";
 
 /** One CTOad: its image, traits, holder, and its backpack, the account it owns. */
@@ -50,6 +51,7 @@ export function CtoadPage({ id }: { id: string }) {
             )}
           </div>
           {token && <CtoadTraits token={token} className="w-fit text-sm" />}
+          {token && <Recolor id={id} holder={token.owner_id} />}
           {token && <Backpack id={id} holder={token.owner_id} />}
         </div>
       </div>
@@ -228,5 +230,66 @@ function BackpackActions(props: {
       )}
       {status && <p className="text-sm text-ink/80">{status}</p>}
     </div>
+  );
+}
+
+/**
+ * The holder can change their CTOad's body to any of the most common body colors. Rare bodies
+ * can only be minted, so the contract leaves them out (see `recolor` in contracts/ctoad-nft).
+ */
+function Recolor({ id, holder }: { id: string; holder: string }) {
+  const { signedAccountId, callFunction } = useWalletSelector();
+  const { data: token, mutate: refreshToken } = useCtoad(id);
+  const { data: art } = useSWR(signedAccountId === holder ? "art" : null, getArt, { revalidateOnFocus: false });
+  const [busy, setBusy] = useState<number | null>(null);
+  const [status, setStatus] = useState<string | null>(null);
+  if (signedAccountId !== holder || !art) return null;
+
+  const bodies = art.categories.find((c) => c.category === "Body")?.layers ?? [];
+  const common = Math.max(0, ...bodies.map((b) => b.weight));
+  const current = token ? ctoadExtra(token).traits?.find((t) => t.category === "Body")?.name : undefined;
+  const choices = bodies.map((b, index) => ({ ...b, index })).filter((b) => b.weight === common);
+  if (choices.length < 2) return null;
+
+  const recolor = async (index: number, name: string) => {
+    setBusy(index);
+    setStatus(null);
+    try {
+      await callFunction({
+        contractId: NFT_CONTRACT,
+        method: "recolor",
+        args: { token_id: id, body: index },
+        gas: TX.recolor.gas,
+        deposit: TX.recolor.deposit,
+      });
+      await refreshToken();
+      setStatus(`Recolored to ${name}.`);
+    } catch (e) {
+      setStatus(errorText(e));
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  return (
+    <section className="space-y-3 border border-ink p-4 text-sm">
+      <div>
+        <p className="font-mono text-xs uppercase">Recolor</p>
+        <p className="mt-1 text-ink/65">Pick a new body color. Rare colors can only be minted, so they aren&apos;t here.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {choices.map((b) => (
+          <button
+            key={b.index}
+            onClick={() => recolor(b.index, b.name)}
+            disabled={busy !== null || b.name === current}
+            className={`press px-3 py-1.5 font-mono text-xs disabled:opacity-40 ${b.name === current ? "bg-accent" : "bg-card"}`}
+          >
+            {busy === b.index ? "Confirm in wallet…" : b.name}
+          </button>
+        ))}
+      </div>
+      {status && <p className="text-ink/80">{status}</p>}
+    </section>
   );
 }

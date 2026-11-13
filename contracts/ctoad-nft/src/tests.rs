@@ -770,3 +770,72 @@ fn replacing_a_layer_changes_ctoads_already_minted() {
     let token = c.nft_token("1".into()).unwrap();
     assert!(decode_media(&token).contains("<g id=\"crown\"/>"));
 }
+
+/// Bodies "green" and "pink" (common, weight 3) and "gold" (rare, weight 1), and a CTOad minted to
+/// alice. Returns the contract and the CTOad's id.
+fn recolor_setup() -> (Contract, TokenId) {
+    let mut c = setup(500);
+    set(&acct("deployer"), NEAR);
+    c.add_layer(Category::Body, "green".into(), "<g id='green'/>".into(), Some(3));
+    c.add_layer(Category::Body, "pink".into(), "<g id='pink'/>".into(), Some(3));
+    c.add_layer(Category::Body, "gold".into(), "<g id='gold'/>".into(), Some(1));
+    let id = mint(&mut c, &acct("alice"));
+    (c, id)
+}
+
+fn body_of(c: &Contract, id: &str) -> String {
+    c.ctoad_traits(id.into()).into_iter().find(|t| t.category == Category::Body).unwrap().name
+}
+
+#[test]
+fn holder_recolors_to_a_common_body() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("alice"), 1);
+    c.recolor(id.clone(), 1);
+    assert_eq!(body_of(&c, &id), "pink");
+    assert!(c.ctoad_svg(id.clone()).contains("<g id='pink'/>"));
+    c.recolor(id.clone(), 0);
+    assert_eq!(body_of(&c, &id), "green");
+}
+
+#[test]
+fn recolor_works_after_the_art_is_frozen() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("deployer"), 1);
+    c.freeze_art();
+    set(&acct("alice"), 1);
+    c.recolor(id.clone(), 1);
+    assert_eq!(body_of(&c, &id), "pink");
+}
+
+#[test]
+#[should_panic(expected = "That body is rare: it can only be minted")]
+fn nobody_recolors_into_a_rare_body() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("alice"), 1);
+    c.recolor(id, 2);
+}
+
+#[test]
+#[should_panic(expected = "You don't own CTOad #1")]
+fn only_the_holder_recolors() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("mallory"), 1);
+    c.recolor(id, 1);
+}
+
+#[test]
+#[should_panic(expected = "No body at that index")]
+fn recolor_needs_an_existing_body() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("alice"), 1);
+    c.recolor(id, 7);
+}
+
+#[test]
+#[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
+fn recolor_needs_one_yocto() {
+    let (mut c, id) = recolor_setup();
+    set(&acct("alice"), 0);
+    c.recolor(id, 1);
+}
