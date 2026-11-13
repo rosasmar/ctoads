@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { CtoadImage, ToadPreview } from "@/components/CtoadImage";
 import { HolderName } from "@/components/HolderName";
+import { ToadHead } from "@/components/ToadHead";
 import { MSGBUBBLES_NUMBER } from "@/config";
 import { useCtoad } from "@/hooks/useCto";
 import { ctoadExtra, type Market, type TokenConfig } from "@/lib/cto";
@@ -39,16 +40,20 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   const max = market?.max_ctoads ?? 500;
   const loss = config ? formatNear(config.loss_threshold) : "1";
   return (
-    <section className="grid overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
-      <div className="relative space-y-7 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
-        <p className="font-mono text-xs">[ MEMBERSHIP COSTS A LOSS ]</p>
+    // No overflow-hidden here, so a thrown toad head can fly past the edges. The grey cell rounds
+    // its own corners instead.
+    <section className="grid rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
+      <div className="relative space-y-7 border-b border-ink p-6 pb-20 md:border-r md:border-b-0 md:p-8">
+        <p className="font-mono text-xs">[ $CTO · MEMBERSHIP COSTS A LOSS ]</p>
         <h1 className="pt-6 text-6xl leading-[1.05] md:text-7xl xl:text-8xl">
           Sell at a loss.
           <br />
-          Get a <span className="bg-accent px-2">toad.</span>
+          Get a <span className="rounded-lg bg-accent px-2">toad.</span>
         </h1>
         <p className="max-w-lg text-lg">
-          Lose {loss} NEAR on a $CTO sell, get one of {max} toads. At #{max}, the toads take over the fees.
+          Buy <strong>$CTO</strong>, sell it at a {loss} NEAR loss, get one of {max} toads.
+          <br />
+          <span className="text-ink/65">At #{max}, the toads take over the fees.</span>
         </p>
         <div className="flex flex-wrap gap-3">
           <a href="#trade" className="press bg-ink px-6 py-3 font-medium text-white">
@@ -58,8 +63,10 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
             Text your toad
           </a>
         </div>
+        {/* Peeks over the cell's bottom edge: the hidden 40% (42 px) hangs below it. */}
+        <ToadHead peek className="absolute right-8 -bottom-[42px] z-20 h-[104px] w-[130px]" />
       </div>
-      <div className="flex items-center justify-center bg-background p-8 md:p-10">
+      <div className="flex items-center justify-center rounded-b-[9px] bg-background p-8 md:rounded-r-[9px] md:rounded-bl-none md:p-10">
         <NewestCtoad minted={market?.ctoads_minted ?? 0} />
       </div>
     </section>
