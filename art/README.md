@@ -3,7 +3,7 @@
 Every CTOad's image is built on-chain from these layers. At mint, the CTOad contract picks one
 layer per category, and when the CTOad is read, it stacks them into one SVG.
 
-The layers here are the CTOads art: 64 layers, about 211 KB, so uploading them costs about
+The layers here are the CTOads art: 65 layers, about 212 KB, so uploading them costs about
 2.2 NEAR.
 
 ## Categories
