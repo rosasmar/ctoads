@@ -237,7 +237,7 @@ export function HowItWorks({ config }: { config?: TokenConfig }) {
               i % 2 === 0 ? "sm:border-r" : ""
             } ${i === 1 ? "lg:border-r" : ""} ${i === 2 ? "sm:border-b-0" : ""}`}
           >
-            <p className="font-display text-5xl text-accent">0{i + 1}</p>
+            <p className="font-display text-5xl text-frog">0{i + 1}</p>
             <h3 className="font-bold">{title}</h3>
             <p className="text-sm text-ink/65">{body}</p>
           </div>
