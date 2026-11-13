@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
-/* A Swiss grid in the toads' own palette: the page is the ink of their outlines, text is cream,
-   hairlines and window frames are purple, NEAR green is the one accent and red is for getting
-   rekt. The names are roles, not colors: "ink" is the text and "white" a surface, so classes like
+/* A Swiss grid in the toads' own palette: a cream page with white cards, text in the ink of their
+   outlines, purple window frames, NEAR green as the one accent (a darker green for green text, so
+   it reads on white) and red for getting rekt. The names are roles, not colors: "ink" is the text and "white" a surface, so classes like
    bg-ink text-white still read as a pair. */
 @theme inline {
-  --color-background: #17111f;
-  --color-card: #201829;
-  --color-white: #17111f;
-  --color-ink: #f5ebd9;
-  --color-line: #2f2640;
+  --color-background: #f6f0e4;
+  --color-card: #ffffff;
+  --color-white: #ffffff;
+  --color-ink: #17111f;
+  --color-line: #e6dccb;
   --color-line-strong: #503078;
   --color-accent: #00ec97;
-  --color-frog: #00ec97;
-  --color-rekt: #ff4d3d;
+  --color-on-accent: #17111f;
+  --color-frog: #00875a;
+  --color-rekt: #e5231b;
   --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-bricolage);
@@ -56,7 +57,7 @@
 }
 /* Text on the green accent is dark, whatever the element's own text color says. */
 .bg-accent {
-  color: var(--color-background);
+  color: var(--color-on-accent);
 }
 .border-2,
 .border-4 {
@@ -98,7 +99,7 @@ h2 {
 
 ::selection {
   background: var(--color-accent);
-  color: var(--color-background);
+  color: var(--color-on-accent);
 }
 
 input[type="number"]::-webkit-inner-spin-button,
