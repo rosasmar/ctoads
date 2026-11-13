@@ -12,7 +12,7 @@ import { profilePath } from "@/lib/profile";
 
 const LINKS = [
   { href: "/", label: "Trade" },
-  { href: "/ctoads", label: "CTOads" },
+  { href: "/ctoads", label: "Gallery" },
   { href: "/claim", label: "Claim" },
   { href: "/vote", label: "Vote" },
   { href: "/texts", label: "Texts" },
@@ -40,7 +40,7 @@ export function Nav() {
       {/* On phones the links get their own row under the logo and wallet button. */}
       <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
         <Link href="/" className="font-display text-2xl">
-          $CTO
+          CTOads
         </Link>
         <div className="order-last flex w-full flex-wrap gap-x-4 gap-y-1 text-sm sm:order-none sm:w-auto">
           {/* The current page is only known per request on pages like /ctoads/1, so the
@@ -81,7 +81,7 @@ function CurrentNavLinks() {
   return <NavLinks pathname={usePathname()} />;
 }
 
-/** `/ctoads/1` highlights CTOads. */
+/** `/ctoads/1` highlights Gallery. */
 function NavLinks({ pathname }: { pathname: string | null }) {
   return LINKS.map((l) => {
     const current = pathname === l.href || (l.href !== "/" && !!pathname?.startsWith(`${l.href}/`));

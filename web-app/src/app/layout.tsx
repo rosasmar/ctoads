@@ -24,7 +24,7 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "$CTO · CTOads",
+  title: "CTOads · $CTO",
   description: "Sell $CTO at a loss and mint a CTOad. When the last one mints, the bagholders take over the fees.",
 };
 
