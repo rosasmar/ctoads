@@ -1,7 +1,7 @@
 "use client";
 
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED, NETWORK, NFT_CONTRACT } from "@/config";
@@ -27,6 +27,13 @@ export function VotePage() {
   const { signedAccountId } = wallet;
   const { data: market } = useMarket();
   const { data: proposals, mutate: refreshProposals } = useProposals();
+  // A VOTE text links to /vote#proposal-3. The proposals load after the page, so scroll to it once
+  // they're there.
+  const loaded = proposals !== undefined;
+  useEffect(() => {
+    if (!loaded || !window.location.hash.startsWith("#proposal-")) return;
+    document.getElementById(window.location.hash.slice(1))?.scrollIntoView({ block: "start" });
+  }, [loaded]);
   const { data: tokens } = useSWR(CONFIGURED && signedAccountId ? ["mine", signedAccountId] : null, ([, id]) =>
     nftTokensForOwner(id),
   );
@@ -243,7 +250,8 @@ function ProposalCard({
     );
 
   return (
-    <div className="space-y-3 rounded-xl border-2 border-ink bg-card p-4">
+    // The id lets a VOTE text link straight to this proposal (/vote#proposal-3).
+    <div id={`proposal-${p.id}`} className="scroll-mt-6 space-y-3 rounded-xl border-2 border-ink bg-card p-4">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-sm text-ink/65">Proposal #{p.id}</p>
