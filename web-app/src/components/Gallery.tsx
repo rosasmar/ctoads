@@ -27,6 +27,8 @@ export function Gallery() {
   const [view, setView] = useState<"all" | "mine">("all");
   const mine = view === "mine" && !!signedAccountId;
   const { data: owned } = useOwnedCtoads(mine ? signedAccountId : null);
+  // Compact cards show only the picture, number and loss; Details adds traits, holder and account.
+  const [details, setDetails] = useState(false);
 
   return (
     <div className="space-y-6">
@@ -36,19 +38,12 @@ export function Gallery() {
           {total ?? "…"} of {max} minted. Each one was earned by losing NEAR on a single $CTO sell.
         </p>
       </div>
-      {signedAccountId && (
-        <div className="flex w-fit gap-1 rounded-xl bg-ink/5 p-1 text-sm">
-          {(["all", "mine"] as const).map((v) => (
-            <button
-              key={v}
-              onClick={() => setView(v)}
-              className={`rounded-lg px-4 py-1.5 ${view === v ? "bg-ink/10 font-medium" : "text-ink/65"}`}
-            >
-              {v === "all" ? "All" : "Mine"}
-            </button>
-          ))}
-        </div>
-      )}
+      <div className="flex flex-wrap gap-3">
+        {signedAccountId && (
+          <Toggle options={[["All", view === "all"], ["Mine", view === "mine"]]} onPick={(i) => setView(i === 0 ? "all" : "mine")} />
+        )}
+        <Toggle options={[["Compact", !details], ["Details", details]]} onPick={(i) => setDetails(i === 1)} />
+      </div>
       {error && <p className="text-rekt">Couldn&apos;t load CTOads: {String(error.message ?? error)}</p>}
       {mine && owned?.length === 0 && (
         <p className="rounded-xl bg-ink/5 p-6 text-center text-ink/65">No CTOads in this wallet yet.</p>
@@ -58,8 +53,8 @@ export function Gallery() {
       )}
       <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
         {mine
-          ? owned?.map((t) => <CtoadCard key={t.token_id} id={t.token_id} token={t} />)
-          : ids.map((id) => <GalleryCard key={id} id={id} />)}
+          ? owned?.map((t) => <CtoadCard key={t.token_id} id={t.token_id} token={t} details={details} />)
+          : ids.map((id) => <GalleryCard key={id} id={id} details={details} />)}
       </div>
       {!mine && total !== undefined && shown < total && (
         <div className="text-center">
@@ -72,13 +67,30 @@ export function Gallery() {
   );
 }
 
-function GalleryCard({ id }: { id: string }) {
+/** A row of buttons where one is picked, like All / Mine. */
+function Toggle({ options, onPick }: { options: [label: string, picked: boolean][]; onPick: (index: number) => void }) {
+  return (
+    <div className="flex w-fit gap-1 rounded-xl bg-ink/5 p-1 text-sm">
+      {options.map(([label, picked], i) => (
+        <button
+          key={label}
+          onClick={() => onPick(i)}
+          className={`rounded-lg px-4 py-1.5 ${picked ? "bg-ink/10 font-medium" : "text-ink/65"}`}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function GalleryCard({ id, details }: { id: string; details: boolean }) {
   const { data: token } = useCtoad(id);
-  return <CtoadCard id={id} token={token ?? undefined} />;
+  return <CtoadCard id={id} token={token ?? undefined} details={details} />;
 }
 
 /** `token` is undefined while it loads. */
-function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
+function CtoadCard({ id, token: t, details }: { id: string; token?: NftToken; details: boolean }) {
   const extra = t ? ctoadExtra(t) : {};
   return (
     <div className="overflow-hidden rounded-2xl border-2 border-ink bg-card shadow-hard">
@@ -90,20 +102,24 @@ function CtoadCard({ id, token: t }: { id: string; token?: NftToken }) {
           CTOad #{id}
         </Link>
         {extra.loss && <p className="font-mono font-bold text-rekt">Lost {formatNear(extra.loss, 2)} NEAR</p>}
-        {t && <CtoadTraits token={t} className="py-1" />}
-        {t && (
-          <p className="text-ink/65">
-            Held by <HolderName accountId={t.owner_id} keep={8} />
-          </p>
+        {details && (
+          <>
+            {t && <CtoadTraits token={t} className="py-1" />}
+            {t && (
+              <p className="text-ink/65">
+                Held by <HolderName accountId={t.owner_id} keep={8} />
+              </p>
+            )}
+            <a
+              href={`${EXPLORER_URL}/address/${ctoadAccountId(id)}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-frog hover:underline"
+            >
+              Its account ↗
+            </a>
+          </>
         )}
-        <a
-          href={`${EXPLORER_URL}/address/${ctoadAccountId(id)}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-frog hover:underline"
-        >
-          Its account ↗
-        </a>
       </div>
     </div>
   );
