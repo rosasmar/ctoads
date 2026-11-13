@@ -45,12 +45,12 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
 
   // The receipt prints, REKT stamps it, then the CTOad pops in. The timing is in globals.css (.mint-*).
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-ink/70 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="You minted a CTOad"
-        className="shadow-window w-full max-w-2xl border border-ink bg-accent"
+        className="shadow-window w-full max-w-2xl border border-ink bg-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-ink bg-card px-3 py-1.5 font-mono text-xs">

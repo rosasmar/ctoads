@@ -33,7 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
           {/* A row of cells, like the rest of the grid: the time, the event, the contract, the fine print. */}
           <footer className="mx-auto mb-6 grid w-full max-w-6xl px-4 font-mono text-xs">
-            <div className="grid border border-ink bg-card sm:grid-cols-4 [&>*]:border-ink [&>*]:px-4 [&>*]:py-3 [&>*:not(:last-child)]:border-b sm:[&>*:not(:last-child)]:border-r sm:[&>*:not(:last-child)]:border-b-0">
+            <div className="grid border border-ink bg-card sm:grid-cols-4 [&>*]:border-line [&>*]:px-4 [&>*]:py-3 [&>*:not(:last-child)]:border-b sm:[&>*:not(:last-child)]:border-r sm:[&>*:not(:last-child)]:border-b-0">
               <Clock />
               <span>Built at NEAR HACKATHON. Not financial advice.</span>
               {NFT_CONTRACT ? (

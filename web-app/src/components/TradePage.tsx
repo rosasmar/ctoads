@@ -92,7 +92,7 @@ function TopUpWindow() {
   }, [open, close]);
   return (
     <div
-      className={`fixed inset-0 z-50 overflow-y-auto bg-ink/40 p-4 ${open ? "" : "hidden"}`}
+      className={`fixed inset-0 z-50 overflow-y-auto bg-black/70 p-4 ${open ? "" : "hidden"}`}
       onClick={(e) => e.target === e.currentTarget && close()}
     >
       <div
