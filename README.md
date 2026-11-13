@@ -98,6 +98,7 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 | NFT | `add_layer({ category, name, svg, weight? })` | Owner only, until the art is frozen. Attach NEAR for storage; the rest is refunded. |
 | NFT | `replace_layer({ category, index, name, svg, weight? })` | Owner only, until the art is frozen. Every CTOad with that layer shows the new one. |
 | NFT | `freeze_art()` | Owner only. Locks the art for good. Attach 1 yoctoNEAR. |
+| NFT | `recolor({ token_id, body })` | The holder only. Changes their CTOad's body to one of the most common body colors (rare bodies can only be minted). Works after `freeze_art` too. Attach 1 yoctoNEAR. |
 | NFT | `get_art` / `get_layer` / `ctoad_traits` / `ctoad_svg` | Free views: every layer's name and weight, one layer's SVG, a CTOad's traits and image. |
 
 ## Settings

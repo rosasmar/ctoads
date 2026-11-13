@@ -165,6 +165,8 @@ export const TX = {
   /** Up to 100 CTOads per vote. */
   vote: { gas: 30_000_000_000_000n, batch: 100 },
   execute: { gas: 50_000_000_000_000n },
+  /** The NFT contract's `recolor`: 1 yoctoNEAR, like transfers. */
+  recolor: { gas: 30_000_000_000_000n, deposit: 1n },
   /** Moves earned fees into CTOad accounts. Anyone can call it. */
   sweep: { gas: 50_000_000_000_000n },
   /**

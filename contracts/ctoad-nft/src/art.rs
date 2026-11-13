@@ -215,6 +215,31 @@ impl Contract {
         svg.push_str("</svg>");
         svg
     }
+
+    /// Changes CTOad `token_id`'s body to layer `body` (its index in `get_art`'s Body list).
+    /// Only its holder can, and only to one of the most common bodies, so rare ones stay rare: a
+    /// toad that minted a rare body can recolor away from it, but nobody can recolor into one.
+    /// Works before and after `freeze_art`. Attach 1 yoctoNEAR. Every view of the toad shows the
+    /// new body right away.
+    #[payable]
+    pub fn recolor(&mut self, token_id: TokenId, body: u32) {
+        near_sdk::assert_one_yocto();
+        let owner = self
+            .tokens
+            .owner_by_id
+            .get(&token_id)
+            .unwrap_or_else(|| env::panic_str(&format!("CTOad #{token_id} doesn't exist")));
+        require!(owner == env::predecessor_account_id(), format!("You don't own CTOad #{token_id}"));
+        let weights = &self.layer_weights[Category::Body as usize];
+        require!((body as usize) < weights.len(), "No body at that index");
+        let common = weights.iter().copied().max().unwrap_or(0);
+        require!(weights[body as usize] == common, "That body is rare: it can only be minted");
+        let slot = CATEGORIES.iter().position(|&c| c == Category::Body).unwrap();
+        let mut traits = *self.traits_of(&token_id);
+        traits[slot] = Some(body);
+        self.traits.insert(token_id.clone(), traits);
+        env::log_str(&format!("CTOad #{token_id} recolored to {}", self.layer(Category::Body, body).name));
+    }
 }
 
 impl Contract {

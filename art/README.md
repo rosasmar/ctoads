@@ -60,6 +60,8 @@ Layers have a weight, 1 by default: a layer with weight 1 next to one with weigh
 `upload-art.sh` takes each layer's weight from [`weights.txt`](weights.txt): most layers get 3,
 and the rare ones 2 or 1, like the gold and diamond toads, laser eyes, the crown and the halo. A
 layer's weight decides its odds from the next mint on; CTOads already minted keep their traits.
+The one exception: a holder can `recolor` their CTOad's body to any body with the most common
+weight, so rare bodies stay rare.
 
 When the art is final, the owner calls `freeze_art`. After that, no layer can be added or
 changed.
