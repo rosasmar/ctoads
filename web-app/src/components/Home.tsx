@@ -41,9 +41,6 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   return (
     <section className="grid overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
       <div className="relative space-y-7 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
-        <span className="absolute top-6 right-6 hidden -rotate-12 tracking-tight rounded-[50%] border-[3px] border-rekt bg-card px-7 py-2.5 text-4xl font-extrabold text-rekt md:block">
-          REKT
-        </span>
         <p className="font-mono text-xs">[ MEMBERSHIP COSTS A LOSS ]</p>
         <h1 className="pt-6 text-6xl leading-[1.05] md:text-8xl">
           Sell at a loss.
