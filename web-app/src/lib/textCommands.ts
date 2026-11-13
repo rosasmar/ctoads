@@ -8,7 +8,7 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 import { after } from "next/server";
 import { NETWORK } from "@/config";
 import { sha256Hex } from "@/lib/alerts";
-import { getMarket, nftTokensForOwner } from "@/lib/cto";
+import { ctoadClaimable, getMarket, getProposals, nftTokensForOwner } from "@/lib/cto";
 import { STATUS_TEXT, TOPUP_ASSETS, type TopUpStatus, WNEAR_CONTRACT } from "@/lib/intents";
 import { moderate } from "@/lib/moderation";
 import { sendText } from "@/lib/msgbubbles";
@@ -86,6 +86,12 @@ export async function replyTo(phone: string, text: string, origin: string): Prom
       return topUp(phone, account, command.assetId, command.amount, origin);
     case "topUpStatus":
       return topUpStatusReply(phone, origin);
+    case "claim":
+      return claimReply(account, origin);
+    case "proposals":
+      return proposalsReply(origin);
+    case "vote":
+      return voteReply(account, command.proposalId, command.approve, origin);
     case "profile": {
       const profile = await profileOf(account);
       return profile
@@ -259,4 +265,39 @@ async function topUpStatusReply(phone: string, origin: string): Promise<string> 
   // Answering STATUS counts as texting the outcome, so the watcher doesn't text it again.
   await claimTopUp(row.deposit_address);
   return outcomeText(status, row, origin);
+}
+
+// Claiming and voting by text: like BUY and SELL, these only reply with a link. The claim or vote
+// happens in the holder's own wallet, on the website.
+
+/** How much the account's CTOads could claim, and a link to claim it. */
+async function claimReply(account: string, origin: string): Promise<string> {
+  const tokens = await nftTokensForOwner(account);
+  if (tokens.length === 0) return `${account} doesn't hold a CTOad, so there's nothing to claim.`;
+  const claimable = await Promise.all(tokens.map((t) => ctoadClaimable(t.token_id)));
+  const total = claimable.reduce((sum, c) => sum + c.total, 0n);
+  if (total === 0n) return `Your ${tokens.length} CTOad${tokens.length === 1 ? " has" : "s have"} nothing to claim yet.`;
+  return `Your CTOads can claim ${formatNear(total)} NEAR. Tap to claim it in your wallet: ${origin}/claim`;
+}
+
+/** The open treasury votes, newest first. */
+async function proposalsReply(origin: string): Promise<string> {
+  const now = Date.now();
+  const open = (await getProposals()).filter((p) => p.status === "Open" && p.voting_ends_ms > now).reverse();
+  if (open.length === 0) return `No open votes right now. See all proposals: ${origin}/vote`;
+  const lines = open.slice(0, 3).map(
+    (p) => `#${p.id}: ${p.description} (${formatNear(p.amount)} NEAR, ${p.yes} yes / ${p.no} no)`,
+  );
+  return [...lines, "", "Reply VOTE 3 YES or VOTE 3 NO with the number."].join("\n");
+}
+
+/** A link to one proposal, if it's open and the account holds a CTOad to vote with. */
+async function voteReply(account: string, proposalId: number, approve: boolean, origin: string): Promise<string> {
+  const proposal = (await getProposals()).find((p) => p.id === proposalId);
+  if (!proposal) return `There's no proposal #${proposalId}. Text PROPOSALS for the open ones.`;
+  if (proposal.status !== "Open" || proposal.voting_ends_ms <= Date.now()) {
+    return `Voting on #${proposalId} is closed (${proposal.status}).`;
+  }
+  if ((await nftTokensForOwner(account)).length === 0) return NOT_A_MEMBER;
+  return `Tap to vote ${approve ? "YES" : "NO"} on #${proposalId} with your CTOads. You'll confirm it in your wallet: ${origin}/vote#proposal-${proposalId}`;
 }
