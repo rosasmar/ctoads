@@ -44,14 +44,16 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
     // its own corners instead.
     <section className="grid rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
       <div className="relative space-y-7 border-b border-ink p-6 pb-20 md:border-r md:border-b-0 md:p-8">
-        <p className="font-mono text-xs">[ MEMBERSHIP COSTS A LOSS ]</p>
+        <p className="font-mono text-xs">[ $CTO · MEMBERSHIP COSTS A LOSS ]</p>
         <h1 className="pt-6 text-6xl leading-[1.05] md:text-7xl xl:text-8xl">
           Sell at a loss.
           <br />
-          Get a <span className="bg-accent px-2">toad.</span>
+          Get a <span className="rounded-lg bg-accent px-2">toad.</span>
         </h1>
         <p className="max-w-lg text-lg">
-          Lose {loss} NEAR on a $CTO sell, get one of {max} toads. At #{max}, the toads take over the fees.
+          Buy <strong>$CTO</strong>, sell it at a {loss} NEAR loss, get one of {max} toads.
+          <br />
+          <span className="text-ink/65">At #{max}, the toads take over the fees.</span>
         </p>
         <div className="flex flex-wrap gap-3">
           <a href="#trade" className="press bg-ink px-6 py-3 font-medium text-white">
