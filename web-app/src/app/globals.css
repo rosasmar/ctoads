@@ -1,59 +1,87 @@
 @import "tailwindcss";
 
+/* A Swiss grid: off-white paper, thin black lines, square corners, NEAR green as the one accent
+   and red for getting rekt. */
 @theme inline {
-  --color-background: #fff7e2;
+  --color-background: #f1f0ec;
   --color-card: #ffffff;
-  --color-ink: #111111;
-  --color-accent: #ffe14a;
-  --color-frog: #15803d;
-  --color-rekt: #c42419;
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-space-mono);
-  --font-display: var(--font-bowlby-one);
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
+  --color-ink: #0a0a0a;
+  --color-accent: #00ec97;
+  --color-frog: #00875a;
+  --color-rekt: #e5231b;
+  --font-sans: var(--font-inter-tight);
+  --font-mono: var(--font-jetbrains-mono);
+  --font-display: var(--font-inter-tight);
+  --radius-md: 0;
+  --radius-lg: 0;
+  --radius-xl: 0;
+  --radius-2xl: 0;
 }
 
-/* A hard black shadow, the brutalist touch on cards. */
+/* Cards are flat, framed by a thin line. Windows (the toad, popups) keep a hard shadow. */
 @utility shadow-hard {
-  box-shadow: 6px 6px 0 var(--color-ink);
+  box-shadow: none;
+}
+@utility shadow-window {
+  box-shadow: 8px 8px 0 var(--color-ink);
 }
 
-/* Buttons sit on a hard shadow and press into it. */
+/* Buttons: a thin frame that darkens a little on hover and presses on click. */
 @utility press {
-  border: 2px solid var(--color-ink);
-  box-shadow: 4px 4px 0 var(--color-ink);
+  border: 1px solid var(--color-ink);
   transition:
-    transform 80ms,
-    box-shadow 80ms;
+    filter 80ms,
+    transform 80ms;
   &:hover:not(:disabled) {
-    transform: translate(2px, 2px);
-    box-shadow: 2px 2px 0 var(--color-ink);
+    filter: brightness(0.9);
   }
   &:active:not(:disabled) {
-    transform: translate(4px, 4px);
-    box-shadow: none;
+    transform: scale(0.98);
   }
   @media (prefers-reduced-motion: reduce) {
     transition: none;
   }
 }
 
+/* Every frame is one thin line, so the grid reads like a printed page. */
+.border-2,
+.border-4 {
+  border-width: 1px;
+}
+.border-t-2 {
+  border-top-width: 1px;
+}
+.border-r-2 {
+  border-right-width: 1px;
+}
+.border-b-2 {
+  border-bottom-width: 1px;
+}
+.border-l-2 {
+  border-left-width: 1px;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-ink);
-  font-family: var(--font-space-grotesk), system-ui, sans-serif;
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
 }
 
 h1,
 h2 {
-  font-family: var(--font-bowlby-one), system-ui, sans-serif;
-  font-weight: 400;
+  font-family: var(--font-inter-tight), system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
 }
 
 h1 {
   text-transform: uppercase;
+}
+
+/* Big numbers and stickers: the heavy cut of the same face. */
+.font-display {
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 input[type="number"]::-webkit-inner-spin-button,

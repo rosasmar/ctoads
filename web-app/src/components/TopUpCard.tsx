@@ -26,8 +26,11 @@ const LIVE = NETWORK === "mainnet";
 const PREVIEW_RECIPIENT = "guest.near";
 const DONE: TopUpStatus[] = ["SUCCESS", "REFUNDED", "FAILED"];
 
-/** "Top up from any chain": pay with USDC, ETH, SOL or BTC, get NEAR, buy $CTO. */
-export function TopUpCard() {
+/**
+ * "Top up from any chain": pay with USDC, ETH, SOL or BTC, get NEAR, buy $CTO. `bare` drops the
+ * card's own frame, for when it sits inside a window.
+ */
+export function TopUpCard({ bare }: { bare?: boolean } = {}) {
   const { signedAccountId, signIn, callFunction } = useWalletSelector();
   const [assetId, setAssetId] = useState(TOPUP_ASSETS[0].id);
   const asset = TOPUP_ASSETS.find((a) => a.id === assetId)!;
@@ -81,7 +84,7 @@ export function TopUpCard() {
   };
 
   return (
-    <section id="topup" className="scroll-mt-6 space-y-4 rounded-2xl border-2 border-ink bg-card p-5 shadow-hard">
+    <section className={`space-y-4 bg-card p-5 ${bare ? "" : "border border-ink"}`}>
       <div>
         <h2 className="text-2xl">Top up from any chain</h2>
         <p className="mt-1 text-sm text-ink/65">

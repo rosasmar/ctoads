@@ -6,7 +6,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 
 import { NETWORK, TOKEN_CONTRACT } from "@/config";
 import { UnmintedCtoad } from "@/components/CtoadImage";
-import { Bagholders, Hero, HowItWorks, Progress, Ticker } from "@/components/Home";
+import { Bagholders, Hero, HowItWorks, Progress, TextYourToad, Ticker } from "@/components/Home";
 import { MintModal, type MintMoment } from "@/components/MintModal";
 import { TestnetHelp } from "@/components/TestnetHelp";
 import { TopUpCard } from "@/components/TopUpCard";
@@ -42,16 +42,16 @@ export function TradePage() {
   useWalletRedirect(signedAccountId, onSellOutcome);
 
   return (
-    <div className="space-y-12">
+    <div className="space-y-8">
       {marketError && (
-        <p className="rounded-xl bg-rekt/10 p-3 text-sm text-rekt">
+        <p className="border border-rekt bg-rekt/10 p-3 text-sm text-rekt">
           Couldn&apos;t reach the $CTO contract: {String(marketError.message ?? marketError)}
         </p>
       )}
       <Ticker market={market} config={config} />
       <Hero market={market} config={config} />
-      <Progress market={market} />
-      <div id="trade" className="grid scroll-mt-6 gap-6 md:grid-cols-[1fr_320px]">
+      <Progress market={market} config={config} />
+      <div id="trade" className="grid scroll-mt-6 border border-ink bg-card md:grid-cols-[1fr_340px]">
         {/* A text command's link (?buy=1 or ?sell=1000) opens the card filled in. The query is only
             known in the browser, so the plain card shows until it's read. */}
         <Suspense fallback={<TradeCard onSellOutcome={onSellOutcome} />}>
@@ -59,10 +59,56 @@ export function TradePage() {
         </Suspense>
         <Position />
       </div>
-      <TopUpCard />
-      <HowItWorks config={config} />
+      <TextYourToad />
       <Bagholders minted={market?.ctoads_minted ?? 0} />
+      <HowItWorks config={config} />
+      <TopUpWindow />
       {moment && <MintModal moment={moment} onClose={() => setMoment(null)} />}
+    </div>
+  );
+}
+
+/**
+ * The top-up card in a window over the page. It opens on #topup, the link the trade card and text
+ * replies use, and stays mounted while closed so a deposit in progress isn't lost.
+ */
+function TopUpWindow() {
+  const [open, setOpen] = useState(false);
+  const close = useCallback(() => {
+    setOpen(false);
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, []);
+  useEffect(() => {
+    const sync = () => setOpen(window.location.hash === "#topup");
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, []);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, close]);
+  return (
+    <div
+      className={`fixed inset-0 z-50 overflow-y-auto bg-ink/40 p-4 ${open ? "" : "hidden"}`}
+      onClick={(e) => e.target === e.currentTarget && close()}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Top up from any chain"
+        className="shadow-window mx-auto my-10 max-w-3xl border border-ink bg-card"
+      >
+        <div className="flex items-center justify-between border-b border-ink px-3 py-1.5 font-mono text-xs">
+          <span>topup --any-chain</span>
+          <button onClick={close} aria-label="Close" className="px-1 text-base leading-none hover:text-rekt">
+            ×
+          </button>
+        </div>
+        <TopUpCard bare />
+      </div>
     </div>
   );
 }
@@ -107,14 +153,14 @@ function TradeCard({
   const [tab, setTab] = useState<"buy" | "sell">(prefill?.tab ?? "buy");
   const amount = prefill && /^\d+(\.\d+)?$/.test(prefill.amount) ? prefill.amount : "";
   return (
-    <section className="rounded-2xl border-2 border-ink shadow-hard bg-card p-5">
-      <div className="mb-5 flex gap-2">
+    <section className="border-b border-ink p-5 md:border-r md:border-b-0 md:p-6">
+      <div className="mb-5 flex">
         {(["buy", "sell"] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`flex-1 rounded-lg py-2 text-sm font-medium capitalize ${
-              tab === t ? (t === "buy" ? "bg-accent text-ink" : "bg-rekt text-white") : "bg-ink/5 text-ink/65"
+            className={`flex-1 border border-ink py-2 text-sm font-medium capitalize ${
+              tab === t ? (t === "buy" ? "bg-accent text-ink" : "bg-rekt text-white") : "bg-card text-ink/65"
             }`}
           >
             {t}
@@ -266,11 +312,11 @@ function SellForm({ onSellOutcome, initial }: { onSellOutcome: OnSellOutcome; in
             />
           </dl>
           {quote.earns_ctoad ? (
-            <div className="flex items-center gap-3 rounded-xl border border-frog/40 bg-frog/10 p-3">
+            <div className="flex items-center gap-3 border border-ink bg-accent p-3">
               <UnmintedCtoad className="h-12 w-12 shrink-0 rounded-lg text-xl" />
               <p className="text-sm">
-                <span className="font-semibold text-frog">This sell earns CTOad #{nextId}.</span>{" "}
-                <span className="text-ink/80">Getting rekt has never paid this well.</span>
+                <span className="font-bold">This sell earns CTOad #{nextId}.</span>{" "}
+                <span>Getting rekt has never paid this well.</span>
               </p>
             </div>
           ) : (
@@ -299,7 +345,8 @@ function Position() {
   if (!signedAccountId && NETWORK === "testnet") return <TestnetHelp />;
   if (!signedAccountId || !holder) {
     return (
-      <aside className="rounded-2xl border-2 border-ink shadow-hard p-5 text-sm text-ink/65">
+      <aside className="p-5 text-sm text-ink/65 md:p-6">
+        <p className="mb-2 font-mono text-xs uppercase">Your bag</p>
         Connect a wallet to see your position.
       </aside>
     );
@@ -310,8 +357,8 @@ function Position() {
   const pnl = value !== null ? value - cost : null;
 
   return (
-    <aside className="space-y-3 rounded-2xl border-2 border-ink shadow-hard p-5 text-sm">
-      <h2 className="font-semibold">Your bag</h2>
+    <aside className="space-y-3 p-5 text-sm md:p-6">
+      <p className="font-mono text-xs uppercase">Your bag</p>
       <dl className="space-y-1">
         <Row label="Balance" value={`${formatCto(balance)} $CTO`} />
         <Row label="Cost basis" value={`${formatNear(cost)} NEAR`} />
