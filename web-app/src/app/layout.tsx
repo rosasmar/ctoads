@@ -26,6 +26,8 @@ const mono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "CTOads · $CTO",
   description: "Sell $CTO at a loss and mint a CTOad. When the last one mints, the bagholders take over the fees.",
+  // Posts on X show the share image (opengraph-image.tsx) large, not as a thumbnail.
+  twitter: { card: "summary_large_image" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

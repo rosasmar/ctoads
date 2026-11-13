@@ -106,6 +106,22 @@ export type Layer = { name: string; svg: string };
 /** The order the contract stacks layers in, bottom first: `DRAW_ORDER` in contracts/ctoad-nft/src/art.rs. */
 export const DRAW_ORDER = ["Background", "Body", "Mouth", "Eyes", "Outfit", "Headwear", "Item"];
 
+/** One random layer per category, picked by weight like the contract's mint, in draw order. */
+export function randomLook(art: ArtView): { category: string; index: number }[] {
+  return DRAW_ORDER.flatMap((category) => {
+    const layers = art.categories.find((c) => c.category === category)?.layers ?? [];
+    let roll = Math.random() * layers.reduce((sum, l) => sum + l.weight, 0);
+    const index = layers.findIndex((l) => (roll -= l.weight) < 0);
+    return index < 0 ? [] : [{ category, index }];
+  });
+}
+
+/** Layers stacked into one SVG, like the contract draws a CTOad, as a `data:` URI. */
+export function stackLayers(layers: Layer[]): string {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">${layers.map((l) => l.svg).join("")}</svg>`;
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 export const getArt = () => view<ArtView>(NFT_CONTRACT, "get_art");
 export const getLayer = (category: string, index: number) =>
   view<Layer>(NFT_CONTRACT, "get_layer", { category, index });

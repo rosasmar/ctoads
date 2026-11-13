@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import useSWR from "swr";
 
 import { CONFIGURED } from "@/config";
-import { ctoadExtra, DRAW_ORDER, getArt, getLayer, type ArtView, type Layer, type NftToken } from "@/lib/cto";
+import { ctoadExtra, getArt, getLayer, randomLook as pickLook, stackLayers, type ArtView, type Layer, type NftToken } from "@/lib/cto";
 
 /**
  * A CTOad's image, exactly as the NFT contract draws it: its layers stacked into one SVG, sent in
@@ -42,17 +42,9 @@ function cachedLayer(category: string, index: number) {
   return layer;
 }
 
-/** One random layer per category, by weight like the contract's mint, stacked in its draw order. */
+/** A random look from the art, stacked into one image. */
 async function randomLook(art: ArtView): Promise<string> {
-  const picks = DRAW_ORDER.flatMap((category) => {
-    const layers = art.categories.find((c) => c.category === category)?.layers ?? [];
-    let roll = Math.random() * layers.reduce((sum, l) => sum + l.weight, 0);
-    const index = layers.findIndex((l) => (roll -= l.weight) < 0);
-    return index < 0 ? [] : [cachedLayer(category, index)];
-  });
-  const layers = await Promise.all(picks);
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">${layers.map((l) => l.svg).join("")}</svg>`;
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  return stackLayers(await Promise.all(pickLook(art).map(({ category, index }) => cachedLayer(category, index))));
 }
 
 /**

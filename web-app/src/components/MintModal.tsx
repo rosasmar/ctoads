@@ -12,6 +12,17 @@ import { CtoadImage } from "@/components/CtoadImage";
 /** `loss` and `nearOut` come from the sell event, in yoctoNEAR. */
 export type MintMoment = { accountId: string; tokenId: string | null; loss: string; nearOut: string; sinceMs: number };
 
+/**
+ * Opens X's post window with the text and link filled in; the holder edits or posts it themselves.
+ * The link's preview shows the toad (app/ctoads/[id]/opengraph-image.tsx). Built on click, since
+ * the page's address is only known in the browser.
+ */
+function shareOnX(tokenId: string, loss: string) {
+  const text = `I lost ${formatNear(loss, 2)} NEAR on $CTO and got CTOad #${tokenId} 🐸 Membership costs a loss.`;
+  const url = `${window.location.origin}/ctoads/${tokenId}`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
+}
+
 /** "You got rekt, here's your CTOad": a receipt of the loss, stamped REKT. Shown after a sell that earned one. */
 export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: () => void }) {
   const [tokenId, setTokenId] = useState(moment.tokenId);
@@ -99,20 +110,20 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
               </h2>
               <p className="mt-2 text-ink/80">Welcome to the club. Membership cost you a loss.</p>
             </div>
-            <div className="flex gap-3">
-              {tokenId && (
-                <Link
-                  href={`/ctoads/${tokenId}`}
+            {/* No Close button: the × in the title bar and a click outside close it. */}
+            {tokenId && (
+              <div className="flex gap-3">
+                <button
+                  onClick={() => shareOnX(tokenId, moment.loss)}
                   className="press rounded-xl bg-ink px-4 py-2 font-bold text-white"
-                  onClick={onClose}
                 >
+                  Share on X
+                </button>
+                <Link href={`/ctoads/${tokenId}`} className="press rounded-xl bg-card px-4 py-2 font-bold" onClick={onClose}>
                   See your CTOad
                 </Link>
-              )}
-              <button onClick={onClose} className="press rounded-xl bg-card px-4 py-2 font-bold">
-                Close
-              </button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
