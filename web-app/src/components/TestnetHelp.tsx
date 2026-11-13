@@ -9,7 +9,7 @@ export function TestnetHelp() {
   const { signIn } = useWalletSelector();
 
   return (
-    <aside className="space-y-3 rounded-2xl border-2 border-ink shadow-hard p-5 text-sm">
+    <aside className="space-y-3 p-5 text-sm md:p-6">
       <h2 className="font-semibold">New to NEAR testnet?</h2>
       <ol className="list-decimal space-y-2 pl-5 text-ink/80">
         <li>

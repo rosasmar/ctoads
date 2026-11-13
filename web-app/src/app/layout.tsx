@@ -1,16 +1,23 @@
 import type { Metadata } from "next";
-import { Bowlby_One, Space_Grotesk, Space_Mono } from "next/font/google";
+import { Inter_Tight, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 
+import { Clock } from "@/components/Clock";
 import { Nav } from "@/components/Nav";
 import { Providers } from "@/components/Providers";
+import { EXPLORER_URL, NFT_CONTRACT } from "@/config";
 import { textingEnabled } from "@/lib/msgbubbles";
 
 import "./globals.css";
 
-const display = Bowlby_One({ variable: "--font-bowlby-one", weight: "400", subsets: ["latin"] });
-const sans = Space_Grotesk({ variable: "--font-space-grotesk", subsets: ["latin"] });
-const mono = Space_Mono({ variable: "--font-space-mono", weight: ["400", "700"], subsets: ["latin"] });
+const sans = Inter_Tight({
+  variable: "--font-inter-tight",
+  subsets: ["latin"],
+});
+const mono = JetBrains_Mono({
+  variable: "--font-jetbrains-mono",
+  subsets: ["latin"],
+});
 
 export const metadata: Metadata = {
   title: "$CTO · CTOads",
@@ -19,29 +26,47 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${display.variable} ${sans.variable} ${mono.variable} h-full antialiased`}>
+    <html lang="en" className={`${sans.variable} ${mono.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <Providers>
           <Nav />
-          <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8">{children}</main>
-          <footer className="border-t-2 border-ink px-4 py-6 text-center text-xs text-ink/65">
-            Built at NEAR HACKATHON. Not financial advice: the whole point is losing money.{" "}
-            {textingEnabled() && (
-              <>
-                Alert texts powered by{" "}
-                <a href="https://msgbubbles.com" target="_blank" rel="noreferrer" className="hover:text-ink">
-                  msgbubbles
-                </a>{" "}
+          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
+          {/* A row of cells, like the rest of the grid: the time, the event, the contract, the fine print. */}
+          <footer className="mx-auto mb-6 grid w-full max-w-6xl px-4 font-mono text-xs">
+            <div className="grid border border-ink bg-card sm:grid-cols-4 [&>*]:border-ink [&>*]:px-4 [&>*]:py-3 [&>*:not(:last-child)]:border-b sm:[&>*:not(:last-child)]:border-r sm:[&>*:not(:last-child)]:border-b-0">
+              <Clock />
+              <span>Built at NEAR HACKATHON. Not financial advice.</span>
+              {NFT_CONTRACT ? (
+                <a
+                  href={`${EXPLORER_URL}/address/${NFT_CONTRACT}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:underline"
+                >
+                  {NFT_CONTRACT} ↗
+                </a>
+              ) : (
+                <span />
+              )}
+              <span>
+                {textingEnabled() && (
+                  <>
+                    Texts by{" "}
+                    <a href="https://msgbubbles.com" target="_blank" rel="noreferrer" className="hover:underline">
+                      msgbubbles
+                    </a>{" "}
+                    ·{" "}
+                  </>
+                )}
+                <Link href="/privacy" className="hover:underline">
+                  Privacy
+                </Link>{" "}
                 ·{" "}
-              </>
-            )}
-            <Link href="/privacy" className="hover:text-ink">
-              Privacy
-            </Link>{" "}
-            ·{" "}
-            <Link href="/terms" className="hover:text-ink">
-              Terms
-            </Link>
+                <Link href="/terms" className="hover:underline">
+                  Terms
+                </Link>
+              </span>
+            </div>
           </footer>
         </Providers>
       </body>
