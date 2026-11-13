@@ -2,7 +2,8 @@
 //   GET    ?account=…            whether that account is signed up, how, and where alerts go
 //                                 (never the number or address); without an account, only
 //                                 whether texting is on
-//   POST   { proof, phone }      sign up or change the number; only CTOad holders
+//   POST   { proof }             get alerts by text at the number linked on the texts page; only
+//                                 CTOad holders
 //   PATCH  { proof, channels }   get alerts by text, email or both
 //   DELETE { proof }             stop all alerts and delete the account's details; anyone signed up,
 //                                 even after selling
@@ -13,8 +14,7 @@ import {
   CHANNELS,
   type Channels,
   channelsAction,
-  normalizePhone,
-  subscribeAction,
+  SUBSCRIBE_TEXT_ACTION,
   UNSUBSCRIBE_ACTION,
   type WalletProof,
 } from "@/lib/alerts";
@@ -27,7 +27,7 @@ const TABLE = "alert_subscribers";
 
 
 /** Reads the JSON body and its proof, or returns the error response to send instead. */
-async function readBody(request: NextRequest): Promise<{ proof: WalletProof; phone?: unknown; channels?: unknown } | Response> {
+async function readBody(request: NextRequest): Promise<{ proof: WalletProof; channels?: unknown } | Response> {
   const body = await request.json().catch(() => null);
   if (!body || !isProof(body.proof)) return errorResponse("Missing or malformed signature.", 400);
   return body;
@@ -60,10 +60,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const body = await readBody(request);
   if (body instanceof Response) return body;
-  const phone = typeof body.phone === "string" ? normalizePhone(body.phone) : null;
-  if (!phone) return errorResponse("Enter your number in international format, e.g. +12025550123.", 400);
   try {
-    const accountId = await verifyHolder(body.proof, subscribeAction(phone));
+    const accountId = await verifyHolder(body.proof, SUBSCRIBE_TEXT_ACTION);
+    // The number linked for text commands: it proved it's the holder's by texting a code.
+    const { data: linked, error: linkError } = await supabase()
+      .from("text_numbers")
+      .select("phone")
+      .eq("account_id", accountId)
+      .not("linked_at", "is", null)
+      .maybeSingle();
+    if (linkError) return serverError(linkError);
+    const phone = linked?.phone as string | undefined;
+    if (!phone) return errorResponse("Link your phone first, then turn on text alerts.", 400);
     const { data: existing } = await supabase().from(TABLE).select("email").eq("account_id", accountId).maybeSingle();
     const { error: dbError } = await supabase()
       .from(TABLE)

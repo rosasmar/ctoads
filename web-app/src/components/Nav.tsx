@@ -15,8 +15,7 @@ const LINKS = [
   { href: "/ctoads", label: "Gallery" },
   { href: "/claim", label: "Claim" },
   { href: "/vote", label: "Vote" },
-  { href: "/texts", label: "Texts" },
-  { href: "/alerts", label: "Alerts" },
+  { href: "/texts", label: "Phone" },
   { href: "/profile", label: "Profile" },
 ];
 

@@ -24,14 +24,16 @@ export default function Privacy() {
       <section className="space-y-2">
         <h2>Alerts</h2>
         <p>
-          If you sign up on <Link href="/alerts" className="text-frog hover:underline">Alerts</Link>, we store your
-          NEAR account name, the phone number and/or email address you add, whether alerts go by text, email or
-          both, and when you signed up or last changed it. They&apos;re kept in a
+          If you sign up for alerts on <Link href="/texts#alerts" className="text-frog hover:underline">Your phone</Link>,
+          we store your NEAR account name, your phone number and/or the email address you add, whether alerts go by
+          text, email or both, and when you signed up or last changed it. Text alerts go to the number you linked for
+          text commands (see below), which proved it&apos;s yours by texting a code; if you link a different number,
+          your text alerts move to it. They&apos;re kept in a
           Supabase database that only this app&apos;s server and its maintainers can read. Your number and address are never shown to
           other holders or on the page.
         </p>
         <p>
-          To prove the wallet is yours, your wallet signs a message naming your number. The server checks the
+          To prove the wallet is yours, your wallet signs a short message for each change. The server checks the
           signature and doesn&apos;t keep it.
         </p>
         <p>
@@ -50,12 +52,13 @@ export default function Privacy() {
           abuse. Recipients see the text and your profile handle (or your account name if you haven&apos;t made a profile), never your phone number.
         </p>
         <p>
-          You can delete your number at any time with &quot;Stop alerts and delete my number&quot; on the Alerts page,
+          You can delete your number from alerts at any time with &quot;Stop all alerts and delete my details&quot; on
+          the Your phone page,
           even after you no longer hold a CTOad, or without a wallet on the{" "}
           <Link href="/alerts/remove" className="text-frog hover:underline">
             remove page
           </Link>
-          , linked at the end of every text. You can delete just your email on the Alerts page too.
+          , linked at the end of every text. You can delete just your email on the Your phone page too.
         </p>
       </section>
 
@@ -77,7 +80,7 @@ export default function Privacy() {
       <section className="space-y-2">
         <h2>Text commands</h2>
         <p>
-          If you link your phone on <Link href="/texts" className="text-frog hover:underline">Text your toad</Link>, we
+          If you link your phone on <Link href="/texts" className="text-frog hover:underline">Your phone</Link>, we
           store your NEAR account name and the linked number. The linking code is kept only as a hash, for 15 minutes.
           When you text the app&apos;s number, msgbubbles passes us your number and the text; we keep your number, the
           first 200 characters of the text and the time, to answer once and limit replies. We reply only to texts you
