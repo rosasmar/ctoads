@@ -73,7 +73,7 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   );
 }
 
-/** A window frame, like an old desktop app: a title bar, the content, and a caption. */
+/** A window frame, like an old desktop app: a title bar, the content, and a caption. No close button, since it can't close. */
 export function ToadWindow({
   title,
   caption,
@@ -87,10 +87,7 @@ export function ToadWindow({
 }) {
   return (
     <div className={`overflow-hidden rounded-xl border border-line-strong bg-card ${className ?? ""}`}>
-      <div className="flex justify-between border-b border-line-strong px-3 py-1.5 font-mono text-xs text-ink/65">
-        <span className="truncate">{title}</span>
-        <span aria-hidden="true">×</span>
-      </div>
+      <div className="truncate border-b border-line-strong px-3 py-1.5 font-mono text-xs text-ink/65">{title}</div>
       {children}
       {caption && <div className="border-t border-line-strong px-3 py-2 font-mono text-xs">{caption}</div>}
     </div>
@@ -118,8 +115,8 @@ function NewestCtoad({ minted }: { minted: number }) {
           </span>
         ) : (
           <span className="flex justify-between gap-3">
-            <span>None minted yet</span>
-            <span>drawn on-chain</span>
+            <span>Could be yours</span>
+            <span>100% on-chain art</span>
           </span>
         )
       }
