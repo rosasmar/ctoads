@@ -156,7 +156,8 @@ Holders can also make a public profile at `ctoads.xyz/@handle`, with
 their CTOads, a short bio and links, like a link-in-bio page.
 Anyone with a NEAR wallet can link their phone and text the app's number:
 holders to change their profile (`SET X name`), and everyone to get a
-link that opens a buy or sell in their wallet (`BUY 1`).
+link that opens a buy or sell in their wallet (`BUY 1`), and holders a
+claim (`CLAIM`) or a treasury vote (`VOTE 3 YES`).
 The trade page also tops up from USDC, ETH, SOL or BTC on
 other chains with NEAR Intents, then buys $CTO with it (mainnet only). A
 linked phone can start one by text too (`TOPUP 10 USDC`) and gets a text

@@ -38,6 +38,9 @@ export type Command =
   | { kind: "topUp"; amount: string; assetId: string }
   | { kind: "topUpHelp" }
   | { kind: "topUpStatus" }
+  | { kind: "claim" }
+  | { kind: "proposals" }
+  | { kind: "vote"; proposalId: number; approve: boolean }
   | { kind: "setHandle"; handle: string }
   | { kind: "setBio"; bio: string }
   | { kind: "setLink"; label: string; url: string }
@@ -57,6 +60,12 @@ export function parseCommand(input: string): Command {
   if ((m = text.match(/^buy (\d+(?:\.\d+)?)(?: ?near)?$/i))) return { kind: "buy", near: m[1] };
   if ((m = text.match(/^sell (\d+(?:\.\d+)?)(?: ?\$?cto)?$/i))) return { kind: "sell", cto: m[1] };
   if (/^(top ?up )?status$/i.test(text)) return { kind: "topUpStatus" };
+  if (/^claim$/i.test(text)) return { kind: "claim" };
+  if (/^(proposals?|votes?)$/i.test(text)) return { kind: "proposals" };
+  if ((m = text.match(/^vote #?(\d+) (yes|y|no|n)$/i))) {
+    return { kind: "vote", proposalId: Number(m[1]), approve: m[2].toLowerCase().startsWith("y") };
+  }
+  if (/^vote\b/i.test(text)) return { kind: "proposals" };
   if ((m = text.match(/^top ?up (\d+(?:\.\d+)?) ?([a-z]+)(?: (?:on )?([a-z]+))?$/i))) {
     const asset = topUpAsset(m[2], m[3]);
     return asset ? { kind: "topUp", amount: m[1], assetId: asset.id } : { kind: "topUpHelp" };
@@ -122,6 +131,9 @@ export const HELP_TEXT = [
   "SELL 1000: a link to sell 1000 $CTO",
   "TOPUP 10 USDC: get NEAR from another chain",
   "STATUS: how your top-up is going",
+  "CLAIM: a link to claim your CTOads' fees",
+  "PROPOSALS: the open treasury votes",
+  "VOTE 3 YES (or NO): a link to vote with your CTOads",
   "PRICE",
   "UNLINK: stop commands from this number",
   "STOP: stop alerts to this number",
