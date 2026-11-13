@@ -1,25 +1,26 @@
 @import "tailwindcss";
 
-/* A Swiss grid on black: near-black page, off-white text, dark-gray hairlines, square corners,
-   NEAR green as the one accent and red for getting rekt. The names are roles, not colors: "ink"
-   is the text and "white" a surface, so classes like bg-ink text-white still read as a pair. */
+/* A Swiss grid in the toads' own palette: the page is the ink of their outlines, text is cream,
+   hairlines and window frames are purple, NEAR green is the one accent and red is for getting
+   rekt. The names are roles, not colors: "ink" is the text and "white" a surface, so classes like
+   bg-ink text-white still read as a pair. */
 @theme inline {
-  --color-background: #0b0b0c;
-  --color-card: #111113;
-  --color-white: #0b0b0c;
-  --color-ink: #ececec;
-  --color-line: #2b2b2e;
-  --color-line-strong: #4a4a4f;
+  --color-background: #17111f;
+  --color-card: #201829;
+  --color-white: #17111f;
+  --color-ink: #f5ebd9;
+  --color-line: #2f2640;
+  --color-line-strong: #503078;
   --color-accent: #00ec97;
-  --color-frog: #3ddc97;
-  --color-rekt: #ff3b30;
+  --color-frog: #00ec97;
+  --color-rekt: #ff4d3d;
   --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-inter-tight);
-  --radius-md: 0;
-  --radius-lg: 0;
-  --radius-xl: 0;
-  --radius-2xl: 0;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
 }
 
 /* Everything is flat. Windows (the toad, popups) stand out with a brighter frame instead. */
@@ -34,6 +35,7 @@
 /* Buttons: a thin frame that darkens a little on hover and presses on click. */
 @utility press {
   border: 1px solid var(--color-line-strong);
+  border-radius: 6px;
   transition:
     filter 80ms,
     transform 80ms;

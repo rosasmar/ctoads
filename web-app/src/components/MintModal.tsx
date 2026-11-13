@@ -50,7 +50,7 @@ export function MintModal({ moment, onClose }: { moment: MintMoment; onClose: ()
         role="dialog"
         aria-modal="true"
         aria-label="You minted a CTOad"
-        className="shadow-window w-full max-w-2xl border border-ink bg-card"
+        className="shadow-window w-full max-w-2xl overflow-hidden rounded-xl border border-ink bg-card"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-ink bg-card px-3 py-1.5 font-mono text-xs">
