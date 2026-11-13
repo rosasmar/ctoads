@@ -42,7 +42,7 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
     <section className="grid overflow-hidden rounded-xl border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
       <div className="relative space-y-7 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
         <p className="font-mono text-xs">[ MEMBERSHIP COSTS A LOSS ]</p>
-        <h1 className="pt-6 text-6xl leading-[1.05] md:text-8xl">
+        <h1 className="pt-6 text-6xl leading-[1.05] md:text-7xl xl:text-8xl">
           Sell at a loss.
           <br />
           Get a <span className="bg-accent px-2">toad.</span>
