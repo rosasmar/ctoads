@@ -198,14 +198,21 @@ async function topUp(phone: string, account: string, assetId: string, input: str
     .from("text_topups")
     .insert({ deposit_address: depositAddress, phone, account_id: account, label });
   if (error) throw error;
+  // The address goes in a text of its own, right after this reply, so a long-press copies just
+  // the address. The webhook sends the reply before the request ends; after() runs once it has.
+  // If it doesn't go out, STATUS still shows the address.
+  after(() =>
+    sendText(phone, depositAddress, `topup-address-${depositAddress}`).catch((e) =>
+      console.error("Couldn't text the top-up address", e),
+    ),
+  );
   after(() => watchTopUp(depositAddress, origin));
 
   return [
-    `Send exactly ${label} to:`,
-    depositAddress,
-    `You'll get about ${formatNear(quote.amountOut)} NEAR in ${account} (at least ${formatNear(quote.minAmountOut)}), ~${quote.timeEstimate} s after it lands.`,
+    `Send exactly ${label} to the address in the next text.`,
+    `You'll get about ${formatNear(quote.amountOut, 2)} NEAR in ${account} (at least ${formatNear(quote.minAmountOut, 2)}), about ${quote.timeEstimate} s after it lands.`,
     `Only send ${asset.symbol} on ${asset.chain}, and only once. I'll text you when it arrives. Text STATUS anytime.`,
-  ].join("\n");
+  ].join("\n\n");
 }
 
 /** Checks on a top-up every few seconds, for a few minutes, and texts the outcome once it has one. */
