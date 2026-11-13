@@ -42,7 +42,7 @@ export function Nav() {
         <Link href="/" className="font-display text-2xl">
           $CTO
         </Link>
-        <div className="order-last flex w-full gap-4 text-sm sm:order-none sm:w-auto">
+        <div className="order-last flex w-full flex-wrap gap-x-4 gap-y-1 text-sm sm:order-none sm:w-auto">
           {/* The current page is only known per request on pages like /ctoads/1, so the
               highlight streams in. Until then, no link is highlighted. */}
           <Suspense fallback={<NavLinks pathname={null} />}>

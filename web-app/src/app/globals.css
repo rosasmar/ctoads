@@ -1,14 +1,18 @@
 @import "tailwindcss";
 
-/* A Swiss grid: off-white paper, thin black lines, square corners, NEAR green as the one accent
-   and red for getting rekt. */
+/* A Swiss grid on black: near-black page, off-white text, dark-gray hairlines, square corners,
+   NEAR green as the one accent and red for getting rekt. The names are roles, not colors: "ink"
+   is the text and "white" a surface, so classes like bg-ink text-white still read as a pair. */
 @theme inline {
-  --color-background: #f1f0ec;
-  --color-card: #ffffff;
-  --color-ink: #0a0a0a;
+  --color-background: #0b0b0c;
+  --color-card: #111113;
+  --color-white: #0b0b0c;
+  --color-ink: #ececec;
+  --color-line: #2b2b2e;
+  --color-line-strong: #4a4a4f;
   --color-accent: #00ec97;
-  --color-frog: #00875a;
-  --color-rekt: #e5231b;
+  --color-frog: #3ddc97;
+  --color-rekt: #ff3b30;
   --font-sans: var(--font-inter-tight);
   --font-mono: var(--font-jetbrains-mono);
   --font-display: var(--font-inter-tight);
@@ -18,22 +22,23 @@
   --radius-2xl: 0;
 }
 
-/* Cards are flat, framed by a thin line. Windows (the toad, popups) keep a hard shadow. */
+/* Everything is flat. Windows (the toad, popups) stand out with a brighter frame instead. */
 @utility shadow-hard {
   box-shadow: none;
 }
 @utility shadow-window {
-  box-shadow: 8px 8px 0 var(--color-ink);
+  box-shadow: none;
+  border-color: var(--color-line-strong);
 }
 
 /* Buttons: a thin frame that darkens a little on hover and presses on click. */
 @utility press {
-  border: 1px solid var(--color-ink);
+  border: 1px solid var(--color-line-strong);
   transition:
     filter 80ms,
     transform 80ms;
   &:hover:not(:disabled) {
-    filter: brightness(0.9);
+    filter: brightness(1.15);
   }
   &:active:not(:disabled) {
     transform: scale(0.98);
@@ -43,7 +48,14 @@
   }
 }
 
-/* Every frame is one thin line, so the grid reads like a printed page. */
+/* Every frame is one thin dark-gray line, so the grid stays quiet and the toads stay loud. */
+.border-ink {
+  border-color: var(--color-line);
+}
+/* Text on the green accent is dark, whatever the element's own text color says. */
+.bg-accent {
+  color: var(--color-background);
+}
 .border-2,
 .border-4 {
   border-width: 1px;
@@ -70,18 +82,19 @@ body {
 h1,
 h2 {
   font-family: var(--font-inter-tight), system-ui, sans-serif;
-  font-weight: 800;
+  font-weight: 500;
+  letter-spacing: -0.045em;
+}
+
+/* Big numbers: medium weight, tight, like the headlines. */
+.font-display {
+  font-weight: 500;
   letter-spacing: -0.03em;
 }
 
-h1 {
-  text-transform: uppercase;
-}
-
-/* Big numbers and stickers: the heavy cut of the same face. */
-.font-display {
-  font-weight: 800;
-  letter-spacing: -0.02em;
+::selection {
+  background: var(--color-accent);
+  color: var(--color-background);
 }
 
 input[type="number"]::-webkit-inner-spin-button,

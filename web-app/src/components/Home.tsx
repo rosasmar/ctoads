@@ -41,11 +41,11 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
   return (
     <section className="grid border border-ink bg-card md:grid-cols-[1.35fr_1fr]">
       <div className="relative space-y-7 border-b border-ink p-6 md:border-r md:border-b-0 md:p-8">
-        <span className="font-display absolute top-6 right-6 hidden -rotate-12 rounded-[50%] border-[3px] border-rekt bg-card px-7 py-2.5 text-4xl text-rekt md:block">
+        <span className="absolute top-6 right-6 hidden -rotate-12 tracking-tight rounded-[50%] border-[3px] border-rekt bg-card px-7 py-2.5 text-4xl font-extrabold text-rekt md:block">
           REKT
         </span>
         <p className="font-mono text-xs">[ MEMBERSHIP COSTS A LOSS ]</p>
-        <h1 className="pt-6 text-6xl leading-[0.9] md:text-8xl">
+        <h1 className="pt-6 text-6xl leading-[1.05] md:text-8xl">
           Sell at a loss.
           <br />
           Get a <span className="bg-accent px-2">toad.</span>
@@ -62,7 +62,7 @@ export function Hero({ market, config }: { market?: Market; config?: TokenConfig
           </a>
         </div>
       </div>
-      <div className="flex items-center justify-center bg-accent p-8 md:p-10">
+      <div className="flex items-center justify-center bg-background p-8 md:p-10">
         <NewestCtoad minted={market?.ctoads_minted ?? 0} />
       </div>
     </section>
@@ -82,13 +82,13 @@ export function ToadWindow({
   className?: string;
 }) {
   return (
-    <div className={`border border-ink bg-card ${className ?? ""}`}>
-      <div className="flex justify-between border-b border-ink px-3 py-1.5 font-mono text-xs">
+    <div className={`border border-line-strong bg-card ${className ?? ""}`}>
+      <div className="flex justify-between border-b border-line-strong px-3 py-1.5 font-mono text-xs text-ink/65">
         <span className="truncate">{title}</span>
         <span aria-hidden="true">×</span>
       </div>
       {children}
-      {caption && <div className="border-t border-ink px-3 py-2 font-mono text-xs">{caption}</div>}
+      {caption && <div className="border-t border-line-strong px-3 py-2 font-mono text-xs">{caption}</div>}
     </div>
   );
 }
@@ -225,10 +225,10 @@ export function HowItWorks({ config }: { config?: TokenConfig }) {
   const max = config?.max_ctoads ?? 500;
   const fee = config ? config.fee_bps / 100 : 1;
   const steps: [string, string, string][] = [
-    ["Buy $CTO", `Every buy and sell pays a ${fee}% fee.`, "bg-[#ff7eb6]"],
-    ["Sell at a loss", `Lose ${loss} NEAR on one sell, mint the next toad.`, "bg-accent"],
-    ["The takeover", `At toad #${max}, the fees go to the holders.`, "bg-[#f2c14e]"],
-    ["Claim and vote", "Each toad is its own NEAR account. Claim its fees, vote on the treasury.", "bg-[#9cc9ff]"],
+    ["Buy $CTO", `Every buy and sell pays a ${fee}% fee.`, "bg-card"],
+    ["Sell at a loss", `Lose ${loss} NEAR on one sell, mint the next toad.`, "bg-card"],
+    ["The takeover", `At toad #${max}, the fees go to the holders.`, "bg-card"],
+    ["Claim and vote", "Each toad is its own NEAR account. Claim its fees, vote on the treasury.", "bg-card"],
   ];
   return (
     <section id="how" className="scroll-mt-6 border border-ink">
@@ -240,9 +240,9 @@ export function HowItWorks({ config }: { config?: TokenConfig }) {
               i % 2 === 0 ? "sm:border-r" : ""
             } ${i === 1 ? "lg:border-r" : ""} ${i === 2 ? "sm:border-b-0" : ""}`}
           >
-            <p className="font-display text-5xl">0{i + 1}</p>
+            <p className="font-display text-5xl text-accent">0{i + 1}</p>
             <h3 className="font-bold">{title}</h3>
-            <p className="text-sm">{body}</p>
+            <p className="text-sm text-ink/65">{body}</p>
           </div>
         ))}
       </div>
