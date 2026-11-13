@@ -19,6 +19,10 @@ import { removeNumberFromAlerts } from "@/lib/removeNumber";
 import { supabase } from "@/lib/supabase";
 import { type Command, HELP_TEXT, parseCommand, TEXTS_PATH, TOPUP_HELP_TEXT } from "@/lib/texts";
 
+/** The bouncer's line: what a linked number without a CTOad gets for club-only commands. */
+export const NOT_A_MEMBER =
+  "Sorry, that's for CTOad holders only. Lose NEAR on a $CTO sell to earn a toad and join the club. Text BUY 1 to start.";
+
 /** How old a webhook delivery may be, as msgbubbles recommends. */
 const REPLAY_WINDOW_SECS = 300;
 
@@ -127,7 +131,7 @@ async function profileOf(account: string): Promise<Profile | null> {
 
 /** Changes one thing on the account's profile, with the same checks as saving it on the website. */
 async function editProfile(account: string, command: Command, origin: string): Promise<string> {
-  if ((await nftTokensForOwner(account)).length === 0) return `${account} doesn't hold a CTOad, so it can't change a profile.`;
+  if ((await nftTokensForOwner(account)).length === 0) return NOT_A_MEMBER;
   const current = await profileOf(account);
   if (!current && command.kind !== "setHandle") return "Pick a handle first: text SET HANDLE yourname.";
   const base: Profile = current ?? { handle: "", bio: "", links: [] };

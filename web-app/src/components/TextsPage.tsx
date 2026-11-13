@@ -71,8 +71,9 @@ export function TextsPage() {
       <div>
         <h1 className="text-4xl">Text your toad</h1>
         <p className="mt-2 text-ink/80">
-          Link your phone once, then text {MSGBUBBLES_NUMBER || "our number"} to update your profile or get a link that
-          opens a trade in your wallet. Nothing is ever bought or sold by text alone.
+          Link your phone once, then text {MSGBUBBLES_NUMBER || "our number"} to get the price, a link that opens a
+          trade in your wallet, or a top-up from another chain. CTOad holders also run their profile and votes by text.
+          Nothing is ever bought, sold or voted by text alone.
         </p>
       </div>
 
@@ -80,9 +81,14 @@ export function TextsPage() {
         <button onClick={() => signIn()} className="press rounded-xl bg-accent px-5 py-3 font-bold">
           Connect wallet
         </button>
-      ) : tokens && !holder ? (
-        <p className="rounded-xl bg-ink/5 p-4 text-sm text-ink/80">Text commands are for CTOad holders, and this wallet holds none.</p>
       ) : (
+        <>
+        {tokens && !holder && (
+          <p className="border border-ink bg-ink/5 p-4 text-sm text-ink/80">
+            This wallet doesn&apos;t hold a CTOad yet. You can still link it to buy, sell and top up by text. Profiles and
+            votes are for holders.
+          </p>
+        )}
         <section className="space-y-4 rounded-2xl border-2 border-ink bg-card p-5 shadow-hard">
           {status?.linked ? (
             <p className="font-bold text-frog">Your number is linked. Text HELP to {MSGBUBBLES_NUMBER} to start.</p>
@@ -99,7 +105,7 @@ export function TextsPage() {
               <p className="text-xs text-ink/65">The code works for 15 minutes. This page updates once it arrives.</p>
             </div>
           ) : (
-            <button onClick={getCode} disabled={busy || !holder} className="press w-full rounded-xl bg-accent py-3 font-bold disabled:opacity-40">
+            <button onClick={getCode} disabled={busy} className="press w-full rounded-xl bg-accent py-3 font-bold disabled:opacity-40">
               {busy ? "Confirm in your wallet…" : "Get my code"}
             </button>
           )}
@@ -109,6 +115,7 @@ export function TextsPage() {
             </button>
           )}
         </section>
+        </>
       )}
 
       {message && <p className="text-sm text-ink/80">{message}</p>}
@@ -117,7 +124,10 @@ export function TextsPage() {
         <h2 className="text-xl">Commands</h2>
         <pre className="overflow-x-auto rounded-xl border-2 border-ink bg-card p-4 font-mono text-sm whitespace-pre-wrap">{HELP_TEXT}</pre>
         <p className="text-sm text-ink/65">
-          Profile changes need you to hold a CTOad, like on the <Link href="/profile" className="underline">Profile</Link>{" "}
+          Profile changes and votes need you to hold a CTOad, like on the{" "}
+          <Link href="/profile" className="underline">
+            Profile
+          </Link>{" "}
           page. Each number gets at most 20 replies an hour.
         </p>
       </section>
