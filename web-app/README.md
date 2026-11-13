@@ -32,7 +32,7 @@ npm run dev                  # http://localhost:3000
 | `NEXT_PUBLIC_NETWORK` | `testnet` | `testnet` or `mainnet` |
 | `NEXT_PUBLIC_TOKEN_CONTRACT` | `cto.you.testnet` | The $CTO token contract |
 | `NEXT_PUBLIC_NFT_CONTRACT` | `ctoads.you.testnet` | The CTOad NFT contract |
-| `NEXT_PUBLIC_RPC_URL` | optional | Defaults to FastNEAR's free RPC for the network |
+| `NEXT_PUBLIC_RPC_URL` | optional | An RPC URL, or several separated by commas, tried first. After them come the free RPCs of FastNEAR, dRPC and Intear for the network, in that order: when one is rate limited or down, requests move to the next |
 | `SUPABASE_URL` | `https://your-project.supabase.co` | For alerts and profiles: the Supabase project that stores sign-ups and profiles. Server only. |
 | `SUPABASE_SERVICE_ROLE_KEY` | | For alerts and profiles: that project's service role key. Server only, keep it secret. |
 | `NEXT_PUBLIC_MSGBUBBLES_NUMBER` | `+12025550123` | For text alerts: the msgbubbles number they come from, shown on the Alerts page |

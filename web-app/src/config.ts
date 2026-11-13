@@ -10,9 +10,20 @@ export const TOKEN_CONTRACT = process.env.NEXT_PUBLIC_TOKEN_CONTRACT ?? "";
 /** The CTOad NFT contract, e.g. ctoads.you.testnet. */
 export const NFT_CONTRACT = process.env.NEXT_PUBLIC_NFT_CONTRACT ?? "";
 
-export const RPC_URL =
-  process.env.NEXT_PUBLIC_RPC_URL ??
-  (NETWORK === "mainnet" ? "https://free.rpc.fastnear.com" : "https://test.rpc.fastnear.com");
+/**
+ * NEAR RPC endpoints, tried in order: when one is rate limited or down, requests move on to the
+ * next. They're run by different companies (FastNEAR, dRPC, Intear), so one limit can't stop the
+ * site. NEXT_PUBLIC_RPC_URL (one URL, or several separated by commas) goes first.
+ */
+const DEFAULT_RPC_URLS =
+  NETWORK === "mainnet"
+    ? ["https://free.rpc.fastnear.com", "https://near.drpc.org", "https://rpc.intea.rs"]
+    : ["https://test.rpc.fastnear.com", "https://near-testnet.drpc.org", "https://testnet-rpc.intea.rs"];
+const CUSTOM_RPC_URLS = (process.env.NEXT_PUBLIC_RPC_URL ?? "")
+  .split(",")
+  .map((url) => url.trim())
+  .filter(Boolean);
+export const RPC_URLS = [...new Set([...CUSTOM_RPC_URLS, ...DEFAULT_RPC_URLS])];
 
 export const EXPLORER_URL = NETWORK === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
 
