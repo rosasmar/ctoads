@@ -3,10 +3,10 @@
 import { useWalletSelector } from "@near-wallet-selector/react-hook";
 import Link from "next/link";
 import { useState } from "react";
-import useSWR from "swr";
 
 import { errorText } from "@/components/TradeFields";
 import { useOwnedCtoads } from "@/hooks/useCto";
+import { useProfileOf } from "@/hooks/useProfile";
 import { signAlertsAction } from "@/lib/alerts";
 import {
   DELETE_PROFILE_ACTION,
@@ -28,9 +28,8 @@ export function ProfileEditor() {
   // Kept here, so it survives the form starting over after a save or delete.
   const [message, setMessage] = useState<string | null>(null);
   const { data: tokens } = useOwnedCtoads(signedAccountId);
-  const { data: saved, mutate } = useSWR(signedAccountId ? ["myProfile", signedAccountId] : null, () =>
-    profileApi<Profile>("GET", { query: `?account=${encodeURIComponent(signedAccountId!)}` }).catch(() => null),
-  );
+  // The same cache as every other place that shows this holder, so a save shows up in the top bar too.
+  const { data: saved, mutate } = useProfileOf(signedAccountId);
   if (!signedAccountId) {
     return (
       <div className="mx-auto max-w-md space-y-6 py-8 text-center">

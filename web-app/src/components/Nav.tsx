@@ -6,7 +6,9 @@ import { usePathname } from "next/navigation";
 import { Suspense } from "react";
 
 import { CONFIGURED, NETWORK } from "@/config";
+import { useProfileOf } from "@/hooks/useProfile";
 import { shortAccount } from "@/lib/near";
+import { profilePath } from "@/lib/profile";
 
 const LINKS = [
   { href: "/", label: "Trade" },
@@ -16,6 +18,18 @@ const LINKS = [
   { href: "/alerts", label: "Alerts" },
   { href: "/profile", label: "Profile" },
 ];
+
+/** The signed-in wallet as "@handle", linking to its profile, or its account name without one. */
+function SignedInAs({ accountId }: { accountId: string }) {
+  const { data: profile } = useProfileOf(accountId);
+  if (!profile) return <span className="font-mono text-ink/80">{shortAccount(accountId)}</span>;
+  return (
+    // Not in the mono font: its "@" reads like an "a" ("@toad" looked like "atoad").
+    <Link href={profilePath(profile.handle)} className="font-bold hover:underline underline-offset-4">
+      @{profile.handle}
+    </Link>
+  );
+}
 
 export function Nav() {
   const { signedAccountId, signIn, signOut } = useWalletSelector();
@@ -40,7 +54,7 @@ export function Nav() {
           )}
           {signedAccountId ? (
             <>
-              <span className="font-mono text-ink/80">{shortAccount(signedAccountId)}</span>
+              <SignedInAs accountId={signedAccountId} />
               <button onClick={() => signOut()} className="text-ink/65 hover:text-ink">
                 Sign out
               </button>
