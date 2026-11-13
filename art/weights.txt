@@ -1,0 +1,20 @@
+# How often each layer is picked at mint, against the other layers of its category: a layer with
+# weight 1 next to one with weight 3 is picked 1 time in 4. scripts/upload-art.sh reads this file.
+# One "folder/name weight" per line. Every layer not listed here gets the default below.
+* 3
+
+background/night 2
+background/gold 1
+
+body/gold 1
+body/diamond 1
+
+eyes/laser 1
+eyes/coins 1
+eyes/shades 2
+
+outfit/suit 2
+outfit/gold-chain 1
+
+headwear/crown 1
+headwear/halo 1
