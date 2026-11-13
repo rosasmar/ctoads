@@ -1,6 +1,8 @@
 // Text commands: holders text the app's number to change their profile or get a trade link.
 // Shared by the browser (the /texts page) and the server (the msgbubbles webhook).
 
+import { TOPUP_ASSETS, type TopUpAsset } from "@/lib/intents";
+
 /** The page where a holder links their number. */
 export const TEXTS_PATH = "/texts";
 
@@ -33,6 +35,9 @@ export type Command =
   | { kind: "price" }
   | { kind: "buy"; near: string }
   | { kind: "sell"; cto: string }
+  | { kind: "topUp"; amount: string; assetId: string }
+  | { kind: "topUpHelp" }
+  | { kind: "topUpStatus" }
   | { kind: "setHandle"; handle: string }
   | { kind: "setBio"; bio: string }
   | { kind: "setLink"; label: string; url: string }
@@ -51,7 +56,13 @@ export function parseCommand(input: string): Command {
   if (/^price$/i.test(text)) return { kind: "price" };
   if ((m = text.match(/^buy (\d+(?:\.\d+)?)(?: ?near)?$/i))) return { kind: "buy", near: m[1] };
   if ((m = text.match(/^sell (\d+(?:\.\d+)?)(?: ?\$?cto)?$/i))) return { kind: "sell", cto: m[1] };
-  if ((m = text.match(/^set handle @?(\S+)$/i))) return { kind: "setHandle", handle: m[1] };
+  if (/^(top ?up )?status$/i.test(text)) return { kind: "topUpStatus" };
+  if ((m = text.match(/^top ?up (\d+(?:\.\d+)?) ?([a-z]+)(?: (?:on )?([a-z]+))?$/i))) {
+    const asset = topUpAsset(m[2], m[3]);
+    return asset ? { kind: "topUp", amount: m[1], assetId: asset.id } : { kind: "topUpHelp" };
+  }
+  if (/^top ?up\b/i.test(text)) return { kind: "topUpHelp" };
+  if ((m = text.match(/^set handle @?(\S+)$/i)))return { kind: "setHandle", handle: m[1] };
   if ((m = text.match(/^set bio (.+)$/i))) return { kind: "setBio", bio: m[1] };
   if ((m = text.match(/^set (x|twitter|github|telegram|website|site) (\S+)$/i))) {
     const kind = LINK_KINDS[m[1].toLowerCase() as keyof typeof LINK_KINDS];
@@ -66,6 +77,39 @@ export function parseCommand(input: string): Command {
   return { kind: "unknown" };
 }
 
+/** Ways to write a chain in TOPUP, and the chain's name in TOPUP_ASSETS. */
+const CHAINS: Record<string, string> = {
+  base: "Base",
+  eth: "Ethereum",
+  ethereum: "Ethereum",
+  arb: "Arbitrum",
+  arbitrum: "Arbitrum",
+  sol: "Solana",
+  solana: "Solana",
+  btc: "Bitcoin",
+  bitcoin: "Bitcoin",
+};
+
+/**
+ * The top-up coin for "USDC" or "USDC Solana". Without a chain it's the first one listed for that
+ * coin: USDC on Base, ETH on Ethereum, SOL on Solana, BTC on Bitcoin.
+ */
+function topUpAsset(symbol: string, chain?: string): TopUpAsset | undefined {
+  const chainName = chain ? CHAINS[chain.toLowerCase()] : undefined;
+  if (chain && !chainName) return undefined;
+  return TOPUP_ASSETS.find((a) => a.symbol === symbol.toUpperCase() && (!chainName || a.chain === chainName));
+}
+
+/** The reply to TOPUP without a coin it knows. */
+export const TOPUP_HELP_TEXT = [
+  "Top up from another chain, e.g.:",
+  "TOPUP 10 USDC (on Base)",
+  "TOPUP 10 USDC SOLANA (also ETHEREUM, ARBITRUM)",
+  "TOPUP 0.01 ETH",
+  "TOPUP 0.1 SOL",
+  "TOPUP 0.0002 BTC",
+].join("\n");
+
 /** The reply to HELP, and to anything that isn't a command. */
 export const HELP_TEXT = [
   "CTOads commands:",
@@ -76,6 +120,8 @@ export const HELP_TEXT = [
   "PROFILE: your page",
   "BUY 1: a link to buy $CTO for 1 NEAR",
   "SELL 1000: a link to sell 1000 $CTO",
+  "TOPUP 10 USDC: get NEAR from another chain",
+  "STATUS: how your top-up is going",
   "PRICE",
   "UNLINK: stop commands from this number",
   "STOP: stop alerts to this number",
