@@ -1,7 +1,7 @@
 // Minimal NEAR JSON-RPC client, unit formatting and event parsing. No Node APIs, so it runs in
 // the browser and on the server.
 
-import { RPC_URL } from "@/config";
+import { RPC_URLS } from "@/config";
 
 export const NEAR_DECIMALS = 24;
 export const CTO_DECIMALS = 18;
@@ -9,19 +9,52 @@ export const YOCTO_PER_NEAR = 10n ** 24n;
 /** Storage price on NEAR: 10^19 yoctoNEAR per byte. */
 export const STORAGE_BYTE_COST = 10n ** 19n;
 
+/** The endpoint that answered last, so the next request starts there instead of at a limited one. */
+let current = 0;
+
+/** A rate limit, whether it comes as HTTP 429 or inside a JSON-RPC error. */
+const rateLimited = (error: { code?: number; message?: string } | undefined) =>
+  error?.code === -429 || /rate limit/i.test(error?.message ?? "");
+
+/**
+ * Calls a NEAR RPC method. If an endpoint is down, rate limited or blocked by the browser, it
+ * tries the next one in RPC_URLS. Errors from NEAR itself (a contract panic, a missing account)
+ * are the same everywhere, so they're thrown right away.
+ */
 async function rpc<T>(method: string, params: unknown): Promise<T> {
-  const res = await fetch(RPC_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: "cto", method, params }),
-  });
-  if (!res.ok) throw new Error(`RPC request failed (${res.status})`);
-  const json = await res.json();
-  if (json.error) {
-    const cause = json.error.cause?.name ? `${json.error.cause.name}: ` : "";
-    throw new Error(cause + (json.error.data ?? json.error.message ?? "RPC error"));
+  let lastError: Error = new Error("RPC request failed");
+  for (let i = 0; i < RPC_URLS.length; i++) {
+    const index = (current + i) % RPC_URLS.length;
+    let json: { result?: T; error?: { code?: number; message?: string; data?: string; cause?: { name?: string } } };
+    try {
+      const res = await fetch(RPC_URLS[index], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: "cto", method, params }),
+        signal: AbortSignal.timeout(15_000),
+      });
+      if (!res.ok) {
+        lastError = new Error(`RPC request failed (${res.status})`);
+        continue;
+      }
+      json = await res.json();
+    } catch (e) {
+      // Offline, a timeout, or a reply without CORS headers (which browsers report as "Failed to fetch").
+      lastError = e instanceof Error ? e : new Error(String(e));
+      continue;
+    }
+    if (rateLimited(json.error)) {
+      lastError = new Error("RPC request failed (rate limited)");
+      continue;
+    }
+    current = index;
+    if (json.error) {
+      const cause = json.error.cause?.name ? `${json.error.cause.name}: ` : "";
+      throw new Error(cause + (json.error.data ?? json.error.message ?? "RPC error"));
+    }
+    return json.result as T;
   }
-  return json.result as T;
+  throw lastError;
 }
 
 function toBase64(text: string): string {
