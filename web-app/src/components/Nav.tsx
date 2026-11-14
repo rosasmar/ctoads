@@ -36,9 +36,10 @@ export function Nav() {
 
   return (
     <header className="border-b-2 border-ink">
-      {/* On phones the links get their own row under the logo and wallet button. */}
-      <nav className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
-        <Link href="/" className="font-display text-2xl">
+      {/* As wide as the page below (layout.tsx), so the name and the wallet button line up with its edges.
+          On phones the links get their own row under the name and wallet button. */}
+      <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-4">
+        <Link href="/" className="font-display text-3xl">
           CTOads
         </Link>
         <div className="order-last flex w-full flex-wrap gap-x-4 gap-y-1 text-sm sm:order-none sm:w-auto">
