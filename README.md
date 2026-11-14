@@ -17,6 +17,9 @@ Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 - **Video (1:39):** https://youtu.be/kWgeeXSbZME
 - **Contracts:** [`token.ctoads.near`](https://nearblocks.io/address/token.ctoads.near) ($CTO) and
   [`toads.ctoads.near`](https://nearblocks.io/address/toads.ctoads.near) (CTOads)
+- **Locked for good:** both contract accounts have no access keys left, so nobody,
+  us included, can change or redeploy their code. Check it with
+  `near account list-keys toads.ctoads.near network-config mainnet now`.
 - **CTOad #1**, minted on mainnet by a real loss of 1.01 NEAR:
   [ctoads.xyz/ctoads/1](https://www.ctoads.xyz/ctoads/1), with its own account
   [`ctoad-1.token.ctoads.near`](https://nearblocks.io/address/ctoad-1.token.ctoads.near)
@@ -151,6 +154,8 @@ Not related to the other "$CTO" at ctotimes.xyz.
 ## Settings
 
 Fixed when the token contract is initialized. There are no admin functions.
+On mainnet, the keys of both contract accounts were deleted after launch, so
+the code can't be upgraded either.
 
 | Setting | Meaning |
 |---|---|
