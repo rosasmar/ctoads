@@ -11,6 +11,53 @@ it collects the CTOad's fees, and it can call other contracts, such as buying
 $CTO with those fees. Selling the CTOad hands over everything in its account.
 Its image lives on-chain too, drawn from SVG layers stored in the NFT contract.
 
+## For judges
+
+- **Live on mainnet:** [ctoads.xyz](https://www.ctoads.xyz)
+- **Video (1:39):** https://youtu.be/kWgeeXSbZME
+- **Contracts:** [`token.ctoads.near`](https://nearblocks.io/address/token.ctoads.near) ($CTO) and
+  [`toads.ctoads.near`](https://nearblocks.io/address/toads.ctoads.near) (CTOads)
+- **CTOad #1**, minted on mainnet by a real loss of 1.01 NEAR:
+  [ctoads.xyz/ctoads/1](https://www.ctoads.xyz/ctoads/1), with its own account
+  [`ctoad-1.token.ctoads.near`](https://nearblocks.io/address/ctoad-1.token.ctoads.near)
+- **The art is frozen:** no layer can be added or changed anymore
+  ([`freeze_art` transaction](https://nearblocks.io/txns/EpnxwjHeVcNUf7V4vdFrg4FmaHAL1skSScwkxaCG7U4h))
+- **Art by** [@jsigwart](https://x.com/jsigwart) (GitHub
+  [@chubbicorn245](https://github.com/chubbicorn245)): 65 layers, stored in the NFT
+  contract and combined on-chain into each CTOad.
+
+### A two-minute tour
+
+| Do | See |
+|---|---|
+| Open ctoads.xyz | The toad preview shuffles looks drawn from the on-chain layers. Grab the green head and throw it. |
+| Open the Gallery, then CTOad #1 | Its traits, its own NEAR account and its backpack. Its holder can recolor it. |
+| Connect any NEAR wallet | The trade card, your bag, and the loss jar that fills as a sell would lose NEAR. The price ticks when people trade. |
+| Open Phone | Link your phone with one text, then `HELP` shows every command: buy and sell links, `TOPUP` from other chains, profile, claim and vote. |
+| Earn a CTOad yourself | On mainnet it takes a single sell that loses at least 1 NEAR, 10 minutes after your last buy. The 1% fee each way alone loses about 1 NEAR on a ~51 NEAR round trip. |
+
+### NEAR tech used
+
+| | Where |
+|---|---|
+| NEP-141 fungible token with its own bonding curve | [`contracts/cto-token`](contracts/cto-token) |
+| NEP-171 / NEP-177 NFTs, capped at 500, art stored and drawn on-chain as SVG | [`contracts/ctoad-nft`](contracts/ctoad-nft) |
+| A sub-account per NFT (`ctoad-<id>.token.ctoads.near`), running one keyless wallet contract deployed as a **global contract** | [`contracts/ctoad-account`](contracts/ctoad-account) |
+| NEP-413 signed messages, so a wallet proves who it is for alerts, profiles and phone links | [`web-app/src/lib/walletProof.ts`](web-app/src/lib/walletProof.ts) |
+| NEAR Intents (1Click) for top-ups from USDC, ETH, SOL or BTC on other chains, also by text | [`web-app/src/lib/oneClick.ts`](web-app/src/lib/oneClick.ts) |
+| NEAR AI Cloud: a private model in a TEE checks every alert and profile before it's sent or saved | [`web-app/src/lib/moderation.ts`](web-app/src/lib/moderation.ts) |
+
+### Tracks
+
+- **NFTs:** on-chain art from layers, an account owned by each NFT, holder-only recolor, and
+  holders who take over the fees and vote on the treasury.
+- **Open Innovation:** iMessage as the interface to NEAR. Text to get a trade link, top up from
+  another chain with NEAR Intents, edit your profile, claim and vote.
+- **Privacy:** holders text the whole club without sharing their number, and a private model in
+  a TEE moderates every message. Phone numbers stay on the server.
+
+Not related to the other "$CTO" at ctotimes.xyz.
+
 ## Contracts
 
 | Contract | Path | What it does |
@@ -168,4 +215,4 @@ Sign-ups and profiles are stored in Supabase. See
 
 ## Team
 
-Marco and Jarren.
+Marco and Jarren (code), art by Julie ([@jsigwart](https://x.com/jsigwart)).
