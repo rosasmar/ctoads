@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
 import { CtoadImage, ToadPreview } from "@/components/CtoadImage";
 import { HolderName } from "@/components/HolderName";
@@ -145,7 +146,7 @@ export function Progress({ market, config }: { market?: Market; config?: TokenCo
         </span>
       </>,
     ],
-    ["1 $CTO", market ? `${formatNear(market.price_per_token)} NEAR` : "…"],
+    ["1 $CTO", market ? <PriceTick price={market.price_per_token} /> : "…"],
     ["Fee", config ? `${config.fee_bps / 100}%` : "…"],
     ["Takeover", market?.takeover ? "Live" : "Not yet"],
   ];
@@ -163,6 +164,31 @@ export function Progress({ market, config }: { market?: Market; config?: TokenCo
         </div>
       ))}
     </section>
+  );
+}
+
+/**
+ * The price, which reloads every 5 seconds. When it changes, it flashes green and ▲ or red and ▼,
+ * with the change since the last update, so trades show as ticks.
+ */
+function PriceTick({ price }: { price: string }) {
+  const [last, setLast] = useState(price);
+  const [tick, setTick] = useState<{ up: boolean; pct: number; n: number } | null>(null);
+  // Compare with the last price while rendering, as React suggests for "state from a prop".
+  if (price !== last) {
+    const before = Number(last);
+    setLast(price);
+    if (before > 0) setTick({ up: Number(price) > before, pct: ((Number(price) - before) / before) * 100, n: (tick?.n ?? 0) + 1 });
+  }
+  return (
+    <span key={tick?.n} className={tick ? (tick.up ? "tick-up" : "tick-down") : undefined}>
+      {formatNear(price)} NEAR
+      {tick && (
+        <span className={`ml-2 align-middle font-mono text-sm ${tick.up ? "text-frog" : "text-rekt"}`}>
+          {tick.up ? "▲" : "▼"} {Math.abs(tick.pct).toFixed(Math.abs(tick.pct) < 1 ? 2 : 1)}%
+        </span>
+      )}
+    </span>
   );
 }
 

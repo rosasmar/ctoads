@@ -55,6 +55,30 @@
 .border-ink {
   border-color: var(--color-line);
 }
+/* The $CTO price flashes when it changes (PriceTick in Home.tsx). */
+@keyframes tick-up {
+  from { background: color-mix(in srgb, var(--color-accent) 45%, transparent); }
+  to { background: transparent; }
+}
+@keyframes tick-down {
+  from { background: color-mix(in srgb, var(--color-rekt) 25%, transparent); }
+  to { background: transparent; }
+}
+.tick-up {
+  animation: tick-up 1.2s ease-out;
+  border-radius: 6px;
+}
+.tick-down {
+  animation: tick-down 1.2s ease-out;
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tick-up,
+  .tick-down {
+    animation: none;
+  }
+}
+
 /* Text on the green accent is dark, whatever the element's own text color says. */
 .bg-accent {
   color: var(--color-on-accent);
