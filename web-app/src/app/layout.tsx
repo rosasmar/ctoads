@@ -37,7 +37,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <Providers>
           <Nav />
           <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
-          {/* A row of cells, like the rest of the grid: the time, the event, the contract, the fine print. */}
+          {/* A row of cells, like the rest of the grid: the time, the event, the contract, the code and fine print. */}
           <footer className="mx-auto mb-6 grid w-full max-w-6xl px-4 font-mono text-xs">
             <div className="grid overflow-hidden rounded-xl border border-ink bg-card sm:grid-cols-4 [&>*]:border-line [&>*]:px-4 [&>*]:py-3 [&>*:not(:last-child)]:border-b sm:[&>*:not(:last-child)]:border-r sm:[&>*:not(:last-child)]:border-b-0">
               <Clock />
@@ -55,6 +55,15 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
                 <span />
               )}
               <span>
+                <a
+                  href="https://github.com/rosasmar/ctoads"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="hover:underline"
+                >
+                  GitHub ↗
+                </a>{" "}
+                ·{" "}
                 {textingEnabled() && (
                   <>
                     Texts by{" "}
