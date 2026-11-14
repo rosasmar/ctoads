@@ -225,12 +225,17 @@ export function TextYourToad() {
         </Link>
       </div>
       <div className="space-y-3 bg-background p-6 md:p-8" aria-label="An example conversation">
-        <Bubble me>TOPUP 10 USDC</Bubble>
+        {/* Shortened from the real replies in lib/textCommands.ts: the address comes in a text of its
+            own, so a long-press copies just the address. */}
+        <Bubble me>TOPUP 10 USDC SOLANA</Bubble>
         <Bubble>
-          Send exactly 10 USDC on Base to: 0x7a…c41f. You&apos;ll get about 2.8 NEAR. I&apos;ll text you when it
-          arrives.
+          Send exactly 10 USDC on Solana to the address in the next text. You&apos;ll get about 2.8 NEAR in you.near.
+          I&apos;ll text you when it arrives.
         </Bubble>
-        <Bubble>Your 10 USDC on Base arrived as NEAR. Tap to buy $CTO with it.</Bubble>
+        <Bubble>
+          <span className="font-mono">7xKXtg2C…Mq9fQa</span>
+        </Bubble>
+        <Bubble>Your 10 USDC on Solana arrived as NEAR in you.near. Tap to buy $CTO with it.</Bubble>
         <Bubble me>SET BIO bagholder since day one</Bubble>
         <Bubble>Saved: ctoads.xyz/@you</Bubble>
         <p className="pt-2 font-mono text-xs text-ink/65">Example conversation.</p>
