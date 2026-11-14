@@ -5,3 +5,4 @@ node_modules/
 neardev/
 .DS_Store
 __pycache__/
+art/preview.html
