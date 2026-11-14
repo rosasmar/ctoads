@@ -19,7 +19,9 @@ export type MintMoment = { accountId: string; tokenId: string | null; loss: stri
  */
 function shareOnX(tokenId: string, loss: string) {
   const text = `I lost ${formatNear(loss, 2)} NEAR on $CTO and got CTOad #${tokenId} 🐸 Membership costs a loss.`;
-  const url = `${window.location.origin}/ctoads/${tokenId}`;
+  // "?minted" makes it a link X hasn't seen. X keeps a card for days, so a link to this number shared
+  // before the mint would otherwise still show "Not minted yet".
+  const url = `${window.location.origin}/ctoads/${tokenId}?minted`;
   window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
 }
 
