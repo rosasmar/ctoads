@@ -344,7 +344,6 @@ function Position() {
   const { data: exit } = useSellQuote(signedAccountId, balance > 0n ? balance : null);
   const { data: market } = useMarket();
   const { data: config } = useTokenConfig();
-  const nowMs = useNow();
 
   if (!signedAccountId && NETWORK === "testnet") return <TestnetHelp />;
   if (!signedAccountId || !holder) {
@@ -376,7 +375,7 @@ function Position() {
         )}
         <Row label="Earned a CTOad" value={holder.earned_ctoad ? "Yes" : "Not yet"} />
       </dl>
-      {exit && market && config && <LossJar holder={holder} quote={exit} config={config} market={market} nowMs={nowMs} />}
+      {exit && market && config && <LossJar holder={holder} quote={exit} config={config} market={market} />}
       {holder.failed_mints > 0 && (
         <button
           onClick={() =>

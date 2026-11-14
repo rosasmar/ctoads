@@ -3,6 +3,7 @@
 import { useId } from "react";
 
 import { ToadFace } from "@/components/ToadHead";
+import { useNow } from "@/hooks/useCto";
 import { type Holder, type Market, type SellQuote, type TokenConfig, whyNoCtoad } from "@/lib/cto";
 import { formatNear } from "@/lib/near";
 
@@ -17,10 +18,12 @@ const JAR = { x: 105, y: 30, w: 90, h: 96 };
 /** The REKT label's middle, low enough to leave the top of the jar to the toad. */
 const LABEL_Y = JAR.y + JAR.h * 0.7;
 
-type Props = { holder: Holder; quote: SellQuote; config: TokenConfig; market: Market; nowMs: number };
+type Props = { holder: Holder; quote: SellQuote; config: TokenConfig; market: Market };
 
-export function LossJar({ holder, quote, config, market, nowMs }: Props) {
+/** Shown only once the bag has loaded in the browser, so reading the clock here is fine. */
+export function LossJar({ holder, quote, config, market }: Props) {
   const clip = useId();
+  const nowMs = useNow();
   const threshold = BigInt(config.loss_threshold);
   const loss = BigInt(quote.loss);
   const inProfit = BigInt(quote.near_out) >= BigInt(holder.cost_basis);
