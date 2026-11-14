@@ -7,6 +7,7 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { NETWORK, TOKEN_CONTRACT } from "@/config";
 import { UnmintedCtoad } from "@/components/CtoadImage";
 import { Bagholders, Hero, HowItWorks, Progress, TextYourToad, Ticker } from "@/components/Home";
+import { LossJar } from "@/components/LossJar";
 import { MintModal, type MintMoment } from "@/components/MintModal";
 import { TestnetHelp } from "@/components/TestnetHelp";
 import { TopUpCard } from "@/components/TopUpCard";
@@ -341,6 +342,9 @@ function Position() {
   const { data: holder } = useHolder(signedAccountId);
   const balance = holder ? BigInt(holder.balance) : 0n;
   const { data: exit } = useSellQuote(signedAccountId, balance > 0n ? balance : null);
+  const { data: market } = useMarket();
+  const { data: config } = useTokenConfig();
+  const nowMs = useNow();
 
   if (!signedAccountId && NETWORK === "testnet") return <TestnetHelp />;
   if (!signedAccountId || !holder) {
@@ -372,6 +376,7 @@ function Position() {
         )}
         <Row label="Earned a CTOad" value={holder.earned_ctoad ? "Yes" : "Not yet"} />
       </dl>
+      {exit && market && config && <LossJar holder={holder} quote={exit} config={config} market={market} nowMs={nowMs} />}
       {holder.failed_mints > 0 && (
         <button
           onClick={() =>
