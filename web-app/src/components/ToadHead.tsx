@@ -125,7 +125,6 @@ export function ToadHead({ className, peek = false }: { className?: string; peek
     };
   }, [peek]);
 
-  const eyes = [36, 84];
   return (
     <div
       ref={headRef}
@@ -135,40 +134,54 @@ export function ToadHead({ className, peek = false }: { className?: string; peek
       title="Grab me"
     >
       <svg viewBox="0 0 120 96" className="h-full w-full overflow-visible" aria-hidden="true">
-        <g stroke="#1c2d3e" strokeWidth="4" strokeLinejoin="round">
-          {/* Head and chin */}
-          <ellipse cx="60" cy="60" rx="54" ry="33" fill="#00ec97" />
-          <ellipse cx="60" cy="74" rx="34" ry="16" fill="#ffffff" fillOpacity="0.35" stroke="none" />
-          {/* Spots */}
-          <g fill="#00a36c" stroke="none">
-            <circle cx="16" cy="58" r="5" />
-            <circle cx="26" cy="72" r="3.5" />
-            <circle cx="104" cy="58" r="5" />
-            <circle cx="94" cy="72" r="3.5" />
-            <circle cx="60" cy="38" r="4" />
-          </g>
-          {/* Nostrils and a smug little smile */}
-          <circle cx="53" cy="54" r="1.8" fill="#1c2d3e" stroke="none" />
-          <circle cx="67" cy="54" r="1.8" fill="#1c2d3e" stroke="none" />
-          <path d="M42 68 Q60 80 78 68" fill="none" strokeLinecap="round" />
-          {/* Eyes: the white is fixed, the pupil moves toward the cursor. */}
-          {eyes.map((cx, i) => (
-            <g key={cx}>
-              <circle data-eye cx={cx} cy="30" r="18" fill="#fffaf0" />
-              <circle
-                ref={(el) => {
-                  pupilRefs.current[i] = el;
-                }}
-                cx={cx}
-                cy="30"
-                r="7"
-                fill="#1c2d3e"
-                stroke="none"
-              />
-            </g>
-          ))}
-        </g>
+        <ToadFace
+          pupilRef={(i, el) => {
+            pupilRefs.current[i] = el;
+          }}
+        />
       </svg>
     </div>
+  );
+}
+
+/** The mouth for each mood: the home page's smug smile, a big smile, or a frown. */
+const MOUTHS = { smug: "M42 68 Q60 80 78 68", happy: "M40 65 Q60 88 80 65", sad: "M44 77 Q60 63 76 77" };
+
+/**
+ * The toad head's drawing, in a 120 × 96 box, for use inside an `<svg>`. `pupilRef` gets each
+ * pupil, so the home page's head can move them toward the cursor.
+ */
+export function ToadFace({
+  mood = "smug",
+  pupilRef,
+}: {
+  mood?: keyof typeof MOUTHS;
+  pupilRef?: (index: number, el: SVGCircleElement | null) => void;
+}) {
+  return (
+    <g stroke="#1c2d3e" strokeWidth="4" strokeLinejoin="round">
+      {/* Head and chin */}
+      <ellipse cx="60" cy="60" rx="54" ry="33" fill="#00ec97" />
+      <ellipse cx="60" cy="74" rx="34" ry="16" fill="#ffffff" fillOpacity="0.35" stroke="none" />
+      {/* Spots */}
+      <g fill="#00a36c" stroke="none">
+        <circle cx="16" cy="58" r="5" />
+        <circle cx="26" cy="72" r="3.5" />
+        <circle cx="104" cy="58" r="5" />
+        <circle cx="94" cy="72" r="3.5" />
+        <circle cx="60" cy="38" r="4" />
+      </g>
+      {/* Nostrils and the mouth */}
+      <circle cx="53" cy="54" r="1.8" fill="#1c2d3e" stroke="none" />
+      <circle cx="67" cy="54" r="1.8" fill="#1c2d3e" stroke="none" />
+      <path d={MOUTHS[mood]} fill="none" strokeLinecap="round" />
+      {/* Eyes: the white is fixed; the pupil can move. */}
+      {[36, 84].map((cx, i) => (
+        <g key={cx}>
+          <circle data-eye cx={cx} cy="30" r="18" fill="#fffaf0" />
+          <circle ref={(el) => pupilRef?.(i, el)} cx={cx} cy={mood === "sad" ? 34 : 30} r="7" fill="#1c2d3e" stroke="none" />
+        </g>
+      ))}
+    </g>
   );
 }
